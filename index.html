@@ -381,6 +381,28 @@ main{padding:26px 40px 60px}
   content:''; position:absolute; left:-1px; top:-3px; width:8px; height:8px;
   border-radius:50%; background:var(--danger);
 }
+/* week agenda (phone) */
+.agenda{max-width:720px; margin-top:6px}
+.ag-day{border-top:1px solid var(--line); padding:13px 0 15px}
+.ag-head{
+  font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-faint);
+  display:flex; align-items:baseline; gap:8px; margin-bottom:4px;
+}
+.ag-head b{font-family:var(--serif); font-size:17px; letter-spacing:.2px; text-transform:none; color:var(--ink); font-weight:600}
+.ag-now{
+  background:var(--ink); color:var(--paper); border-radius:999px; padding:2px 10px;
+  font-size:9.5px; letter-spacing:1.5px;
+}
+.ag-row{
+  display:flex; align-items:center; gap:9px; padding:9px 2px;
+  border-bottom:1px dashed var(--line-soft); cursor:pointer;
+}
+.ag-time{width:74px; flex-shrink:0; font-size:10.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums}
+.ag-t{min-width:0; overflow-wrap:break-word; font-size:13.5px}
+.ag-done{text-decoration:line-through; color:var(--ink-faint)}
+.ag-gcal{cursor:default; color:var(--ink-soft); font-style:italic}
+.ag-empty{font-family:var(--serif); font-style:italic; color:var(--ink-faint); font-size:13.5px; padding:4px 2px}
+
 /* google calendar items in month cells */
 .cal-ev.gcal{color:var(--ink-faint); cursor:default; font-style:italic}
 .gc-mark{
@@ -562,9 +584,10 @@ footer button:hover, footer label:hover{color:var(--ink)}
   .view-title{font-size:26px}
   .view-head{flex-wrap:wrap; gap:8px 12px}
   .view-sub{display:none}
-  /* swipeable kanban: one column ≈ one screen */
-  .cols{gap:12px; padding:12px 0 20px; scroll-snap-type:x proximity}
-  .col{min-width:80vw; width:80vw; scroll-snap-align:start}
+  /* phone scrolls vertically: columns become stacked sections */
+  .cols{flex-direction:column; gap:20px; padding:12px 0 20px; overflow-x:visible}
+  .col{min-width:0; width:100%}
+  .col-body{gap:8px}
   .tick{width:22px; height:22px}
   .tick svg{width:11px; height:11px}
   .drawer{width:100vw; padding:24px 18px 40px}
@@ -1428,6 +1451,35 @@ function calCellHTML(d,inMonth,extra,byDate,gByDate,today){
       </div>`).join('')}
   </div>`;
 }
+/* week as a vertical agenda — the phone-native way to read time */
+function renderWeekAgenda(start,byDate,gByDate,today){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d;});
+  return '<div class="agenda">'+days.map(d=>{
+    const k=dstr(d);
+    const ts=byDate[k]||[], gs=gByDate[k]||[];
+    const timed=[...ts.filter(t=>t.start).map(t=>({t})),...gs.filter(e=>e.start).map(e=>({e}))]
+      .sort((a,b)=>hmToMin((a.t||a.e).start)-hmToMin((b.t||b.e).start));
+    const allday=[...ts.filter(t=>!t.start).map(t=>({t})),...gs.filter(e=>!e.start).map(e=>({e}))];
+    const rows=[...timed,...allday].map(x=>{
+      if(x.t){const t=x.t,b=board(t.boardId);
+        return `<div class="ag-row ${t.done?'done-card':''}" onclick="openDrawer('${t.id}')">
+          <span class="ag-time">${t.start?fmtSlot(t):'all day'}</span>
+          <span class="dot" style="background:${b?b.accent:'#999'}"></span>
+          ${t.urgent?'<span class="cal-urg">!</span>':''}
+          <span class="ag-t ${t.done?'ag-done':''}">${esc(t.title)}</span></div>`;}
+      const e=x.e;
+      return `<div class="ag-row ag-gcal">
+        <span class="ag-time">${e.start?fmtSlot(e):'all day'}</span>
+        <span class="gc-mark">G</span><span class="ag-t">${esc(e.title)}</span></div>`;
+    }).join('');
+    return `<div class="ag-day ${k===today?'ag-today':''}">
+      <div class="ag-head">${d.toLocaleDateString('en-US',{weekday:'long'})}
+        <b>${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</b>
+        ${k===today?'<span class="ag-now">today</span>':''}</div>
+      ${rows||'<div class="ag-empty">nothing planned — breathe</div>'}
+    </div>`;
+  }).join('')+'</div>';
+}
 /* week with hours — timed tasks and calendar events as duration blocks */
 function renderWeekGrid(start,byDate,gByDate,today){
   const S_MIN=0, E_MIN=24*60, PPH=48;   // full day, midnight to midnight
@@ -1499,7 +1551,8 @@ function renderCal(){
     label=start.getMonth()===end.getMonth()
       ? f(start,{month:'long'})+' '+start.getDate()+' – '+end.getDate()+', '+end.getFullYear()
       : f(start,{month:'short',day:'numeric'})+' – '+f(end,{month:'short',day:'numeric'})+', '+end.getFullYear();
-    body=renderWeekGrid(start,byDate,gByDate,today);
+    const NARROW=window.matchMedia&&matchMedia('(max-width:700px)').matches;
+    body=NARROW?renderWeekAgenda(start,byDate,gByDate,today):renderWeekGrid(start,byDate,gByDate,today);
   }else{
     const {y,m}=calCur;
     const startDow=new Date(y,m,1).getDay(), daysIn=new Date(y,m+1,0).getDate();
@@ -2083,6 +2136,7 @@ dedupeState();
 render();
 updateGhLink();
 if(GH.cfg){ghPull();ghStartPolling();}
+if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());
 </script>
 </body>
 </html>
