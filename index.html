@@ -628,6 +628,7 @@ footer button:hover, footer label:hover{color:var(--ink)}
   <div class="wordmark m-only" onclick="go('master')">A<em>telier</em></div>
   <div class="top-date" id="topDate"></div>
   <button class="btn-ghost" id="saveBtn" style="margin-left:auto" onclick="manualSave()">Save</button>
+  <button class="btn-ghost" onclick="hardRefresh()" title="Save, sync, and reload the freshest version">↻</button>
   <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
 <hr class="rule">
@@ -1841,6 +1842,14 @@ document.addEventListener('input',e=>{
   if(el.matches('input[type=date],input[type=time],input[type=range],select'))return; // these fire change natively / handle input themselves
   if(el.getAttribute('onchange'))el.dispatchEvent(new Event('change'));
 });
+async function hardRefresh(){
+  const a=document.activeElement; if(a&&a.blur)a.blur();
+  save();
+  try{
+    if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}  // push edits out before reloading
+  }catch(e){}
+  location.href=location.pathname+'?r='+Date.now();   // cache-busting reload — works in home-screen apps
+}
 async function manualSave(){
   const a=document.activeElement; if(a&&a.blur)a.blur();  // commit any field mid-edit
   save();
