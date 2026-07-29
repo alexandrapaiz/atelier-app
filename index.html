@@ -491,6 +491,42 @@ main{padding:26px 40px 60px}
 .era:hover .era-head .goal-tools{opacity:1}
 .plan-item:hover .goal-tools{opacity:1}
 
+/* ---------- claude page ---------- */
+.cl-wrap{max-width:760px}
+.cl-note{
+  background:var(--card); border:1px solid var(--line-soft); border-radius:16px;
+  padding:20px 22px 16px; box-shadow:var(--shadow); margin:0 0 16px;
+  border-left:3px solid var(--ochre);
+}
+.cl-text{font-family:var(--serif); font-size:17px; font-style:italic; line-height:1.55}
+.cl-task{display:flex; align-items:center; gap:9px; margin-top:12px; flex-wrap:wrap}
+.cl-task-t{font-size:13.5px; font-weight:500; cursor:pointer}
+.cl-task-t:hover{text-decoration:underline}
+.cl-actions{display:flex; gap:8px; margin-top:13px; flex-wrap:wrap}
+.cl-btn{
+  border:1px solid var(--line); border-radius:999px; padding:6px 14px;
+  font-size:12.5px; background:var(--card); letter-spacing:.2px; white-space:nowrap;
+}
+.cl-btn:hover{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.cl-btn.danger:hover{background:var(--danger); border-color:var(--danger)}
+.cl-btn.ghost{border-color:transparent; color:var(--ink-faint)}
+.cl-sig{margin-top:12px; font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--ink-faint)}
+.cl-sub{font-size:12.5px; color:var(--ink-faint); margin:-2px 0 8px; font-style:italic; font-family:var(--serif); font-size:14px}
+.cl-row{
+  display:flex; align-items:center; gap:10px; padding:9px 4px;
+  border-bottom:1px solid var(--line-soft); flex-wrap:wrap;
+}
+.cl-row-t{cursor:pointer; min-width:0; font-size:13.5px}
+.cl-row-t:hover{text-decoration:underline}
+.cl-row-btns{margin-left:auto; display:flex; gap:6px; flex-wrap:wrap}
+.cl-foot{
+  margin-top:36px; padding-top:16px; border-top:1px solid var(--line);
+  font-family:var(--serif); font-style:italic; color:var(--ink-soft); font-size:15px;
+}
+@media (max-width:700px){
+  .cl-row-btns{margin-left:26px; width:100%; margin-top:2px}
+}
+
 /* ---------- drawer (task detail) ---------- */
 .scrim{
   position:fixed; inset:0; background:rgba(30,26,20,.28); opacity:0; pointer-events:none;
@@ -756,6 +792,7 @@ function ensureDefaults(){
   if(!S.priCols)S.priCols=[{id:uid(),name:'Do now!'},{id:uid(),name:'Do soon'},{id:uid(),name:'On the horizon'}];
   if(!S.meta.horizonCols){S.boards.forEach(addHorizonCol);S.meta.horizonCols=true;}
   if(!S.gcal)S.gcal=[];
+  if(!S.claude)S.claude={notes:[]};
 }
 ensureDefaults();
 /* Claude's updates ride inside this file — merged on every load, no file link needed */
@@ -899,6 +936,7 @@ function render(){
   else if(route.view==='pri')m.innerHTML=renderPriorities();
   else if(route.view==='cal')m.innerHTML=renderCal();
   else if(route.view==='ach')m.innerHTML=renderAch();
+  else if(route.view==='claude')m.innerHTML=renderClaude();
   else m.innerHTML=renderBoard();
   save();
 }
@@ -936,6 +974,7 @@ function renderSidebar(){
     <button class="snav ${route.view==='plan'?'on':''}" onclick="go('plan')">Life Plan</button>
     <button class="snav ${route.view==='goals'?'on':''}" onclick="go('goals')">Goals</button>
     <button class="snav ${route.view==='ach'?'on':''}" onclick="go('ach')">The Laurels</button>
+    <button class="snav ${route.view==='claude'?'on':''}" onclick="go('claude')"><span style="color:var(--ochre)">✦</span> Claude</button>
     <div class="side-label">Boards</div>
     ${groups}${orphans}
     <button class="snav side-new" onclick="newBoard(S.masterColumns[0].id)">+ New board</button>`;
@@ -1769,6 +1808,94 @@ function renderAch(){
     <div class="ach-wrap">${intentions}${timeline||''}</div>`;
 }
 
+/* ============ claude — the resident reviewer ============ */
+function renderClaude(){
+  const now=Date.now(), today=todayStr();
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t));
+  const taskOf=id=>S.tasks.find(t=>t.id===id);
+  const bAcc=t=>{const b=board(t.boardId);return b?b.accent:'#999';};
+  const bName=t=>{const b=board(t.boardId);return b?b.name:'';};
+  /* my letters — written from our sessions, actionable in place */
+  const notes=((S.claude&&S.claude.notes)||[]).filter(n=>{
+    if(n.resolved)return false;
+    if(n.taskId){const t=taskOf(n.taskId);if(!t||t.done)return false;}
+    return true;
+  });
+  const noteHtml=notes.map(n=>{
+    const t=n.taskId?taskOf(n.taskId):null;
+    return `<div class="cl-note">
+      <div class="cl-text">${esc(n.text)}</div>
+      ${t?`<div class="cl-task"><span class="dot" style="background:${bAcc(t)}"></span>
+        <span class="cl-task-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+        <span class="b-tag">${esc(bName(t))}</span>${whenChip(t)}</div>`:''}
+      <div class="cl-actions">
+        ${(n.actions||[]).map((a,i)=>`<button class="cl-btn ${a.act==='delete'?'danger':''}" onclick="clNoteAct('${n.id}',${i})">${esc(a.label)}</button>`).join('')}
+        <button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Not now</button>
+      </div>
+      <div class="cl-sig">— Claude</div>
+    </div>`;
+  }).join('');
+  /* standing reviews — computed fresh every time */
+  const row=(t,btns)=>`<div class="cl-row">
+    <span class="dot" style="background:${bAcc(t)}"></span>
+    <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+    <span class="b-tag">${esc(bName(t))}</span>
+    ${whenChip(t)}
+    <span class="cl-row-btns">${btns}</span>
+  </div>`;
+  const btn=(label,fn,danger)=>`<button class="cl-btn ${danger?'danger':''}" onclick="${fn}">${label}</button>`;
+  const overdue=open.filter(t=>t.due&&t.due<today);
+  const QW=/^(buy|call|book|send|schedule|check|email|text|ask|pay|order|register|renew|clean)\b/i;
+  const wins=open.filter(t=>!t.due&&QW.test(t.title)).slice(0,7);
+  const stale=open.filter(t=>!t.due&&!t.priCol&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
+  const sec=(title,subtitle,items,empty)=>`
+    <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
+    <div class="cl-sub">${subtitle}</div>
+    ${items.length?items.join(''):`<div class="empty-note">${empty}</div>`}`;
+  const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
+    overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
+    'nothing overdue — a clean conscience');
+  const winsHtml=sec('Quick wins on the table','each of these smells like fifteen minutes — knock one out for momentum',
+    wins.map(t=>row(t,btn('Today',`clToday('${t.id}')`)+btn('Do now!',`clDoNow('${t.id}')`))),
+    'no obvious quick wins right now');
+  const staleHtml=sec('Gathering dust','undated, untriaged, untouched for a week — decide: give it a date, or let it go with grace',
+    stale.map(t=>row(t,btn('Date today',`clToday('${t.id}')`)+btn('Still matters',`clStill('${t.id}')`)+btn('Let it go',`clDelete('${t.id}')`,true))),
+    'nothing abandoned — everything here is either moving or resting on purpose');
+  return `<div class="view-head">
+      <div class="view-title">Claude <span style="color:var(--ochre);font-size:22px">✦</span></div>
+      <div class="view-sub">your resident reviewer — notes from me, plus standing audits of the boards</div>
+    </div>
+    <div class="cl-wrap">
+      ${noteHtml||'<div class="empty-note">No new notes from me — ask me in our chat for a fresh review anytime, and it will appear here.</div>'}
+      ${overdueHtml}
+      ${winsHtml}
+      ${staleHtml}
+      <div class="cl-foot">Want a deeper review — priorities challenged, boards reorganized, honest opinions? Just tell me in our conversation; I read everything here and write back.</div>
+    </div>`;
+}
+function clToday(id){const t=S.tasks.find(t=>t.id===id);if(!t)return;t.due=todayStr();touch(t);save();render();}
+function clDoNow(id){
+  const t=S.tasks.find(t=>t.id===id);if(!t)return;
+  const c=S.priCols.find(c=>/\bnow\b/i.test(c.name))||S.priCols[0];
+  if(c)t.priCol=c.id;touch(t);save();render();
+}
+function clStill(id){const t=S.tasks.find(t=>t.id===id);if(!t)return;touch(t);save();render();}
+function clDelete(id){
+  if(!confirm('Let this one go? (It disappears, guilt included.)'))return;
+  S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
+}
+function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
+function clNoteAct(nid,i){
+  const n=S.claude.notes.find(n=>n.id===nid); if(!n)return;
+  const a=(n.actions||[])[i]; if(!a)return;
+  if(a.act==='date-today'&&n.taskId){const t=S.tasks.find(t=>t.id===n.taskId);if(t){t.due=todayStr();touch(t);}}
+  else if(a.act==='do-now'&&n.taskId)clDoNow(n.taskId);
+  else if(a.act==='done'&&n.taskId){const t=S.tasks.find(t=>t.id===n.taskId);if(t&&!t.done)toggleDone(n.taskId);}
+  else if(a.act==='delete'&&n.taskId)S.tasks=S.tasks.filter(t=>t.id!==n.taskId);
+  else if(a.act==='open'&&n.taskId){openDrawer(n.taskId);return;}
+  n.resolved=Date.now();save();render();
+}
+
 /* ============ life plan ============ */
 function renderPlan(){
   const eras=S.plan.map(e=>{
@@ -1932,6 +2059,14 @@ function mergeStates(loc,rem){
     else merge(em.get(e.id).items,e.items);
   });
   if(rem.gcal&&rem.gcal.length&&(preferRem||!(loc.gcal||[]).length))loc.gcal=rem.gcal;
+  if(rem.claude&&rem.claude.notes){
+    if(!loc.claude)loc.claude={notes:[]};
+    const nm=new Map(loc.claude.notes.map((x,i)=>[x.id,i]));
+    rem.claude.notes.forEach(x=>{
+      if(!nm.has(x.id))loc.claude.notes.push(x);
+      else{const l=loc.claude.notes[nm.get(x.id)]; if(x.resolved&&!l.resolved)l.resolved=x.resolved;}
+    });
+  }
   if(preferRem&&rem.meta.mission)loc.meta.mission=rem.meta.mission;
   return loc;
 }
