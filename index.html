@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Atelier — Alexandra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -414,6 +414,11 @@ main{padding:26px 40px 60px}
 }
 
 /* ---------- calendar ---------- */
+.cal-nav{display:flex; align-items:center; gap:10px}
+.cal-nav-btns{display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden}
+.cal-nb{padding:6px 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.4}
+.cal-nb:hover{background:var(--paper-2); color:var(--ink)}
+.cal-nb+.cal-nb{border-left:1px solid var(--line-soft)}
 .cal-month{font-size:25px; margin:4px 0 14px}
 .cal-grid{
   display:grid; grid-template-columns:repeat(7,1fr); max-width:1240px;
@@ -526,6 +531,15 @@ main{padding:26px 40px 60px}
 }
 .cl-you-t{font-size:14px; line-height:1.5}
 .cl-you-s{font-size:11px; color:var(--ink-faint); margin-top:6px; font-style:italic}
+.cl-quote{
+  font-size:12.5px; color:var(--ink-faint); font-style:italic; font-family:var(--serif);
+  border-left:2px solid var(--line); padding:1px 0 1px 10px; margin-bottom:8px;
+}
+.cl-replied{
+  color:var(--sage); font-size:9.5px; letter-spacing:1.2px; margin-left:12px; text-transform:none;
+}
+.cl-cancel{color:var(--ink-faint); font-size:14px; padding:0 4px}
+.cl-cancel:hover{color:var(--danger)}
 .cl-sub{font-size:12.5px; color:var(--ink-faint); margin:-2px 0 8px; font-style:italic; font-family:var(--serif); font-size:14px}
 .cl-row{
   display:flex; align-items:center; gap:10px; padding:9px 4px;
@@ -663,7 +677,10 @@ footer button:hover, footer label:hover{color:var(--ink)}
   .ach-n{font-size:26px}
   .mission-input{font-size:21px}
   .era{padding-left:22px}
-  footer{padding:10px 14px 22px; flex-wrap:wrap}
+  footer{padding:10px 14px calc(26px + env(safe-area-inset-bottom, 0px)); flex-wrap:wrap}
+  main{padding-bottom:calc(46px + env(safe-area-inset-bottom, 0px))}
+  .cal-nav{width:100%; justify-content:space-between}
+  .cal-nb{padding:8px 16px; font-size:13.5px}
   .sync-banner{margin:10px 14px 0}
   .practices{gap:6px 8px}
   .practice{font-size:13px; padding:4px 11px}
@@ -1641,13 +1658,17 @@ function renderCal(){
       <div class="view-title">Calendar</div>
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
-      <div class="seg">
-        <button class="${calMode==='month'?'on':''}" onclick="calMode='month';render()">Month</button>
-        <button class="${calMode==='week'?'on':''}" onclick="calMode='week';calJump=1;render()">Week</button>
+      <div class="cal-nav">
+        <div class="seg">
+          <button class="${calMode==='month'?'on':''}" onclick="calMode='month';render()">Month</button>
+          <button class="${calMode==='week'?'on':''}" onclick="calMode='week';calJump=1;render()">Week</button>
+        </div>
+        <span class="cal-nav-btns">
+          <button class="cal-nb" onclick="calShift(-1)" title="Previous">‹</button>
+          <button class="cal-nb" onclick="calCur=null;calJump=1;render()">Today</button>
+          <button class="cal-nb" onclick="calShift(1)" title="Next">›</button>
+        </span>
       </div>
-      <button class="btn-ghost" onclick="calShift(-1)">‹ prev</button>
-      <button class="btn-ghost" onclick="calCur=null;calJump=1;render()">Today</button>
-      <button class="btn-ghost" onclick="calShift(1)">next ›</button>
     </div>
     <div class="cal-month h-serif">${label}</div>
     ${body}`;
@@ -1837,9 +1858,12 @@ function renderClaude(){
     if(n.taskId){const t=taskOf(n.taskId);if(!t||t.done)return false;}
     return true;
   });
+  const exc=(s,k)=>s&&s.length>k?s.slice(0,k-1)+'…':(s||'');
+  const repliedTo=new Set(((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.re).map(m=>m.re));
   const noteHtml=notes.map(n=>{
     const t=n.taskId?taskOf(n.taskId):null;
     return `<div class="cl-note">
+      ${n.reText?`<div class="cl-quote">you said: “${esc(exc(n.reText,110))}”</div>`:''}
       <div class="cl-text">${esc(n.text)}</div>
       ${t?`<div class="cl-task"><span class="dot" style="background:${bAcc(t)}"></span>
         <span class="cl-task-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
@@ -1849,7 +1873,9 @@ function renderClaude(){
         <button class="cl-btn ghost" onclick="clReply('${n.id}')">Reply</button>
         <button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Not now</button>
       </div>
-      <div class="cl-sig">— Claude</div>
+      <div class="cl-sig">— Claude
+        ${repliedTo.has(n.id)?'<span class="cl-replied">↪ your reply is on its way to me</span>':''}
+      </div>
     </div>`;
   }).join('');
   /* standing reviews — computed fresh every time */
@@ -1887,15 +1913,23 @@ function renderClaude(){
         <textarea id="clMsg" rows="2" oninput="window.clDraft=this.value"
           placeholder="Write to Claude — instruct, ask, push back. ‘Split the Nature paper into smaller tasks’, ‘date all the gift-buying for Friday’, ‘why the CV nagging?’…">${esc(window.clDraft||'')}</textarea>
         <div class="cl-compose-row">
-          <span class="small muted" id="clReplyTag">${window.clReplyTo?'replying to a note ✎':''}</span>
-          <button class="btn-ink" onclick="clSend()">Send to Claude</button>
+          <span class="small muted" id="clReplyTag">${(()=>{
+            const rn=window.clReplyTo?((S.claude&&S.claude.notes)||[]).find(n=>n.id===window.clReplyTo):null;
+            return rn?`replying to: “${esc(exc(rn.text,60))}” <button class="cl-cancel" onclick="clCancelReply()">×</button>`:'';
+          })()}</span>
+          <span style="display:flex;gap:8px">
+            <button class="cl-btn" onclick="clPing()" title="Sync instantly and open our chat">⚡ Ping Claude now</button>
+            <button class="btn-ink" onclick="clSend()">Send to Claude</button>
+          </span>
         </div>
       </div>
-      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>`
-        <div class="cl-you">
+      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>{
+        const rn=m.re?((S.claude&&S.claude.notes)||[]).find(n=>n.id===m.re):null;
+        return `<div class="cl-you">
+          ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
           <div class="cl-you-t">${esc(m.text)}</div>
-          <div class="cl-you-s">sent ✓ — I read and act on these within ~2 hours; for something urgent, ping me in our chat</div>
-        </div>`).join('')}
+          <div class="cl-you-s">sent ✓ — read &amp; acted on within ~2 hours, or use ⚡ to summon me now</div>
+        </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${overdueHtml}
       ${winsHtml}
@@ -1917,8 +1951,16 @@ function clDelete(id){
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
 function clReply(nid){
   window.clReplyTo=nid;
+  render();
   const el=$('clMsg'); if(el)el.focus();
-  const tag=$('clReplyTag'); if(tag)tag.textContent='replying to a note ✎';
+}
+function clCancelReply(){window.clReplyTo=null;render();}
+async function clPing(){
+  save();
+  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}}catch(e){}
+  const tag=$('clReplyTag');
+  if(tag)tag.innerHTML='synced ✓ — in our chat, just say <b>“check Atelier”</b> and I’ll act right away';
+  window.open('https://claude.ai/','_blank');
 }
 function clSend(){
   const el=$('clMsg'); if(!el||!el.value.trim())return;
