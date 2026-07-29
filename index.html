@@ -182,7 +182,7 @@ main{padding:26px 40px 60px}
 .bcard:hover{box-shadow:var(--shadow-lift); transform:translateY(-1px)}
 .bcard-rest{opacity:.42; box-shadow:none; background:transparent}
 .bcard-rest:hover{opacity:1; background:var(--card)}
-.bcard-rest .bcard-name::after{content:' ✓'; color:var(--sage); font-size:14px}
+.bcard-alldone .bcard-name::after{content:' ✓'; color:var(--sage); font-size:14px}
 .bcard.dragging{opacity:.4}
 .bcard-top{display:flex; align-items:center; gap:9px; margin-bottom:6px}
 .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0}
@@ -1059,8 +1059,9 @@ function boardCard(b){
   const p=progress(ts);
   const dues=ts.filter(t=>!t.done&&t.due).sort((a,c)=>a.due<c.due?-1:1);
   const nxt=dues[0];
-  const rest=ts.length>0&&open===0;   // every task done — the board rests
-  return `<div class="bcard ${rest?'bcard-rest':''}" draggable="true" data-bid="${b.id}"
+  const rest=open===0;                    // nothing open — done or empty, the board rests
+  const alldone=rest&&ts.length>0;        // earned its checkmark by finishing
+  return `<div class="bcard ${rest?'bcard-rest':''} ${alldone?'bcard-alldone':''}" draggable="true" data-bid="${b.id}"
       ondragstart="dragBoard(event,'${b.id}')" ondragend="dragEnd(event)"
       onclick="go('board','${b.id}')">
     <div class="bcard-top"><span class="dot" style="background:${b.accent}"></span>
