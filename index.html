@@ -511,6 +511,21 @@ main{padding:26px 40px 60px}
 .cl-btn.danger:hover{background:var(--danger); border-color:var(--danger)}
 .cl-btn.ghost{border-color:transparent; color:var(--ink-faint)}
 .cl-sig{margin-top:12px; font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--ink-faint)}
+.cl-compose{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:14px 16px; margin-bottom:18px; box-shadow:var(--shadow);
+}
+.cl-compose textarea{
+  width:100%; border:none; outline:none; background:transparent; resize:vertical;
+  font-size:14px; line-height:1.5; min-height:44px; font-family:var(--sans);
+}
+.cl-compose-row{display:flex; align-items:center; justify-content:space-between; margin-top:8px}
+.cl-you{
+  background:var(--paper-2); border-radius:14px; padding:13px 17px; margin:0 0 12px 40px;
+  max-width:680px;
+}
+.cl-you-t{font-size:14px; line-height:1.5}
+.cl-you-s{font-size:11px; color:var(--ink-faint); margin-top:6px; font-style:italic}
 .cl-sub{font-size:12.5px; color:var(--ink-faint); margin:-2px 0 8px; font-style:italic; font-family:var(--serif); font-size:14px}
 .cl-row{
   display:flex; align-items:center; gap:10px; padding:9px 4px;
@@ -792,7 +807,8 @@ function ensureDefaults(){
   if(!S.priCols)S.priCols=[{id:uid(),name:'Do now!'},{id:uid(),name:'Do soon'},{id:uid(),name:'On the horizon'}];
   if(!S.meta.horizonCols){S.boards.forEach(addHorizonCol);S.meta.horizonCols=true;}
   if(!S.gcal)S.gcal=[];
-  if(!S.claude)S.claude={notes:[]};
+  if(!S.claude)S.claude={notes:[],inbox:[]};
+  if(!S.claude.inbox)S.claude.inbox=[];
 }
 ensureDefaults();
 /* Claude's updates ride inside this file — merged on every load, no file link needed */
@@ -1830,6 +1846,7 @@ function renderClaude(){
         <span class="b-tag">${esc(bName(t))}</span>${whenChip(t)}</div>`:''}
       <div class="cl-actions">
         ${(n.actions||[]).map((a,i)=>`<button class="cl-btn ${a.act==='delete'?'danger':''}" onclick="clNoteAct('${n.id}',${i})">${esc(a.label)}</button>`).join('')}
+        <button class="cl-btn ghost" onclick="clReply('${n.id}')">Reply</button>
         <button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Not now</button>
       </div>
       <div class="cl-sig">— Claude</div>
@@ -1866,7 +1883,20 @@ function renderClaude(){
       <div class="view-sub">your resident reviewer — notes from me, plus standing audits of the boards</div>
     </div>
     <div class="cl-wrap">
-      ${noteHtml||'<div class="empty-note">No new notes from me — ask me in our chat for a fresh review anytime, and it will appear here.</div>'}
+      <div class="cl-compose">
+        <textarea id="clMsg" rows="2" oninput="window.clDraft=this.value"
+          placeholder="Write to Claude — instruct, ask, push back. ‘Split the Nature paper into smaller tasks’, ‘date all the gift-buying for Friday’, ‘why the CV nagging?’…">${esc(window.clDraft||'')}</textarea>
+        <div class="cl-compose-row">
+          <span class="small muted" id="clReplyTag">${window.clReplyTo?'replying to a note ✎':''}</span>
+          <button class="btn-ink" onclick="clSend()">Send to Claude</button>
+        </div>
+      </div>
+      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>`
+        <div class="cl-you">
+          <div class="cl-you-t">${esc(m.text)}</div>
+          <div class="cl-you-s">sent ✓ — I read and act on these within ~2 hours; for something urgent, ping me in our chat</div>
+        </div>`).join('')}
+      ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${overdueHtml}
       ${winsHtml}
       ${staleHtml}
@@ -1885,6 +1915,18 @@ function clDelete(id){
   S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
 }
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
+function clReply(nid){
+  window.clReplyTo=nid;
+  const el=$('clMsg'); if(el)el.focus();
+  const tag=$('clReplyTag'); if(tag)tag.textContent='replying to a note ✎';
+}
+function clSend(){
+  const el=$('clMsg'); if(!el||!el.value.trim())return;
+  S.claude.inbox=S.claude.inbox||[];
+  S.claude.inbox.push({id:uid(),text:el.value.trim(),re:window.clReplyTo||null,createdAt:Date.now()});
+  window.clReplyTo=null; window.clDraft='';
+  save();render();
+}
 function clNoteAct(nid,i){
   const n=S.claude.notes.find(n=>n.id===nid); if(!n)return;
   const a=(n.actions||[])[i]; if(!a)return;
@@ -2059,13 +2101,18 @@ function mergeStates(loc,rem){
     else merge(em.get(e.id).items,e.items);
   });
   if(rem.gcal&&rem.gcal.length&&(preferRem||!(loc.gcal||[]).length))loc.gcal=rem.gcal;
-  if(rem.claude&&rem.claude.notes){
-    if(!loc.claude)loc.claude={notes:[]};
-    const nm=new Map(loc.claude.notes.map((x,i)=>[x.id,i]));
-    rem.claude.notes.forEach(x=>{
-      if(!nm.has(x.id))loc.claude.notes.push(x);
-      else{const l=loc.claude.notes[nm.get(x.id)]; if(x.resolved&&!l.resolved)l.resolved=x.resolved;}
-    });
+  if(rem.claude){
+    if(!loc.claude)loc.claude={notes:[],inbox:[]};
+    const sticky=(la,ra,flag)=>{
+      if(!ra)return;
+      const m=new Map(la.map((x,i)=>[x.id,i]));
+      ra.forEach(x=>{
+        if(!m.has(x.id))la.push(x);
+        else{const l=la[m.get(x.id)]; if(x[flag]&&!l[flag])l[flag]=x[flag];}
+      });
+    };
+    sticky(loc.claude.notes=loc.claude.notes||[],rem.claude.notes,'resolved');
+    sticky(loc.claude.inbox=loc.claude.inbox||[],rem.claude.inbox,'processed');
   }
   if(preferRem&&rem.meta.mission)loc.meta.mission=rem.meta.mission;
   return loc;
