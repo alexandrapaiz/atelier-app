@@ -76,6 +76,9 @@ aside.side .wordmark{margin:0 0 24px 10px}
 .side-group .caret{width:11px; font-size:10px}
 .snav-sub{padding-left:26px}
 .side-new{color:var(--ink-faint); font-size:12.5px; margin-top:2px}
+.m-only{display:none}
+.side-close{display:none}
+.m-menu-btn{font-size:19px; padding:2px 8px; color:var(--ink); line-height:1}
 .content{flex:1; min-width:0; display:flex; flex-direction:column}
 .content footer{margin-top:auto}
 
@@ -563,22 +566,28 @@ footer button:hover, footer label:hover{color:var(--ink)}
 @media (max-width:700px){
   body{font-size:15px}
   .shell{flex-direction:column}
-  aside.side{
-    width:100%; height:auto; position:static; border-right:none;
-    border-bottom:1px solid var(--line); flex-direction:row; flex-wrap:nowrap;
-    align-items:center; gap:4px; padding:12px 14px;
-    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  /* sidebar becomes a full-screen menu behind the ☰ button */
+  aside.side{display:none}
+  body.menu-open aside.side{
+    display:flex; position:fixed; inset:0; z-index:70; background:var(--paper);
+    width:100%; height:100%; border:none; overflow-y:auto;
+    flex-direction:column; flex-wrap:nowrap; gap:2px; padding:26px 24px 44px;
   }
-  aside.side .wordmark{margin:0 10px 0 0; font-size:22px; flex-shrink:0}
-  .snav{width:auto; flex-shrink:0; padding:8px 12px}
-  .snav-sub{padding-left:12px}
-  .snav .dot{width:7px;height:7px}
-  .snav-count{display:none}
-  .side-label{display:none}
-  .side-group{width:auto; flex-shrink:0; margin-top:0; padding:8px 8px}
-  .side-group .caret{display:none}
+  body.menu-open{overflow:hidden}
+  body.menu-open aside.side .wordmark{margin:0 0 22px 8px; font-size:28px}
+  body.menu-open .snav{width:100%; padding:12px 14px; font-size:16px; border-radius:11px}
+  body.menu-open .snav-sub{padding-left:34px}
+  body.menu-open .side-group{width:100%; margin-top:12px; padding:8px 14px; font-size:11px}
+  body.menu-open .side-label{display:block; margin-top:26px}
+  body.menu-open .side-close{
+    display:block; position:absolute; top:16px; right:18px;
+    font-size:26px; color:var(--ink-faint); padding:6px 10px;
+  }
+  .m-only{display:inline-flex !important; align-items:center}
+  .top .wordmark{font-size:22px}
+  .top-date{display:none}
   .top,main{padding-left:14px; padding-right:14px}
-  .top{padding-top:14px}
+  .top{padding-top:14px; align-items:center; gap:14px}
   .rule{margin-left:14px; margin-right:14px; margin-top:12px}
   main{padding-top:16px}
   .view-title{font-size:26px}
@@ -616,8 +625,10 @@ footer button:hover, footer label:hover{color:var(--ink)}
 <div class="content">
 <div id="syncBanner"></div>
 <header class="top">
+  <div class="wordmark m-only" onclick="go('master')">A<em>telier</em></div>
   <div class="top-date" id="topDate"></div>
   <button class="btn-ghost" id="saveBtn" style="margin-left:auto" onclick="manualSave()">Save</button>
+  <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
 <hr class="rule">
 <main id="main"></main>
@@ -862,7 +873,9 @@ function importData(ev){
 /* ============ routing ============ */
 let route={view:'master'};   // {view:'master'|'goals'|'board', boardId, mode:'kanban'|'list'}
 let filters={status:'all',due:'all',goal:'all'};
+function toggleMenu(){document.body.classList.toggle('menu-open');}
 function go(view,boardId){
+  document.body.classList.remove('menu-open');
   route={view,boardId,mode:route.boardId===boardId?route.mode:'kanban'};
   if(view!=='board')route.boardId=null;
   filters={status:'all',due:'all',goal:'all'};
@@ -914,6 +927,7 @@ function renderSidebar(){
   const grouped=S.masterColumns.flatMap(mc=>S.boards.filter(b=>b.masterCol===mc.id));
   const orphans=S.boards.filter(b=>!grouped.includes(b)).map(bItem).join('');
   $('sidebar').innerHTML=`
+    <button class="side-close" onclick="toggleMenu()">×</button>
     <div class="wordmark" onclick="go('master')">A<em>telier</em></div>
     <button class="snav ${route.view==='master'?'on':''}" onclick="go('master')">The Studio</button>
     <button class="snav ${route.view==='pri'?'on':''}" onclick="go('pri')">Priorities</button>
