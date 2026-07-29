@@ -685,16 +685,14 @@ footer button:hover, footer label:hover{color:var(--ink)}
   .ach-n{font-size:26px}
   .mission-input{font-size:21px}
   .era{padding-left:22px}
-  /* fixed, centered footer bar clear of the home indicator */
+  /* footer scrolls with the page — centered, comfortably clear of the edge */
   footer{
-    position:fixed; left:0; right:0; bottom:0; z-index:30;
-    background:var(--paper); border-top:1px solid var(--line);
+    border-top:1px solid var(--line-soft); margin-top:20px;
     justify-content:center; text-align:center; flex-wrap:wrap; gap:8px 16px;
-    padding:11px 16px calc(11px + env(safe-area-inset-bottom, 0px));
-    margin-top:0;
+    padding:18px 16px calc(30px + env(safe-area-inset-bottom, 0px));
   }
   .f-verbose,.f-sep{display:none}
-  main{padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px))}
+  main{padding-bottom:28px}
   .cal-nav{width:100%; justify-content:space-between}
   .cal-nb{padding:8px 16px; font-size:13.5px}
   .sync-banner{margin:10px 22px 0}
