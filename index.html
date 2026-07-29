@@ -1968,7 +1968,7 @@ function renderClaude(){
             return rn?`replying to: “${esc(exc(rn.text,60))}” <button class="cl-cancel" onclick="clCancelReply()">×</button>`:'';
           })()}</span>
           <span style="display:flex;gap:8px">
-            <button class="cl-btn" onclick="clPing()" title="Sync instantly and open our chat">⚡ Ping Claude now</button>
+            <button class="cl-btn" onclick="clPing()" title="Deliver everything to Claude immediately">⚡ Deliver now</button>
             <button class="btn-ink" onclick="clSend()">Send to Claude</button>
           </span>
         </div>
@@ -1978,8 +1978,8 @@ function renderClaude(){
         return `<div class="cl-you">
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
           <div class="cl-you-t">${esc(m.text)}</div>
-          <div class="cl-you-s">sent ✓ — read &amp; acted on within ~2 hours
-            <button class="cl-btn" style="margin-left:10px;padding:3px 11px;font-size:11px" onclick="clPing()">⚡ Ping now</button>
+          <div class="cl-you-s">sent ✓ — read &amp; acted on within the hour
+            <button class="cl-btn" style="margin-left:10px;padding:3px 11px;font-size:11px" onclick="clPing()">⚡ Deliver now</button>
           </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
@@ -2009,10 +2009,12 @@ function clReply(nid){
 function clCancelReply(){window.clReplyTo=null;render();}
 async function clPing(){
   save();
-  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}}catch(e){}
+  let ok=false;
+  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();ok=true;}}catch(e){}
   const tag=$('clReplyTag');
-  if(tag)tag.innerHTML='synced ✓ — in our chat, just say <b>“check Atelier”</b> and I’ll act right away';
-  window.open('https://claude.ai/','_blank');
+  if(tag)tag.innerHTML=ok
+    ?'<b>delivered to Claude ✓</b> — he reads and acts within the hour'
+    :'saved — will reach Claude when sync reconnects';
 }
 function clSend(){
   const el=$('clMsg'); if(!el||!el.value.trim())return;
