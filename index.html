@@ -1673,11 +1673,11 @@ function renderPriorities(){
   const autoHor=t=>!!horizon&&unassigned(t)&&!t.urgent&&(!t.due||t.due>wkS);
   const autoNow=t=>!!doNow&&unassigned(t)&&t.urgent;
   const unsorted=byUrgent(open.filter(t=>unassigned(t)&&!autoHor(t)&&!autoNow(t)));
-  const un=`<div class="col" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropPri(event,null)">
+  const un=unsorted.length?`<div class="col" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropPri(event,null)">
       <div class="col-head"><span class="col-name" style="color:var(--ink-faint)">Unsorted</span>
         <span class="col-count">${unsorted.length}</span></div>
       <div class="col-body">${unsorted.map(ptCard).join('')}</div>
-    </div>`;
+    </div>`:'';   // an empty inbox earns its absence
   const cols=S.priCols.map(c=>{
     const ts=byUrgent(open.filter(t=>t.priCol===c.id
       ||(horizon&&c.id===horizon.id&&autoHor(t))
