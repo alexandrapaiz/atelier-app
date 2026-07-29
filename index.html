@@ -449,7 +449,8 @@ main{padding:26px 40px 60px}
 .cal-ev:hover{background:var(--paper-2); color:var(--ink)}
 .cal-ev .dot{width:6px; height:6px; align-self:center; flex-shrink:0}
 .cal-time{color:var(--ink-faint); font-variant-numeric:tabular-nums; white-space:nowrap; font-size:10.5px}
-.cal-ev-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.cal-ev{min-width:0; max-width:100%}
+.cal-ev-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1 1 auto}
 .cal-urg{color:var(--danger); font-weight:600; flex-shrink:0}
 .cal-ev.done{opacity:.45}
 .cal-ev.done .cal-ev-t{text-decoration:line-through}
@@ -670,9 +671,13 @@ footer button:hover, footer label:hover{color:var(--ink)}
   /* week grid scrolls sideways */
   .wk{overflow-x:auto; -webkit-overflow-scrolling:touch}
   .wk-row{grid-template-columns:42px repeat(7,minmax(120px,1fr)); min-width:900px}
-  .cal-grid{overflow-x:auto}
-  .cal-cell{min-height:88px; padding:5px 4px}
-  .cal-ev{font-size:10.5px}
+  .cal-grid{overflow-x:hidden}
+  .cal-cell{min-height:84px; padding:4px 3px; overflow:hidden}
+  .cal-ev{font-size:9px; gap:3px; padding:1.5px 2px; border-radius:4px}
+  .cal-ev .cal-time{display:none}
+  .cal-ev .gc-mark{display:none}
+  .cal-ev .dot{width:5px; height:5px}
+  .cal-dnum{font-size:13px; margin-bottom:3px}
   .ach-hero{font-size:24px}
   .ach-n{font-size:26px}
   .mission-input{font-size:21px}
@@ -877,7 +882,14 @@ function dueClass(t){
   if(!t.due||t.done)return '';
   const today=todayStr();
   if(t.due<today)return 'due-over';
-  if(t.due===today)return 'due-today';
+  if(t.due===today){
+    if(t.start){ // timed today: only overdue once its window has actually passed
+      const n=new Date();
+      const nowHM=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+      if((t.end||t.start)<nowHM)return 'due-over';
+    }
+    return 'due-today';
+  }
   return '';
 }
 function fmtDue(d){
@@ -1936,7 +1948,9 @@ function renderClaude(){
         return `<div class="cl-you">
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
           <div class="cl-you-t">${esc(m.text)}</div>
-          <div class="cl-you-s">sent ✓ — read &amp; acted on within ~2 hours, or use ⚡ to summon me now</div>
+          <div class="cl-you-s">sent ✓ — read &amp; acted on within ~2 hours
+            <button class="cl-btn" style="margin-left:10px;padding:3px 11px;font-size:11px" onclick="clPing()">⚡ Ping now</button>
+          </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${overdueHtml}
