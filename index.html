@@ -1030,6 +1030,7 @@ function nlParse(raw){
     if(!isNaN(d))setD(d);
   }
   if(out.start&&!out.due)out.due=ymd(now);          // a time implies today
+  out.appt=!!out.start||NL_APPT.test(raw);          // an hour, or a word that means "be there"
   /* tidy the leftover title */
   let t=s.replace(/\s+/g,' ').trim()
      .replace(/\s+(?:at|on|el|de|a|para|from|desde|@)[\s,;·—–-]*$/i,'')
@@ -1037,9 +1038,12 @@ function nlParse(raw){
   if(t)out.title=t.charAt(0).toUpperCase()+t.slice(1);
   return out;
 }
+/* social & scheduled-by-nature words — these are commitments, not chores */
+const NL_APPT=/\b(lunch|dinner|breakfast|brunch|coffee|caf[ée]|drinks|dinner|almuerzo|cena|desayuno|comida|cafecito|meeting|reuni[óo]n|junta|appointment|cita|consulta|call|llamada|interview|entrevista|class|clase|church|iglesia|misa|party|fiesta|birthday|cumplea[ñn]os|date|flight|vuelo|doctor|dentist|dentista|session|sesi[óo]n|retiro|retreat|wedding|boda)\b/i;
 function nlHint(p){
-  if(!p.due&&!p.start&&!p.urgent)return '';
+  if(!p.due&&!p.start&&!p.urgent&&!p.appt)return '';
   const bits=[];
+  if(p.appt)bits.push('◷ appointment');
   if(p.due){
     const d=new Date(p.due+'T12:00:00'), today=todayStr();
     bits.push(p.due===today?'Today':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
@@ -1123,6 +1127,48 @@ function gcalUrl(t){
     +'&text='+encodeURIComponent(t.title)
     +'&dates='+dates+tz
     +'&details='+encodeURIComponent((t.note?t.note+'\n\n':'')+'From Atelier · '+(b?b.name:''));
+}
+/* ============ one-press calendar sync ============
+   Builds a single .ics of everything dated that Google hasn't seen yet.
+   Stable UIDs mean re-syncing an edited item updates it instead of duplicating. */
+const needsSync=t=>!!t.due&&!t.done&&!isRoutine(t)&&
+  (!t.gcalId||(String(t.gcalId).indexOf('ics-')===0&&(t.touchedAt||0)>(t.gcalSyncAt||0)));
+function syncQueue(){return S.tasks.filter(needsSync);}
+function icsEsc(s){return String(s||'').replace(/([\\,;])/g,'\\$1').replace(/\r?\n/g,'\\n');}
+function icsBuild(list){
+  const p=n=>String(n).padStart(2,'0');
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const dayAfter=d=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);
+    return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate());};
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Atelier//Personal//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  list.forEach(t=>{
+    const b=board(t.boardId), d=t.due.replace(/-/g,'');
+    L.push('BEGIN:VEVENT','UID:'+t.id+'@atelier','DTSTAMP:'+stamp,
+      'SUMMARY:'+icsEsc(t.title),
+      'DESCRIPTION:'+icsEsc((t.note?t.note+'\n\n':'')+'From Atelier · '+(b?b.name:'')));
+    if(t.start){
+      L.push('DTSTART;TZID=America/Guatemala:'+d+'T'+t.start.replace(':','')+'00',
+             'DTEND;TZID=America/Guatemala:'+d+'T'+endOf(t).replace(':','')+'00');
+    }else{
+      L.push('DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+dayAfter(t.due));
+    }
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.join('\r\n');
+}
+function calSync(){
+  const list=syncQueue();
+  if(!list.length)return;
+  const blob=new Blob([icsBuild(list)],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url;a.download='atelier-'+todayStr()+'.ics';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  const now=Date.now();
+  list.forEach(t=>{if(!t.gcalId)t.gcalId='ics-'+t.id;t.gcalSyncAt=now;});
+  save();
+  window.calSynced=list.length;
+  render();
 }
 function exportData(){
   const a=document.createElement('a');
@@ -1533,8 +1579,8 @@ function nlComposer(container,before,bid,cid){
     if(v){
       const p=nlParse(v);
       S.tasks.push({id:uid(),boardId:bid,colId:cid,title:p.title,note:'',
-        due:p.due,start:p.start,end:p.end,urgent:p.start?false:(p.urgent||undefined),
-        kind:p.start?'appt':'task',      // a stated hour makes it an appointment
+        due:p.due,start:p.start,end:p.end,urgent:p.appt?false:(p.urgent||undefined),
+        kind:p.appt?'appt':'task',       // a stated hour, or a word like "dinner", means be there
         done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
     }
     render();
@@ -1628,7 +1674,9 @@ function openDrawer(tid){
     <div class="d-field"><div class="d-label">Notes</div>
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
     <div class="d-actions">
-      ${cal?`<a class="gcal-link" href="${cal}" target="_blank" rel="noopener">Add to Google Calendar ↗</a>`:'<span class="small muted">Set a due date to add this to Google Calendar.</span>'}
+      <span class="small muted">${t.due
+        ?(needsSync(t)?'Will go to Google Calendar on your next sync.':'On your Google Calendar ✓')
+        :'No date — nothing to put on the calendar.'}</span>
       <button class="d-delete" onclick="t_delete()">Delete task</button>
     </div>`;
   $('drawer').classList.add('open');$('scrim').classList.add('open');
@@ -1914,6 +1962,9 @@ function renderCal(){
       <div class="view-title">Calendar</div>
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
+      ${(()=>{const n=syncQueue().length;
+        return n?`<button class="cl-btn" onclick="calSync()" title="Download every new or changed item as one calendar file">⟳ Sync ${n} to Google</button>`
+        :`<span class="small muted" style="margin-right:4px">calendar up to date ✓</span>`;})()}
       <div class="cal-nav">
         <div class="seg">
           <button class="${calMode==='month'?'on':''}" onclick="calMode='month';render()">Month</button>
@@ -1927,6 +1978,11 @@ function renderCal(){
         </span>
       </div>
     </div>
+    ${window.calSynced?`<div class="sync-banner" style="margin:12px 0 0">
+      <span><b>${window.calSynced} event${window.calSynced>1?'s':''} downloaded.</b>
+      On iPhone: open the file and tap Add All. On your Mac: Google Calendar → Settings → Import.
+      Re-syncing an edited item updates it — it never duplicates.</span>
+      <button class="btn-ink" onclick="window.calSynced=0;render()">Got it</button></div>`:''}
     <div class="cal-month h-serif">${label}</div>
     ${body}`;
 }
