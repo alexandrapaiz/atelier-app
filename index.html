@@ -2144,7 +2144,7 @@ document.addEventListener('input',e=>{
 function themeApply(t){
   if(t==='dark')document.documentElement.setAttribute('data-theme','dark');
   else document.documentElement.removeAttribute('data-theme');
-  const btn=$('themeBtn'); if(btn)btn.textContent=t==='dark'?'☀':'☾';
+  const btn=$('themeBtn'); if(btn)btn.textContent=t==='dark'?'☼':'☾';   // ☼ stays a glyph, never an emoji
   const mc=document.getElementById('themeColor'); if(mc)mc.setAttribute('content',t==='dark'?'#181613':'#faf8f3');
 }
 function themeToggle(){
