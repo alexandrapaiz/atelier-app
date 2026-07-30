@@ -258,6 +258,21 @@ main{padding:26px 40px 60px}
 .chip.due-today{background:#ece5d2; color:#8a6d2f}
 .chip.goal-chip{border:1px solid var(--line); background:transparent; color:var(--ink-faint); font-style:italic; font-family:var(--serif); font-size:12.5px}
 .chip.urgent-chip{background:#f3e1db; color:var(--danger); font-weight:500; letter-spacing:.4px}
+.chip.due-past{background:var(--paper-2); color:var(--ink-faint)}
+/* appointments */
+.appt-strip{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:14px 2px 2px}
+.appt-pill{
+  display:inline-flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft);
+  padding:5px 14px; border:1px solid var(--line); border-radius:999px; background:var(--card);
+}
+.appt-pill:hover{color:var(--ink); box-shadow:var(--shadow)}
+.appt-pill .dot{width:6px; height:6px}
+.appt-when{font-variant-numeric:tabular-nums; color:var(--ink-faint); font-size:11px; white-space:nowrap}
+.kind-seg{width:100%}
+.kind-seg button{flex:1; padding:9px 10px}
+.kind-note{font-size:11.5px; color:var(--ink-faint); margin-top:7px; font-style:italic; line-height:1.45}
+.cl-when{font-size:11px; color:var(--ink-faint); font-variant-numeric:tabular-nums; white-space:nowrap; min-width:104px}
+[data-theme=dark] .chip.due-past{background:var(--paper-2); color:var(--ink-faint)}
 .urgent-toggle{
   width:100%; text-align:left; border:1px solid var(--line); background:var(--card);
   border-radius:9px; padding:8px 11px; font-size:13px; color:var(--ink-faint);
@@ -667,10 +682,18 @@ footer button, footer label{cursor:pointer; letter-spacing:.3px}
 footer button:hover, footer label:hover{color:var(--ink)}
 
 /* new item ghost input */
+.ghost-box{width:100%}
 .ghost-new{
   width:100%; background:transparent; border:none; outline:none; font-size:13.5px;
   padding:10px 12px; border:1px dashed var(--line); border-radius:12px;
 }
+.ghost-new:focus{border-color:var(--ink-faint); border-style:solid}
+.ghost-hint{
+  display:none; font-size:11.5px; color:var(--ink-soft); padding:6px 12px 2px;
+  line-height:1.45; letter-spacing:.2px;
+}
+.ghost-hint b{font-weight:500; color:var(--ink)}
+.ghost-hint::before{content:'→ '; color:var(--sage)}
 @media (max-width:700px){
   body{font-size:15px}
   .shell{flex-direction:column}
@@ -922,6 +945,103 @@ const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','
 const boardTasks=bid=>S.tasks.filter(t=>t.boardId===bid);
 const colOf=t=>{const b=board(t.boardId);return b?b.columns.find(c=>c.id===t.colId):null;};
 const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
+/* appointments: commitments AT a time, not work you can knock out early.
+   Anything with a start time is one, unless explicitly kept a task. */
+const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
+/* ============ natural language capture ============
+   "dinner at zuzu's 8:30pm today" → title + date + time, understood as you type. */
+const NL_MONTHS={jan:0,january:0,ene:0,enero:0,feb:1,february:1,febrero:1,march:2,marzo:2,apr:3,april:3,abr:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,ago:7,agosto:7,sep:8,sept:8,september:8,septiembre:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,dic:11,diciembre:11};
+const NL_DOWS={sunday:0,sun:0,domingo:0,dom:0,monday:1,mon:1,lunes:1,lun:1,tuesday:2,tue:2,tues:2,martes:2,wednesday:3,wed:3,miercoles:3,'miércoles':3,mie:3,thursday:4,thu:4,thur:4,thurs:4,jueves:4,jue:4,friday:5,fri:5,viernes:5,vie:5,saturday:6,sat:6,sabado:6,'sábado':6,sab:6};
+function nlParse(raw){
+  let s=' '+raw+' ';
+  const out={due:null,start:null,end:null,urgent:false,title:raw};
+  const pad=n=>String(n).padStart(2,'0');
+  const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const now=new Date();
+  const eat=re=>{const m=s.match(re); if(m)s=s.replace(m[0],' '); return m;};
+  const hm=(h,mn,mer)=>{
+    h=+h; mn=mn?+mn:0;
+    if(mer){mer=mer.toLowerCase();
+      if(/^p/.test(mer)&&h<12)h+=12;
+      if(/^a/.test(mer)&&h===12)h=0;
+    }
+    if(h>23||mn>59)return null;
+    return pad(h)+':'+pad(mn);
+  };
+  /* urgency */
+  if(/(^|\s)(urgent|urgente|asap|!!)\b/i.test(s)){
+    out.urgent=true;
+    s=s.replace(/(^|\s)(urgent|urgente|asap|!!)\b[:,;\-\s]*/gi,' ');
+  }
+  /* spanish meridiem phrases → am/pm markers */
+  s=s.replace(/\s(?:de|por)\s+la\s+(mañana|manana)\b/gi,' am')
+     .replace(/\s(?:de|por)\s+la\s+(tarde|noche)\b/gi,' pm')
+     .replace(/\bp\.?\s?m\.?\b/gi,'pm').replace(/\ba\.?\s?m\.?\b/gi,'am');
+  const T='(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?';
+  /* time range: 8:30-10pm · 5 to 6pm · de 5 a 6pm */
+  let m=eat(new RegExp('\\s(?:from|de|desde)?\\s*'+T+'\\s*(?:-|–|—|to|a|hasta|until)\\s*'+T+'\\s','i'));
+  if(m&&(m[3]||m[6]||m[2]||m[5])){
+    const a=hm(m[1],m[2],m[3]||m[6]), b=hm(m[4],m[5],m[6]);
+    if(a&&b){out.start=a;out.end=b;}
+  }
+  /* single time — needs am/pm, a colon, or an "at / a las / @" cue */
+  if(!out.start){
+    m=eat(new RegExp('\\s(?:at|@|a\\s+las?|para\\s+las?)\\s*'+T+'\\s','i'))
+     ||eat(/\s(\d{1,2}):(\d{2})\s*(am|pm)?\s/i)
+     ||eat(/\s(\d{1,2})()\s*(am|pm)\s/i);
+    if(m){const a=hm(m[1],m[2],m[3]); if(a)out.start=a;}
+  }
+  if(eat(/\s(noon|mediod[ií]a)\s/i))out.start=out.start||'12:00';
+  if(eat(/\s(midnight|medianoche)\s/i))out.start=out.start||'00:00';
+  /* dates, most explicit first */
+  const setD=d=>{out.due=ymd(d);};
+  if(eat(/\s(today|hoy|tonight|esta\s+noche)\s/i))setD(now);
+  else if(eat(/\s(tomorrow|mañana|manana)\s/i)){const d=new Date(now);d.setDate(d.getDate()+1);setD(d);}
+  else if((m=eat(/\s(?:in|en)\s+(\d{1,2})\s+(days?|d[ií]as?)\s/i))){const d=new Date(now);d.setDate(d.getDate()+ +m[1]);setD(d);}
+  else if(eat(/\s(next\s+week|pr[óo]xima\s+semana)\s/i)){const d=new Date(now);d.setDate(d.getDate()+7);setD(d);}
+  else if((m=eat(new RegExp('\\s(next\\s+|pr[óo]ximo\\s+|este\\s+|this\\s+)?('+Object.keys(NL_DOWS).join('|')+')\\s','i')))){
+    const target=NL_DOWS[m[2].toLowerCase()], d=new Date(now);
+    let diff=(target-d.getDay()+7)%7;
+    if(/next|próximo|proximo/i.test(m[1]||''))diff=diff||7,diff+= (diff<7&&/next|próximo|proximo/i.test(m[1])&&diff!==7)?7-diff>0?0:0:0;
+    if(/next|próximo|proximo/i.test(m[1]||'')&&diff===0)diff=7;
+    d.setDate(d.getDate()+diff);setD(d);
+  }
+  else if((m=eat(new RegExp('\\s('+Object.keys(NL_MONTHS).join('|')+')\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s','i')))){
+    const d=new Date(now.getFullYear(),NL_MONTHS[m[1].toLowerCase()],+m[2]);
+    if(d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
+    setD(d);
+  }
+  else if((m=eat(new RegExp('\\s(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:de\\s+)?('+Object.keys(NL_MONTHS).join('|')+')\\.?\\s','i')))){
+    const d=new Date(now.getFullYear(),NL_MONTHS[m[2].toLowerCase()],+m[1]);
+    if(d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
+    setD(d);
+  }
+  else if((m=eat(/\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s/))){   // d/m — the way you write dates
+    let a=+m[1],b=+m[2],yr=m[3]?(+m[3]<100?2000+ +m[3]:+m[3]):now.getFullYear();
+    if(a>12&&b<=12){}else if(b>12&&a<=12){const t=a;a=b;b=t;}   // swap if clearly m/d
+    const d=new Date(yr,b-1,a);
+    if(!m[3]&&d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
+    if(!isNaN(d))setD(d);
+  }
+  if(out.start&&!out.due)out.due=ymd(now);          // a time implies today
+  /* tidy the leftover title */
+  let t=s.replace(/\s+/g,' ').trim()
+     .replace(/\s+(?:at|on|el|de|a|para|from|desde|@)[\s,;·—–-]*$/i,'')
+     .replace(/^[\s,;·—–-]+|[\s,;·—–-]+$/g,'').replace(/\s{2,}/g,' ');
+  if(t)out.title=t.charAt(0).toUpperCase()+t.slice(1);
+  return out;
+}
+function nlHint(p){
+  if(!p.due&&!p.start&&!p.urgent)return '';
+  const bits=[];
+  if(p.due){
+    const d=new Date(p.due+'T12:00:00'), today=todayStr();
+    bits.push(p.due===today?'Today':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+  }
+  if(p.start)bits.push(fmtSlot({start:p.start,end:p.end}));
+  if(p.urgent)bits.push('urgent');
+  return '<b>'+esc(p.title)+'</b> · '+bits.join(' · ');
+}
 const byUrgent=a=>[...a].sort((x,z)=>(z.urgent?1:0)-(x.urgent?1:0));
 const touch=t=>{t.touchedAt=Date.now();};  // per-task stamp — merge resolves conflicts by last touch
 const urgentChip=t=>t.urgent?'<span class="chip urgent-chip">! urgent</span>':'';
@@ -929,12 +1049,13 @@ const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 function dueClass(t){
   if(!t.due||t.done)return '';
   const today=todayStr();
-  if(t.due<today)return 'due-over';
+  const past=cls=>isAppt(t)?'due-past':cls;  // a passed appointment is history, not guilt
+  if(t.due<today)return past('due-over');
   if(t.due===today){
-    if(t.start){ // timed today: only overdue once its window has actually passed
+    if(t.start){ // timed today: only "over" once its window has actually passed
       const n=new Date();
       const nowHM=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-      if((t.end||t.start)<nowHM)return 'due-over';
+      if((t.end||t.start)<nowHM)return past('due-over');
     }
     return 'due-today';
   }
@@ -961,14 +1082,14 @@ function fmtSlot(t){
 function whenChip(t){
   const d=t.due?fmtDue(t.due):'', s=fmtSlot(t);
   if(!d&&!s)return '';
-  return `<span class="chip ${dueClass(t)}">${d}${d&&s?' · ':''}${s}</span>`;
+  return `<span class="chip ${dueClass(t)}">${isAppt(t)?'◷ ':''}${d}${d&&s?' · ':''}${s}</span>`;
 }
 function goalDescendants(gid){
   return S.goals.filter(g=>g.parentId===gid).map(g=>g.id);
 }
 function goalTaskSet(gid){
   const ids=[gid,...goalDescendants(gid)];
-  return S.tasks.filter(t=>t.goalId&&ids.includes(t.goalId)&&!isRoutine(t));
+  return S.tasks.filter(t=>t.goalId&&ids.includes(t.goalId)&&!isRoutine(t)&&!isAppt(t));
 }
 function progress(tasks){
   if(!tasks.length)return null;
@@ -1045,7 +1166,7 @@ function render(){
 /* ============ sidebar ============ */
 function renderSidebar(){
   const bItem=b=>{
-    const open=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)).length;
+    const open=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)).length;
     const on=route.view==='board'&&route.boardId===b.id;
     return `<button class="snav snav-sub ${on?'on':''}" onclick="go('board','${b.id}')">
       <span class="dot" style="background:${b.accent}"></span>
@@ -1088,18 +1209,21 @@ function mcolFold(id){
 /* ============ master (studio) ============ */
 function boardCard(b){
   const all=boardTasks(b.id), rn=all.filter(isRoutine).length;
-  const ts=all.filter(t=>!isRoutine(t)), open=ts.filter(t=>!t.done).length, done=ts.length-open;
+  const timed=all.filter(t=>!isRoutine(t)&&isAppt(t));
+  const ts=all.filter(t=>!isRoutine(t)&&!isAppt(t));   // only real work counts toward progress
+  const open=ts.filter(t=>!t.done).length, done=ts.length-open;
   const p=progress(ts);
+  const apptOpen=timed.filter(t=>!t.done&&(!t.due||t.due>=todayStr())).length;
   const dues=ts.filter(t=>!t.done&&t.due).sort((a,c)=>a.due<c.due?-1:1);
   const nxt=dues[0];
-  const rest=open===0;                    // nothing open — done or empty, the board rests
+  const rest=open===0&&apptOpen===0;      // no work and nothing upcoming — the board rests
   const alldone=rest&&ts.length>0;        // earned its checkmark by finishing
   return `<div class="bcard ${rest?'bcard-rest':''} ${alldone?'bcard-alldone':''}" draggable="true" data-bid="${b.id}"
       ondragstart="dragBoard(event,'${b.id}')" ondragend="dragEnd(event)"
       onclick="go('board','${b.id}')">
     <div class="bcard-top"><span class="dot" style="background:${b.accent}"></span>
       <span class="bcard-name">${esc(b.name)}</span></div>
-    <div class="bcard-meta"><span>${open} open</span><span>${done} done</span>${rn?`<span>${rn} routine${rn>1?'s':''}</span>`:''}</div>
+    <div class="bcard-meta"><span>${open} open</span><span>${done} done</span>${apptOpen?`<span>◷ ${apptOpen}</span>`:''}${rn?`<span>${rn} routine${rn>1?'s':''}</span>`:''}</div>
     <div class="mini-track"><div class="mini-fill" style="width:${p??0}%;background:${b.accent}"></div></div>
     ${nxt?`<div class="bcard-due ${nxt.due<todayStr()?'overdue':''}">next · ${esc(nxt.title)} — ${fmtDue(nxt.due)}</div>`:''}
   </div>`;
@@ -1347,20 +1471,8 @@ function toggleFold(bid,cid){
   c.folded=!c.folded;render();
 }
 function quickAddList(ev,bid,cid){
-  const btn=ev.currentTarget, wrap=btn.parentElement;
-  if(wrap.querySelector('.ghost-new'))return;
-  const inp=document.createElement('input');
-  inp.className='ghost-new';inp.placeholder='What needs doing?';
-  wrap.insertBefore(inp,btn);inp.focus();
-  let doneAdding=false;
-  const commit=()=>{
-    if(doneAdding)return; doneAdding=true;
-    const v=inp.value.trim();
-    if(v)S.tasks.push({id:uid(),boardId:bid,colId:cid,title:v,note:'',due:null,done:false,goalId:null,createdAt:Date.now()});
-    render();
-  };
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){doneAdding=true;render();}});
-  inp.addEventListener('blur',commit);
+  const btn=ev.currentTarget;
+  nlComposer(btn.parentElement,btn,bid,cid);
 }
 /* board ops */
 function b_rename(id,v){const b=board(id);if(b&&v.trim())b.name=v.trim();save();}
@@ -1386,21 +1498,43 @@ function colDel(bid,cid){
   if(b.columns.length<=1)return;
   b.columns=b.columns.filter(c=>c.id!==cid);render();
 }
-function quickAdd(bid,cid,btn){
-  const wrap=btn.parentElement.querySelector('.col-body');
-  if(wrap.querySelector('.ghost-new'))return;
+/* one smart composer, used by every quick-add in the app */
+function nlComposer(container,before,bid,cid){
+  if(container.querySelector('.ghost-new'))return;
+  const box=document.createElement('div');
+  box.className='ghost-box';
   const inp=document.createElement('input');
-  inp.className='ghost-new';inp.placeholder='What needs doing?';
-  wrap.appendChild(inp);inp.focus();
+  inp.className='ghost-new';
+  inp.placeholder='What needs doing?  “dinner at Zuzu’s 8:30pm today”';
+  const hint=document.createElement('div');
+  hint.className='ghost-hint';
+  box.appendChild(inp);box.appendChild(hint);
+  if(before)container.insertBefore(box,before); else container.appendChild(box);
+  inp.focus();
   let doneAdding=false;
+  const refresh=()=>{
+    const v=inp.value.trim();
+    const h=v?nlHint(nlParse(v)):'';
+    hint.innerHTML=h;hint.style.display=h?'block':'none';
+  };
   const commit=()=>{
     if(doneAdding)return; doneAdding=true;
     const v=inp.value.trim();
-    if(v)S.tasks.push({id:uid(),boardId:bid,colId:cid,title:v,note:'',due:null,done:false,goalId:null,createdAt:Date.now()});
+    if(v){
+      const p=nlParse(v);
+      S.tasks.push({id:uid(),boardId:bid,colId:cid,title:p.title,note:'',
+        due:p.due,start:p.start,end:p.end,urgent:p.start?false:(p.urgent||undefined),
+        kind:p.start?'appt':'task',      // a stated hour makes it an appointment
+        done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
+    }
     render();
   };
+  inp.addEventListener('input',refresh);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){doneAdding=true;render();}});
   inp.addEventListener('blur',commit);
+}
+function quickAdd(bid,cid,btn){
+  nlComposer(btn.parentElement.querySelector('.col-body'),null,bid,cid);
 }
 function toggleDone(id){
   const t=S.tasks.find(t=>t.id===id);
@@ -1433,16 +1567,28 @@ function openDrawer(tid){
         `<option value="${s.id}" ${t.goalId===s.id?'selected':''}>&nbsp;&nbsp;— ${esc(s.title)}</option>`)
     ])].join('');
   const cal=gcalUrl(t);
+  const appt=isAppt(t);
+  const blockOf=t.blockFor?S.tasks.find(x=>x.id===t.blockFor):null;
   $('drawer').innerHTML=`
     <button class="d-close" onclick="closeDrawer()">×</button>
     <div class="small muted" style="letter-spacing:1.5px;text-transform:uppercase;font-size:10.5px">
       <span class="dot" style="background:${b.accent};display:inline-block;width:7px;height:7px;margin-right:6px"></span>${esc(b.name)}</div>
     <textarea class="d-title" rows="2" onchange="t_set('title',this.value)">${esc(t.title)}</textarea>
+    <div class="d-field"><div class="d-label">Kind</div>
+      <div class="seg kind-seg">
+        <button class="${appt?'':'on'}" onclick="t_setKind('task')">Task</button>
+        <button class="${appt?'on':''}" onclick="t_setKind('appt')">◷ Appointment</button>
+      </div>
+      <div class="kind-note">${appt
+        ?'Happens at its hour — no urgency, and it stays out of your progress and triage.'
+        :'Work you can do whenever — sortable, urgent-able, counts toward progress.'}</div></div>
+    ${blockOf?`<div class="d-field"><div class="d-label">Time blocked for</div>
+      <button class="cl-btn" onclick="openDrawer('${blockOf.id}')">${esc(blockOf.title)} ↗</button></div>`:''}
     <div class="d-field"><div class="d-label">Status</div>
       <select onchange="t_setCol(this.value)">${colOpts}</select></div>
-    <div class="d-field"><div class="d-label">Urgency</div>
+    ${appt?'':`<div class="d-field"><div class="d-label">Urgency</div>
       <button class="urgent-toggle ${t.urgent?'on':''}" onclick="t_toggleUrgent()">
-        ${t.urgent?'! Urgent — floats to the top everywhere':'Mark as urgent'}</button></div>
+        ${t.urgent?'! Urgent — floats to the top everywhere':'Mark as urgent'}</button></div>`}
     <div class="d-field"><div class="d-label">Date</div>
       <input type="date" value="${t.due||''}" onchange="t_set('due',this.value||null)"></div>
     <div class="d-field"><div class="d-label">Time slot ${t.start?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">— optional</span>'}</div>
@@ -1452,7 +1598,7 @@ function openDrawer(tid){
         <input type="time" value="${t.end||''}" onchange="t_set('end',this.value||null)">
         ${t.start?`<button class="btn-ghost" onclick="t_clearTime()">clear</button>`:''}
       </div></div>
-    <div class="d-field"><div class="d-label">Priority (master board)</div>
+    ${appt?'':`<div class="d-field"><div class="d-label">Priority (master board)</div>
       <select onchange="t_set('priCol',this.value||null)">
         <option value="">— follow the rules —</option>
         ${S.priCols.map(c=>`<option value="${c.id}" ${t.priCol===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
@@ -1464,6 +1610,8 @@ function openDrawer(tid){
         <span class="prog-val">${t.progress!=null?t.progress+'%':'—'}</span>
         ${t.progress!=null?`<button class="btn-ghost" onclick="t_clearProg()">clear</button>`:''}
       </div></div>
+    <div class="d-field"><div class="d-label">Focus time</div>
+      <button class="cl-btn" onclick="t_blockTime()" title="Create an appointment reserved for this task">◷ Block time for this</button></div>`}
     <div class="d-field"><div class="d-label">Linked goal</div>
       <select onchange="t_set('goalId',this.value||null)">${goalOpts}</select></div>
     <div class="d-field"><div class="d-label">Notes</div>
@@ -1497,6 +1645,22 @@ function t_clearProg(){
 function t_toggleUrgent(){
   const t=S.tasks.find(x=>x.id===drawerTask);
   t.urgent=!t.urgent;touch(t);save();openDrawer(drawerTask);
+}
+function t_setKind(k){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  t.kind=k;
+  if(k==='appt'){t.urgent=false;t.priCol=null;t.progress=null;if(!t.due)t.due=todayStr();}
+  touch(t);save();openDrawer(drawerTask);
+}
+function t_blockTime(){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  const n=new Date(); let h=n.getHours()+1; if(h>22)h=9;
+  const p=x=>String(x).padStart(2,'0');
+  const a={id:uid(),boardId:t.boardId,colId:t.colId,title:t.title,note:'',
+    due:t.due&&t.due>=todayStr()?t.due:todayStr(),start:p(h)+':00',end:p((h+1)%24)+':00',
+    kind:'appt',blockFor:t.id,done:false,goalId:t.goalId||null,
+    createdAt:Date.now(),touchedAt:Date.now()};
+  S.tasks.push(a);save();openDrawer(a.id);
 }
 function t_clearTime(){
   const t=S.tasks.find(x=>x.id===drawerTask);
@@ -1783,8 +1947,26 @@ function ptCard(t){
     </div>
   </div>`;
 }
+function apptStrip(days,title){
+  const today=todayStr();
+  const lim=new Date();lim.setDate(lim.getDate()+days);
+  const limS=dstr(lim);
+  const list=S.tasks.filter(t=>!t.done&&isAppt(t)&&t.due&&t.due>=today&&t.due<=limS)
+    .sort((a,b)=>(a.due+(a.start||'99'))<(b.due+(b.start||'99'))?-1:1);
+  if(!list.length)return '';
+  return `<div class="appt-strip">
+    <span class="practices-label">${title}</span>
+    ${list.map(t=>{const b=board(t.boardId);
+      const when=t.due===today?'today':new Date(t.due+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});
+      return `<button class="appt-pill" onclick="openDrawer('${t.id}')">
+        <span class="dot" style="background:${b?b.accent:'#999'}"></span>
+        <span class="appt-when">${when}${t.start?' '+fmtSlot(t):''}</span>
+        <span>${esc(t.title)}</span>
+      </button>`;}).join('')}
+  </div>`;
+}
 function renderPriorities(){
-  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t));
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t));  // appointments aren't triage — they're commitments
   const valid=id=>S.priCols.some(c=>c.id===id);
   const horizon=S.priCols.find(c=>/horizon/i.test(c.name));
   const wk=new Date();wk.setDate(wk.getDate()+7);
@@ -1816,10 +1998,11 @@ function renderPriorities(){
   }).join('');
   return `<div class="view-head">
       <div class="view-title">Priorities</div>
-      <div class="view-sub">every open task — urgent jumps straight to Do now!, undated or more than a week out drifts to On the horizon</div>
+      <div class="view-sub">every task you can actually act on — urgent jumps to Do now!, undated or far out drifts to On the horizon</div>
       <div class="spacer"></div>
       <button class="btn-ghost" onclick="priAdd()">+ Column</button>
     </div>
+    ${apptStrip(7,'Commitments')}
     ${practicesStrip()}
     <div class="cols">${un}${cols}</div>`;
 }
@@ -1932,7 +2115,7 @@ function renderAch(){
 /* ============ claude — the resident reviewer ============ */
 function renderClaude(){
   const now=Date.now(), today=todayStr();
-  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t));
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t));
   const taskOf=id=>S.tasks.find(t=>t.id===id);
   const bAcc=t=>{const b=board(t.boardId);return b?b.accent:'#999';};
   const bName=t=>{const b=board(t.boardId);return b?b.name:'';};
@@ -1979,6 +2162,19 @@ function renderClaude(){
     <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
     <div class="cl-sub">${subtitle}</div>
     ${items.length?items.join(''):`<div class="empty-note">${empty}</div>`}`;
+  /* what's coming at a fixed hour — nothing to do but show up */
+  const tmr=(()=>{const d=new Date();d.setDate(d.getDate()+1);return dstr(d);})();
+  const soon=S.tasks.filter(t=>!t.done&&isAppt(t)&&(t.due===today||t.due===tmr))
+    .sort((a,b)=>(a.due+(a.start||'99'))<(b.due+(b.start||'99'))?-1:1);
+  const comingHtml=soon.length?sec('Coming up','you can’t get these done early — just be there',
+    soon.map(t=>{const b=board(t.boardId);
+      const blk=t.blockFor?S.tasks.find(x=>x.id===t.blockFor):null;
+      return `<div class="cl-row">
+        <span class="dot" style="background:${b?b.accent:'#999'}"></span>
+        <span class="cl-when">${t.due===today?'Today':'Tomorrow'}${t.start?' · '+fmtSlot(t):''}</span>
+        <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+        ${blk?`<span class="b-tag">focus time</span>`:`<span class="b-tag">${esc(b?b.name:'')}</span>`}
+      </div>`;}),''):'';
   const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
     overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
     'nothing overdue — a clean conscience');
@@ -2017,6 +2213,7 @@ function renderClaude(){
           </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
+      ${comingHtml}
       ${overdueHtml}
       ${winsHtml}
       ${staleHtml}
