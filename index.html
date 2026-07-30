@@ -215,6 +215,9 @@ main{padding:26px 40px 60px}
 .bcard-rest{opacity:.42; box-shadow:none; background:transparent}
 .bcard-rest:hover{opacity:1; background:var(--card)}
 .bcard-alldone .bcard-name::after{content:' ✓'; color:var(--sage); font-size:14px}
+.bcard-sched{opacity:.7; box-shadow:none}        /* nothing to decide — only showing up left */
+.bcard-sched:hover{opacity:1}
+.bcard-sched .bcard-name::after{content:' ◷'; color:var(--ink-faint); font-size:13px}
 .bcard.dragging{opacity:.4}
 .bcard-top{display:flex; align-items:center; gap:9px; margin-bottom:6px}
 .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0}
@@ -1272,9 +1275,10 @@ function boardCard(b){
   const now=ts.filter(t=>!t.done&&t.due===today).length;
   const call=late?`<div class="bcard-due overdue">${late} overdue</div>`
     :now?`<div class="bcard-due">${now} due today</div>`:'';
-  const rest=open===0&&apptOpen===0;      // no work and nothing upcoming — the board rests
-  const alldone=rest&&ts.length>0;        // earned its checkmark by finishing
-  return `<div class="bcard ${rest?'bcard-rest':''} ${alldone?'bcard-alldone':''}" draggable="true" data-bid="${b.id}"
+  const rest=open===0&&apptOpen===0;          // nothing open at all — fully at rest
+  const sched=open===0&&apptOpen>0;           // only appointments left — scheduled is half done
+  const alldone=rest&&ts.length>0;            // earned its checkmark by finishing
+  return `<div class="bcard ${rest?'bcard-rest':''} ${sched?'bcard-sched':''} ${alldone?'bcard-alldone':''}" draggable="true" data-bid="${b.id}"
       ondragstart="dragBoard(event,'${b.id}')" ondragend="dragEnd(event)"
       onclick="go('board','${b.id}')">
     <div class="bcard-top"><span class="dot" style="background:${b.accent}"></span>
