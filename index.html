@@ -948,6 +948,12 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
 /* appointments: commitments AT a time, not work you can knock out early.
    Anything with a start time is one, unless explicitly kept a task. */
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
+const plusHour=hm=>{           // an appointment with no stated end runs an hour
+  let [h,m]=hm.split(':').map(Number);
+  h=(h+1)%24;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+};
+const endOf=t=>t.end||(t.start?plusHour(t.start):null);
 /* ============ natural language capture ============
    "dinner at zuzu's 8:30pm today" → title + date + time, understood as you type. */
 const NL_MONTHS={jan:0,january:0,ene:0,enero:0,feb:1,february:1,febrero:1,march:2,marzo:2,apr:3,april:3,abr:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,ago:7,agosto:7,sep:8,sept:8,september:8,septiembre:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,dic:11,diciembre:11};
@@ -1055,7 +1061,7 @@ function dueClass(t){
     if(t.start){ // timed today: only "over" once its window has actually passed
       const n=new Date();
       const nowHM=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-      if((t.end||t.start)<nowHM)return past('due-over');
+      if(endOf(t)<nowHM)return past('due-over');
     }
     return 'due-today';
   }
@@ -1074,7 +1080,7 @@ function fmtTime(hm){
 }
 function fmtSlot(t){
   if(!t.start)return '';
-  const a=fmtTime(t.start), b=t.end?fmtTime(t.end):'';
+  const a=fmtTime(t.start), b=fmtTime(endOf(t));
   if(!b)return a;
   const sameAp=a.slice(-2)===b.slice(-2);
   return (sameAp?a.slice(0,-2):a)+'–'+b;
@@ -1601,7 +1607,8 @@ function openDrawer(tid){
         <span class="muted">to</span>
         <input type="time" value="${t.end||''}" onchange="t_set('end',this.value||null)">
         ${t.start?`<button class="btn-ghost" onclick="t_clearTime()">clear</button>`:''}
-      </div></div>
+      </div>
+      ${t.start&&!t.end?`<div class="kind-note">Ends ${fmtTime(plusHour(t.start))} — an hour, unless you say otherwise.</div>`:''}</div>
     ${appt?'':`<div class="d-field"><div class="d-label">Priority (master board)</div>
       <select onchange="t_set('priCol',this.value||null)">
         <option value="">— follow the rules —</option>
@@ -1842,7 +1849,7 @@ function renderWeekGrid(start,byDate,gByDate,today){
     const blocks=items.map(x=>{
       const it=x.t||x.e;
       const s=Math.max(hmToMin(it.start),S_MIN);
-      const en=Math.min(it.end?hmToMin(it.end):hmToMin(it.start)+60,E_MIN);
+      const en=Math.min(hmToMin(endOf(it)||it.start)||hmToMin(it.start)+60,E_MIN);
       const top=(s-S_MIN)/60*PPH, h=Math.max(24,(en-s)/60*PPH);
       if(x.t){
         const b=board(x.t.boardId);
