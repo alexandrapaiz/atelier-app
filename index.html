@@ -12,7 +12,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Atelier">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#faf8f3">
+<meta name="theme-color" content="#faf8f3" id="themeColor">
+<script>/* apply saved theme before first paint */
+try{
+  var _t=localStorage.getItem('atelier.theme');
+  if(!_t)_t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  if(_t==='dark')document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+</script>
 <style>
 :root{
   --paper:#faf8f3;
@@ -30,6 +37,31 @@
   --shadow:0 1px 2px rgba(50,42,28,.05), 0 6px 24px -12px rgba(50,42,28,.12);
   --shadow-lift:0 2px 6px rgba(50,42,28,.08), 0 18px 40px -18px rgba(50,42,28,.25);
 }
+[data-theme=dark]{
+  --paper:#181613;
+  --paper-2:#221f1a;
+  --card:#201d18;
+  --ink:#ece6d9;
+  --ink-soft:#b8b0a0;
+  --ink-faint:#837b6d;
+  --line:#37322a;
+  --line-soft:#2b2721;
+  --danger:#e08a74;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 24px -12px rgba(0,0,0,.5);
+  --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 18px 40px -18px rgba(0,0,0,.7);
+}
+[data-theme=dark] .chip.due-over,[data-theme=dark] .chip.urgent-chip{background:#46281f; color:#eda28d}
+[data-theme=dark] .chip.due-today{background:#3b3220; color:#dcbe7c}
+[data-theme=dark] .urgent-toggle.on{background:#46281f; border-color:#5e372a; color:#eda28d}
+[data-theme=dark] .urgent-toggle:hover{color:#eda28d; border-color:#5e372a}
+[data-theme=dark] .sync-banner{background:#332c1c; border-color:#4c4128; color:#d8c48f}
+[data-theme=dark] .cal-cell.heat-1{background:#252017}
+[data-theme=dark] .cal-cell.heat-2{background:#2e2718}
+[data-theme=dark] .cal-cell.heat-3{background:#3a3019}
+[data-theme=dark] .cal-cell.heat-4{background:#493c1e}
+[data-theme=dark] .wk-ev{background:color-mix(in srgb, var(--acc) 24%, #201d18)}
+[data-theme=dark] .wk-ev.gcal{background:var(--paper-2)}
+[data-theme=dark] .cal-today{background:var(--paper-2)}
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{height:100%}
 body{
@@ -725,6 +757,7 @@ footer button:hover, footer label:hover{color:var(--ink)}
   <div class="top-date" id="topDate"></div>
   <button class="btn-ghost" id="saveBtn" style="margin-left:auto" onclick="manualSave()">Save</button>
   <button class="btn-ghost" onclick="hardRefresh()" title="Save, sync, and reload the freshest version">↻</button>
+  <button class="btn-ghost" onclick="themeToggle()" id="themeBtn" title="Day / night">☾</button>
   <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
 <hr class="rule">
@@ -2108,6 +2141,18 @@ document.addEventListener('input',e=>{
   if(el.matches('input[type=date],input[type=time],input[type=range],select'))return; // these fire change natively / handle input themselves
   if(el.getAttribute('onchange'))el.dispatchEvent(new Event('change'));
 });
+function themeApply(t){
+  if(t==='dark')document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  const btn=$('themeBtn'); if(btn)btn.textContent=t==='dark'?'☀':'☾';
+  const mc=document.getElementById('themeColor'); if(mc)mc.setAttribute('content',t==='dark'?'#181613':'#faf8f3');
+}
+function themeToggle(){
+  const cur=document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';
+  const next=cur==='dark'?'light':'dark';
+  store.set('atelier.theme',next);
+  themeApply(next);
+}
 async function hardRefresh(){
   const a=document.activeElement; if(a&&a.blur)a.blur();
   save();
@@ -2439,6 +2484,7 @@ render();
 updateGhLink();
 if(GH.cfg){ghPull();ghStartPolling();}
 if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());
+themeApply(document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light');
 </script>
 </body>
 </html>
