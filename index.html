@@ -212,11 +212,11 @@ main{padding:26px 40px 60px}
   position:relative; transition:box-shadow .15s, transform .15s;
 }
 .bcard:hover{box-shadow:var(--shadow-lift); transform:translateY(-1px)}
-.bcard-rest{opacity:.42; box-shadow:none; background:transparent}
+.bcard-rest{opacity:.3; box-shadow:none; background:transparent}
 .bcard-rest:hover{opacity:1; background:var(--card)}
 .bcard-alldone .bcard-name::after{content:' ✓'; color:var(--sage); font-size:14px}
-.bcard-sched{opacity:.7; box-shadow:none}        /* nothing to decide — only showing up left */
-.bcard-sched:hover{opacity:1}
+.bcard-sched{opacity:.55; box-shadow:none; background:transparent}  /* nothing to decide — only showing up left */
+.bcard-sched:hover{opacity:1; background:var(--card)}
 .bcard-sched .bcard-name::after{content:' ◷'; color:var(--ink-faint); font-size:13px}
 .bcard.dragging{opacity:.4}
 .bcard-top{display:flex; align-items:center; gap:9px; margin-bottom:6px}
@@ -1262,6 +1262,14 @@ function mcolFold(id){
 }
 
 /* ============ master (studio) ============ */
+/* how much a board still asks of you: 0 = live work, 1 = only scheduled, 2 = at rest */
+function boardTier(b){
+  const all=boardTasks(b.id).filter(t=>!isRoutine(t));
+  const open=all.filter(t=>!isAppt(t)&&!t.done).length;
+  if(open)return 0;
+  const appt=all.filter(t=>isAppt(t)&&!t.done&&(!t.due||t.due>=todayStr())).length;
+  return appt?1:2;
+}
 function boardCard(b){
   const all=boardTasks(b.id), rn=all.filter(isRoutine).length;
   const timed=all.filter(t=>!isRoutine(t)&&isAppt(t));
@@ -1290,7 +1298,8 @@ function boardCard(b){
 }
 function renderMaster(){
   const cols=S.masterColumns.map(mc=>{
-    const bs=S.boards.filter(b=>b.masterCol===mc.id);
+    /* stable sort: your hand-arranged order holds within each tier, quiet boards sink */
+    const bs=S.boards.filter(b=>b.masterCol===mc.id).sort((a,c)=>boardTier(a)-boardTier(c));
     return `<div class="col" ondragover="overCol(event)" ondragleave="leaveCol(event)"
         ondrop="dropBoard(event,'${mc.id}')">
       <div class="col-head">
