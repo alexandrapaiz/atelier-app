@@ -431,6 +431,11 @@ main{padding:26px 40px 60px}
 .star-row{padding:14px 0; border-bottom:1px dashed var(--line-soft)}
 .star-serving{display:flex; flex-wrap:wrap; gap:7px; margin:8px 0 0 27px}
 .star-serving .star-chip{cursor:pointer}
+.anchor-ask{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  background:var(--paper-2); border-radius:12px; padding:11px 16px; margin-bottom:16px;
+  font-size:12.5px; color:var(--ink-soft);
+}
 
 /* ---------- rewards ---------- */
 .reward-line{
@@ -1017,6 +1022,7 @@ function ensureDefaults(){
   /* the plan's items were always goals — promote them, chapters keep only the time */
   if(!S.meta.planGoals){
     (S.plan||[]).forEach(ch=>{
+      if(/north star/i.test(ch.era)){ch.items=[];return;}   // those are bearings, not goals
       (ch.items||[]).forEach(it=>{
         let g=S.goals.find(x=>!x.parentId&&x.title.trim().toLowerCase()===String(it.text||'').trim().toLowerCase());
         if(!g){g={id:uid(),parentId:null,title:it.text,note:''};S.goals.push(g);}
@@ -1459,7 +1465,7 @@ function newBoard(mcol){
   const name=prompt('Name this board — a domain of your life:');
   if(!name||!name.trim())return;
   S.boards.push({id:uid(),name:name.trim(),accent:ACCENTS[S.boards.length%ACCENTS.length],
-    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Doing'},{id:uid(),name:'On the horizon'},{id:uid(),name:'Done'}]});
+    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'On the horizon'},{id:uid(),name:'Done'}]});
   render();
 }
 
@@ -2631,8 +2637,13 @@ function starsFooter(){
         :'<span class="small muted" style="font-style:italic">nothing steers by this yet</span>'}</div>
     </div>`;
   }).join('');
+  const loose=S.goals.filter(g=>!g.parentId&&!g.starId).length;
   return `<div class="stars-footer">
     <div class="stars-label">✶ North Stars — the bearings everything above is trying to reach</div>
+    ${loose?`<div class="anchor-ask">
+      <span>${loose} goal${loose>1?'s aren’t':' isn’t'} anchored to a bearing.</span>
+      <button class="cl-btn" onclick="askAnchor()">✶ Ask Claude to anchor them</button>
+    </div>`:''}
     ${stars||'<div class="empty-note">No bearings set yet.</div>'}
     <button class="add-inline" onclick="star_add()">+ New north star</button>
   </div>`;
@@ -2737,6 +2748,18 @@ function compassStarsOld(){
     </div>`:''}
     <div class="star-block star-new"><button class="add-inline" onclick="g_add(null)" style="font-size:13.5px">+ New goal</button></div>
   </div>`;
+}
+async function askAnchor(){
+  const loose=S.goals.filter(g=>!g.parentId&&!g.starId).map(g=>g.title);
+  S.claude.inbox=S.claude.inbox||[];
+  S.claude.inbox.push({id:uid(),createdAt:Date.now(),
+    text:'Please anchor my unanchored goals to the right north stars, using your judgment — '
+      +loose.join('; ')+'. If one genuinely serves no star, say so rather than forcing it, '
+      +'and tell me if you think I\'m missing a bearing.'});
+  save();
+  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}}catch(e){}
+  render();
+  alert('Sent to Claude — his anchoring, and any thoughts about a missing star, will appear on the Claude page. You can always override with the ✶ picker.');
 }
 function star_add(){
   const t=prompt('Name a north star — a bearing you steer by:');
@@ -3070,17 +3093,36 @@ function dedupeState(){
       S.tasks.forEach(t=>{if(t.boardId===dup.id)t.boardId=keep.id;});
     });
   }
-  { /* goals by title */
+  { /* a goal that shares a north star's name is a migration artifact — the star already exists */
+    const starNames=new Set((S.stars||[]).map(s=>low(s.title)));
+    S.goals.filter(g=>!g.parentId&&starNames.has(low(g.title))&&
+        !S.tasks.some(t=>t.goalId===g.id)&&!S.goals.some(x=>x.parentId===g.id))
+      .forEach(g=>{S.goals=S.goals.filter(x=>x.id!==g.id);});
+  }
+  { /* goals by title — keep the richer twin */
+    const rich=g=>(g.era?2:0)+(g.starId?2:0)
+      +S.goals.filter(x=>x.parentId===g.id).length*3
+      +S.tasks.filter(t=>t.goalId===g.id).length;
     const seen={};
     S.goals=S.goals.filter(g=>{
-      const k=(g.parentId?'s|':'g|')+low(g.title);
-      if(seen[k]){
-        S.tasks.forEach(t=>{if(t.goalId===g.id)t.goalId=seen[k].id;});
-        S.goals.forEach(x=>{if(x.parentId===g.id)x.parentId=seen[k].id;});
-        return false;
+      const k=(g.parentId?'s|'+g.parentId+'|':'g|')+low(g.title);
+      const prev=seen[k];
+      if(!prev){seen[k]=g;return true;}
+      const keep=rich(g)>rich(prev)?g:prev, drop=keep===g?prev:g;
+      S.tasks.forEach(t=>{if(t.goalId===drop.id)t.goalId=keep.id;});
+      S.goals.forEach(x=>{if(x.parentId===drop.id)x.parentId=keep.id;});
+      if(keep===g){                       // swap the survivor into the map
+        seen[k]=g;
+        S.goals=S.goals.filter(x=>x.id!==prev.id);
+        return true;
       }
-      seen[k]=g;return true;
+      return false;
     });
+  }
+  /* chapters carry time only; north-star chapters are obsolete */
+  if(S.meta&&S.meta.planGoals){
+    S.plan=(S.plan||[]).filter(e=>!/north star/i.test(e.era));
+    S.plan.forEach(e=>{e.items=[];});
   }
   { /* priority columns by name */
     const seen={};
