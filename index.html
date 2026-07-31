@@ -1100,6 +1100,8 @@ textarea.tr-mission-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·3</span>
+  <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
   <label>Import<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
@@ -1447,29 +1449,6 @@ function goalTaskSet(gid){
 function progress(tasks){
   if(!tasks.length)return null;
   return Math.round(100*tasks.filter(t=>t.done).length/tasks.length);
-}
-function gcalUrl(t){
-  if(!t.due)return null;
-  const d=t.due.replace(/-/g,'');
-  let dates, tz='';
-  if(t.start){
-    const s=t.start.replace(':','')+'00';
-    let endHM=t.end;
-    if(!endHM){ // default one hour
-      let [h,m]=t.start.split(':').map(Number); h=(h+1)%24;
-      endHM=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
-    }
-    dates=d+'T'+s+'/'+d+'T'+endHM.replace(':','')+'00';
-    tz='&ctz='+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone||'America/Guatemala');
-  }else{
-    const next=new Date(t.due+'T12:00:00');next.setDate(next.getDate()+1);
-    dates=d+'/'+next.getFullYear()+String(next.getMonth()+1).padStart(2,'0')+String(next.getDate()).padStart(2,'0');
-  }
-  const b=board(t.boardId);
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-    +'&text='+encodeURIComponent(t.title)
-    +'&dates='+dates+tz
-    +'&details='+encodeURIComponent((t.note?t.note+'\n\n':'')+'From Atelier · '+(b?b.name:''));
 }
 /* ============ one-press calendar sync ============
    Builds a single .ics of everything dated that Google hasn't seen yet.
@@ -2022,7 +2001,6 @@ function openDrawer(tid){
       ...S.goals.filter(s=>s.parentId===g.id).map(s=>
         `<option value="${s.id}" ${t.goalId===s.id?'selected':''}>&nbsp;&nbsp;— ${esc(s.title)}</option>`)
     ])].join('');
-  const cal=gcalUrl(t);
   const appt=isAppt(t);
   const blockOf=t.blockFor?S.tasks.find(x=>x.id===t.blockFor):null;
   $('drawer').innerHTML=`
@@ -2075,7 +2053,7 @@ function openDrawer(tid){
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
     <div class="d-actions">
       <span class="small muted">${t.due
-        ?(needsSync(t)?'Will go to Google Calendar on your next sync.':'On your Google Calendar ✓')
+        ?(needsSync(t)?'Goes to Google Calendar next time you press Save.':'On your Google Calendar ✓')
         :'No date — nothing to put on the calendar.'}</span>
       <button class="d-delete" onclick="t_delete()">Delete task</button>
     </div>`;
@@ -2366,7 +2344,8 @@ function renderCal(){
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
       ${(()=>{const n=syncQueue().length;
-        return n?`<button class="cl-btn" onclick="calSync()" title="Download every new or changed item as one calendar file">⟳ Sync ${n} to Google</button>`
+        return n?`<span class="small muted" style="margin-right:8px">${n} change${n>1?'s':''} will go to Google when you press Save</span>
+          <button class="cl-btn" onclick="calSync()" title="Send them now instead of waiting for Save">⟳ Send now</button>`
         :`<span class="small muted" style="margin-right:4px">calendar up to date ✓</span>`;})()}
       <div class="cal-nav">
         <div class="seg">
@@ -3470,8 +3449,11 @@ async function manualSave(){
   const a=document.activeElement; if(a&&a.blur)a.blur();  // commit any field mid-edit
   save();
   clearTimeout(wTimer); await writeToFile();              // push to the shared file right now
+  const n=syncQueue().length;                             // every calendar change made this session, in one file
+  if(n)calSync();
   const btn=$('saveBtn');
-  if(btn){btn.textContent='Saved ✓'; setTimeout(()=>{if($('saveBtn'))$('saveBtn').textContent='Save';},1600);}
+  if(btn){btn.textContent=n?`Saved ✓ · ${n} to calendar`:'Saved ✓';
+    setTimeout(()=>{if($('saveBtn'))$('saveBtn').textContent='Save';},2400);}
 }
 function flushEdits(){
   const a=document.activeElement;
