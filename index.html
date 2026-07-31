@@ -1696,6 +1696,43 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
   .map-range select{flex:1 1 auto; max-width:none}
 }
 
+
+/* the board menu, as a menu */
+.snav{position:relative}
+.side-menu{
+  position:absolute; top:calc(100% + 4px); right:6px; z-index:200; min-width:196px;
+  background:var(--card); border:1px solid var(--line); border-radius:12px;
+  box-shadow:var(--shadow-lift); padding:6px; display:flex; flex-direction:column; gap:1px;
+  text-align:left; cursor:default;
+}
+.sm-row{
+  display:flex; align-items:center; gap:8px; background:none; border:none; cursor:pointer;
+  text-align:left; padding:8px 11px; border-radius:8px; font-family:var(--sans);
+  font-size:13px; color:var(--ink); white-space:nowrap; width:100%;
+}
+.sm-row:hover{background:var(--paper-2)}
+.sm-row.on{color:var(--ochre)}
+.sm-row.danger{color:var(--danger); margin-top:3px; border-top:1px solid var(--line-soft); border-radius:0 0 8px 8px}
+.sm-row.danger:hover{background:#f7ece9}
+[data-theme=dark] .sm-row.danger:hover{background:#33201c}
+.sm-dot{width:9px; height:9px; border-radius:50%; margin-left:auto}
+.sm-label{font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
+  padding:9px 11px 4px; border-top:1px solid var(--line-soft); margin-top:3px}
+.side-menu .ghost-new{margin:2px 0}
+/* a + on every domain heading */
+.snav-plus{
+  margin-left:6px; color:var(--ink-faint); font-size:15px; line-height:1; padding:0 5px;
+  border-radius:6px; opacity:0; transition:opacity .15s; cursor:pointer;
+}
+.side-group:hover .snav-plus{opacity:1}
+.snav-plus:hover{color:var(--ink); background:var(--paper-2)}
+@media (max-width:700px){ .snav-plus{opacity:1} }
+
+
+.sm-row.quiet{color:var(--ink-faint); font-size:12.5px; padding-top:5px}
+.sm-row.danger.armed{background:#f7ece9; color:var(--danger); font-weight:500}
+[data-theme=dark] .sm-row.danger.armed{background:#33201c}
+
 </style>
 </head>
 <body>
@@ -1716,7 +1753,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·32</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·33</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -2429,7 +2466,8 @@ function renderSidebar(){
       <span class="dot" style="background:${b.accent}"></span>
       <span class="snav-name">${esc(b.name)}</span>
       <span class="snav-count">${open||''}</span>
-      <span class="snav-menu" onclick="event.stopPropagation();sideMenu('${b.id}',event)">⋯</span>
+      <span class="snav-menu" onclick="sideMenu('${b.id}',event)">⋯</span>
+      ${sideMenuFor===b.id?sideMenuHtml(b):''}
     </div>`;
   };
   const groups=S.masterColumns.map(mc=>{
@@ -2441,6 +2479,8 @@ function renderSidebar(){
       <span class="caret">${mc.folded?'▸':'▾'}</span>
       <span class="snav-name">${esc(mc.name)}</span>
       <span class="snav-count">${mc.folded?(openN||''):''}</span>
+      <span class="snav-plus" title="New board in ${esc(mc.name)}"
+        onclick="event.stopPropagation();newBoard('${mc.id}',this.parentElement.parentElement)">+</span>
     </div>
     ${mc.folded?'':bs.map(bItem).join('')}`;
   }).join('');
@@ -2457,36 +2497,61 @@ function renderSidebar(){
     <button class="snav ${route.view==='claude'?'on':''}" onclick="go('claude')"><span style="color:var(--ochre)">✦</span> Claude</button>
     <div class="side-label">Domains</div>
     ${groups}${orphans}
-    <button class="snav side-new" onclick="newBoard((S.masterColumns[0]||{}).id)">+ New domain</button>`;
+    <button class="snav side-new" onclick="newDomain(this.parentElement)">+ New domain</button>`;
 }
 function mcolFold(id){
   const c=S.masterColumns.find(c=>c.id===id);
   c.folded=!c.folded;render();
 }
 /* board management straight from the sidebar */
+let sideMenuFor=null, sideDelArm=null;
 function sideMenu(bid,ev){
+  if(ev)ev.stopPropagation();
+  sideMenuFor=(sideMenuFor===bid?null:bid);
+  render();
+}
+function sideMenuHtml(b){
+  const n=boardTasks(b.id).filter(t=>!t.done).length;
+  return `<div class="side-menu" onclick="event.stopPropagation()">
+    <button class="sm-row" onclick="sm_rename('${b.id}',this)">Rename</button>
+    <button class="sm-row" onclick="sm_colour('${b.id}')">
+      Next colour <span class="sm-dot" style="background:${b.accent}"></span></button>
+    <div class="sm-label">Move to a domain</div>
+    ${S.masterColumns.map(c=>`<button class="sm-row ${b.masterCol===c.id?'on':''}"
+      onclick="sm_move('${b.id}','${c.id}')">${esc(c.name)}</button>`).join('')}
+    ${sideDelArm===b.id
+      ? `<button class="sm-row danger armed" onclick="sm_delete('${b.id}')">Yes — delete it${n?' and its '+n+' open task'+(n>1?'s':''):''}</button>
+         <button class="sm-row quiet" onclick="sideDelArm=null;render()">Keep it</button>`
+      : `<button class="sm-row danger" onclick="sideDelArm='${b.id}';render()">Delete this board…</button>`}
+  </div>`;
+}
+function sm_rename(bid,btn){
   const b=board(bid); if(!b)return;
-  const cols=S.masterColumns.map((c,i)=>(i+1)+') '+c.name).join('   ');
-  const pick=prompt(
-    'Board: '+b.name+
-    '\n\nType a new name to rename it,'+
-    '\nor a number to move it:   '+cols+
-    '\nor "color" to change its accent,'+
-    '\nor "delete" to remove it.',b.name);
-  if(pick===null)return;
-  const v=pick.trim();
-  if(!v)return;
-  if(/^delete$/i.test(v)){b_delete(bid);return;}
-  if(/^colou?r$/i.test(v)){
-    const i=ACCENTS.indexOf(b.accent);
-    b.accent=ACCENTS[(i+1)%ACCENTS.length];save();render();return;
-  }
-  if(/^\d+$/.test(v)){
-    const c=S.masterColumns[+v-1];
-    if(c){b.masterCol=c.id;save();render();}
-    return;
-  }
-  b.name=v;save();render();
+  const host=btn.parentElement;
+  btn.style.display='none';
+  textComposer(host,b.name,v=>{b.name=v;sideMenuFor=null;});
+}
+function sm_colour(bid){
+  const b=board(bid); if(!b)return;
+  b.accent=ACCENTS[(ACCENTS.indexOf(b.accent)+1)%ACCENTS.length];save();render();
+}
+function sm_delete(bid){
+  const b=board(bid); if(!b)return;
+  tombstone.apply(null,[bid].concat(boardTasks(bid).map(t=>t.id),(b.columns||[]).map(c=>c.id)));
+  S.tasks=S.tasks.filter(t=>t.boardId!==bid);
+  S.boards=S.boards.filter(x=>x.id!==bid);
+  sideMenuFor=null; sideDelArm=null;
+  if(route.view==='board'&&route.boardId===bid)go('master'); else {save();render();}
+}
+function sm_move(bid,cid){
+  const b=board(bid); if(!b)return;
+  b.masterCol=cid; sideMenuFor=null; save(); render();
+}
+/* a domain: the column the boards sit in */
+function newDomain(host){
+  const make=v=>S.masterColumns.push({id:uid(),name:v});
+  if(host&&host.nodeType===1)textComposer(host,'Name this domain…',make);
+  else{make('New domain');save();render();}
 }
 function dropSideBoard(ev,targetId){
   ev.preventDefault();ev.stopPropagation();
@@ -2556,14 +2621,14 @@ function renderMaster(){
         <button class="col-del" title="Remove column" onclick="delMCol('${mc.id}')">×</button>
       </div>
       <div class="col-body">${bs.map(boardCard).join('')}</div>
-      <button class="add-inline" onclick="newBoard('${mc.id}')">+ New board</button>
+      <div class="gc-add"><button class="add-inline" onclick="newBoard('${mc.id}',this.parentElement)">+ New board</button></div>
     </div>`;
   }).join('');
   return `<div class="view-head">
       <div class="view-title">The Studio</div>
       <div class="view-sub">your domains, arranged your way — drag boards to reorder priorities</div>
       <div class="spacer"></div>
-      <button class="btn-ghost" onclick="newMCol()">+ Column</button>
+      <span class="gc-add"><button class="btn-ghost" onclick="newMCol(this.parentElement)">+ Domain</button></span>
     </div>
     ${practicesStrip()}
     <div class="cols">${cols}</div>`;
@@ -2579,7 +2644,7 @@ function practicesStrip(){
       </button>`;}).join('')}
   </div>`;
 }
-function newMCol(){S.masterColumns.push({id:uid(),name:'Untitled'});render();}
+function newMCol(host){newDomain(host);}
 function renameMCol(id,v){const c=S.masterColumns.find(c=>c.id===id);if(c&&v.trim())c.name=v.trim();save();}
 function delMCol(id){
   if(S.masterColumns.length<=1)return;
@@ -2591,16 +2656,15 @@ function delMCol(id){
   tombstone(id);
   S.masterColumns=S.masterColumns.filter(c=>c.id!==id);render();
 }
-function newBoard(mcol){
+function newBoard(mcol,host){
   if(!mcol){
     if(!S.masterColumns.length)S.masterColumns=[{id:uid(),name:'Boards'}];
     mcol=S.masterColumns[0].id;
   }
-  const name=prompt('Name this board — a domain of your life:');
-  if(!name||!name.trim())return;
-  S.boards.push({id:uid(),name:name.trim(),accent:ACCENTS[S.boards.length%ACCENTS.length],
+  const make=v=>S.boards.push({id:uid(),name:v,accent:ACCENTS[S.boards.length%ACCENTS.length],
     masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'Shelved'}]});
-  render();
+  if(host&&host.nodeType===1)textComposer(host,'Name this board…',make);
+  else{make('New board');save();render();}
 }
 
 /* ============ drag & drop ============ */
@@ -3908,6 +3972,7 @@ function gripOff(){document.querySelectorAll('[data-gid][draggable]').forEach(c=
 document.addEventListener('mouseup',gripOff);
 document.addEventListener('click',e=>{
   if(starPickFor&&!e.target.closest('.anchor-wrap')){starPickFor=null;render();}
+  if(sideMenuFor&&!e.target.closest('.snav-menu,.side-menu')){sideMenuFor=null;sideDelArm=null;render();}
 },true);
 document.addEventListener('touchend',gripOff);
 
