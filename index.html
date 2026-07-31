@@ -1414,6 +1414,81 @@ textarea.chap-t{
 .btn-ghost.wipe{margin-left:16px; color:var(--ink-faint); font-size:11.5px}
 .btn-ghost.wipe:hover{color:var(--danger)}
 
+
+/* ---- key results measured by the work they point at ---- */
+.kr{position:relative}
+.kr-link{
+  display:inline-flex; align-items:center; gap:6px; flex-shrink:0; max-width:230px;
+  background:transparent; border:1px solid var(--line); border-radius:999px;
+  padding:3px 11px; cursor:pointer; font-family:var(--sans); font-size:11.5px; color:var(--ink-soft);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:.15s;
+}
+.kr-link:hover{border-color:var(--ink-faint); color:var(--ink)}
+.kr-link.empty{border-style:dashed; color:var(--ink-faint)}
+.kr-link.plain{border:none; padding:3px 6px; color:var(--ink-faint)}
+.kr-link .dot{width:6px; height:6px; border-radius:50%; flex-shrink:0}
+.kr-count{color:var(--ink-faint); font-variant-numeric:tabular-nums}
+.kr-picker{
+  flex-basis:100%; margin:8px 0 4px 22px; padding:12px 14px;
+  background:var(--paper-2); border:1px solid var(--line); border-radius:11px;
+}
+.kp-label{font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px}
+.kp-label:not(:first-child){margin-top:13px}
+.kp-chips{display:flex; flex-wrap:wrap; gap:7px}
+.kp-chips .ch{
+  display:inline-flex; align-items:baseline; gap:7px;
+  font-size:12px; border:1px solid var(--line); background:var(--paper); color:var(--ink);
+  border-radius:999px; padding:5px 12px; cursor:pointer; font-family:var(--sans); transition:.15s;
+}
+.kp-chips .ch:hover{border-color:var(--ochre)}
+.kp-n{font-size:10.5px; color:var(--ink-faint)}
+.kp-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.kp-row select{
+  border:1px solid var(--line); border-radius:8px; padding:6px 9px; font-size:12px;
+  background:var(--paper); color:var(--ink); max-width:190px;
+}
+.kp-row.foot{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px}
+@media (max-width:700px){
+  .kr-link{max-width:none; flex-basis:100%; justify-content:flex-start}
+  .kr-picker{margin-left:0}
+  .kp-row select{flex:1 1 100%; max-width:none}
+}
+
+
+/* the bearing, chosen by clicking it */
+.anchor-wrap{position:relative; display:inline-flex}
+button.anchor{
+  display:inline-flex; align-items:baseline; gap:5px; background:transparent; border:none;
+  padding:2px 4px; margin-left:-4px; border-radius:7px; cursor:pointer; max-width:190px;
+}
+button.anchor:hover{background:var(--paper-2)}
+button.anchor.none{font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--ink-faint)}
+.anchor-pick{
+  position:absolute; top:calc(100% + 6px); left:-6px; z-index:40; min-width:190px;
+  background:var(--card); border:1px solid var(--line); border-radius:11px;
+  box-shadow:var(--shadow-lift); padding:6px; display:flex; flex-direction:column; gap:1px;
+}
+.ap-row{
+  display:flex; align-items:baseline; gap:8px; background:none; border:none; cursor:pointer;
+  text-align:left; padding:7px 10px; border-radius:8px; font-family:var(--serif); font-style:italic;
+  font-size:14.5px; color:var(--ink); white-space:nowrap;
+}
+.ap-row:hover{background:var(--paper-2)}
+.ap-row.on{background:var(--paper-2)}
+.ap-row.clear{font-size:12.5px; color:var(--ink-faint)}
+.ap-empty{padding:7px 10px; font-size:12.5px; color:var(--ink-faint); font-style:italic}
+.ap-new{border-top:1px solid var(--line-soft); margin-top:3px; padding:5px 6px 2px}
+/* a row is its own toggle */
+.tr-node.goal{cursor:pointer; border-radius:8px}
+.tr-node.goal:hover{background:var(--paper-2)}
+.tr-node.goal textarea,.tr-node.goal button,.tr-node.goal .anchor-wrap{cursor:auto}
+.tr-node.goal .more{cursor:pointer}
+.kr{cursor:pointer; border-radius:8px}
+.kr:hover{background:var(--paper-2)}
+.kr textarea,.kr input,.kr button{cursor:auto}
+.kr .more,.kr .kr-tick,.kr .kr-link{cursor:pointer}
+@media (max-width:700px){ .anchor-pick{left:auto; right:0} }
+
 </style>
 </head>
 <body>
@@ -1434,7 +1509,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·17</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·18</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1847,12 +1922,93 @@ function progress(tasks){
    it is trying to reach. Progress is the mean of the key results — never the tasks,
    which are deliberately detached for now. 80% is the mark; 100% means it was too safe. */
 const TARGET_PCT=80;
-function isMetric(kr){return kr&&kr.target!==undefined&&kr.target!==null&&kr.target!=='';}
+function isMetric(kr){return kr&&kr.mode==='number'&&kr.target!==undefined&&kr.target!==null&&kr.target!=='';}
+/* the tasks a key result is actually made of — a column, a whole board, or a hand-picked few */
+function krTasks(kr){
+  const l=kr&&kr.link; if(!l)return [];
+  let list;
+  if(l.kind==='col')list=S.tasks.filter(t=>t.boardId===l.boardId&&t.colId===l.colId);
+  else if(l.kind==='board')list=S.tasks.filter(t=>t.boardId===l.boardId);
+  else if(l.kind==='tasks')list=S.tasks.filter(t=>(l.taskIds||[]).indexOf(t.id)>=0);
+  else return [];
+  return list.filter(t=>!isRoutine(t)&&!isAppt(t));   // appointments and habits aren't progress
+}
+function krLinkLabel(kr){
+  const l=kr&&kr.link; if(!l)return '';
+  const b=board(l.boardId);
+  if(l.kind==='tasks')return (l.taskIds||[]).length+' chosen task'+((l.taskIds||[]).length===1?'':'s');
+  if(!b)return 'missing board';
+  if(l.kind==='board')return b.name;
+  const c=(b.columns||[]).find(c=>c.id===l.colId);
+  return b.name+' · '+(c?c.name:'—');
+}
 function krPct(kr){
+  if(kr&&kr.link){
+    const ts=krTasks(kr);
+    if(!ts.length)return 0;
+    return Math.round(100*ts.filter(t=>t.done).length/ts.length);
+  }
   if(!isMetric(kr))return kr.achieved?100:0;
   const t=Number(kr.target), b=Number(kr.base||0), c=Number(kr.current||0);
   if(!isFinite(t)||!isFinite(c)||t===b)return kr.achieved?100:0;
   return Math.max(0,Math.min(100,Math.round(100*(c-b)/(t-b))));
+}
+/* which board or column a key result probably means, read off its own words */
+const KR_STOP=new Set(['the','and','for','with','from','into','all','out','and','my','me','get','set','new','one','two','you','your','this','that','then','than','its','are','was','has','have','will','can','how','who','why','not','but','off','per','via','let','own','use','make','made','done','doing']);
+function krWords(t){
+  return String(t||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+    .filter(w=>w.length>2&&!KR_STOP.has(w));
+}
+function krSuggest(kr){
+  const parent=kr.parentId?goal(kr.parentId):null;
+  const q=new Set(krWords(kr.title).concat(krWords(parent&&parent.title)));
+  if(!q.size)return [];
+  const out=[];
+  S.boards.forEach(b=>{
+    const bs=krWords(b.name).filter(w=>q.has(w)).length;
+    const live=t=>!isRoutine(t)&&!isAppt(t);
+    (b.columns||[]).forEach(c=>{
+      if(/^(done|shelved)$/i.test(String(c.name).trim()))return;
+      const cs=krWords(c.name).filter(w=>q.has(w)).length;
+      const n=S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id&&live(t)).length;
+      const score=cs*3+bs*2+(n?.5:0);
+      if(score>0)out.push({score,kind:'col',boardId:b.id,colId:c.id,label:b.name+' · '+c.name,n});
+    });
+    if(bs>0){
+      const n=S.tasks.filter(t=>t.boardId===b.id&&live(t)).length;
+      out.push({score:bs*2+(n?.5:0),kind:'board',boardId:b.id,label:b.name,n});
+    }
+  });
+  return out.sort((a,b)=>b.score-a.score).slice(0,4);
+}
+const krOpen=new Set();
+function kr_picker(id){krOpen.has(id)?krOpen.delete(id):krOpen.add(id);render();}
+function kr_link(id,kind,boardId,colId){
+  const k=goal(id); if(!k)return;
+  k.link={kind,boardId,colId:colId||null};
+  k.mode=null; k.krTouched=Date.now();
+  krOpen.delete(id); save(); render();
+}
+function kr_pickBoard(id,bid){
+  const k=goal(id); if(!k)return;
+  if(!bid){k.link=null;} else k.link={kind:'board',boardId:bid,colId:null};
+  k.mode=null; k.krTouched=Date.now(); save(); render();
+}
+function kr_pickCol(id,cid){
+  const k=goal(id); if(!k||!k.link)return;
+  k.link=cid?{kind:'col',boardId:k.link.boardId,colId:cid}:{kind:'board',boardId:k.link.boardId,colId:null};
+  k.krTouched=Date.now(); save(); render();
+}
+function kr_manual(id){
+  const k=goal(id); if(!k)return;
+  k.link=null; k.mode='number';
+  if(k.current==null)k.current=0;
+  k.krTouched=Date.now(); save(); render();
+}
+function kr_clear(id){
+  const k=goal(id); if(!k)return;
+  k.link=null; k.mode=null; k.krTouched=Date.now();
+  krOpen.delete(id); save(); render();
 }
 function goalKrs(gid){return S.goals.filter(s=>s.parentId===gid);}
 function goalPct(gid){
@@ -1862,6 +2018,7 @@ function goalPct(gid){
 }
 function kr_set(id,field,v){
   const k=goal(id); if(!k)return;
+  k.mode='number';
   if(field==='unit')k.unit=v.trim()||null;
   else{const n=v===''?null:Number(v); k[field]=(n===null||!isFinite(n))?null:n;}
   k.krTouched=Date.now(); save(); render();
@@ -3435,37 +3592,95 @@ function gripDown(ev){
 }
 function gripOff(){document.querySelectorAll('[data-gid][draggable]').forEach(c=>c.removeAttribute('draggable'));}
 document.addEventListener('mouseup',gripOff);
+document.addEventListener('click',e=>{
+  if(starPickFor&&!e.target.closest('.anchor-wrap')){starPickFor=null;render();}
+},true);
 document.addEventListener('touchend',gripOff);
 
 function fitTA(el){el.style.height='auto';el.style.height=(el.scrollHeight+1)+'px';}
 const TA_KEYS="if(event.key==='Enter'){event.preventDefault();this.blur();}";
 const goalOpen=new Set();
 function g_expand(id){goalOpen.has(id)?goalOpen.delete(id):goalOpen.add(id);render();}
-const toolsOpen=new Set();
-function g_tools(id){toolsOpen.has(id)?toolsOpen.delete(id):toolsOpen.add(id);render();}
+let starPickFor=null;
+function anchorPick(gid){starPickFor=(starPickFor===gid?null:gid);render();}
+function anchorMenu(g){
+  const cur=g.starId||'';
+  return `<div class="anchor-pick" onclick="event.stopPropagation()">
+    ${(S.stars||[]).map(s=>`<button class="ap-row ${cur===s.id?'on':''}" onclick="g_setStar('${g.id}','${s.id}')">
+      <span class="star-mark">✶</span>${esc(s.title)}</button>`).join('')
+      ||'<div class="ap-empty">no bearings yet</div>'}
+    ${cur?`<button class="ap-row clear" onclick="g_setStar('${g.id}','')">— unanchored —</button>`:''}
+    <div class="ap-new"><button class="add-inline" onclick="star_add(this.parentElement)">+ New north star</button></div>
+  </div>`;
+}
+function anchorChip(g){
+  const s=g.starId?star(g.starId):null;
+  return `<span class="anchor-wrap">
+    <button class="anchor ${s?'':'none'}" onclick="event.stopPropagation();anchorPick('${g.id}')"
+      title="${s?'Change the bearing':'Choose a bearing'}">
+      ${s?`<span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span>`:'unanchored'}
+    </button>
+    ${starPickFor===g.id?anchorMenu(g):''}
+  </span>`;
+}
 
 /* one goal node — the same shape on the Timeline and in the Tree */
 /* one key result — a number it is trying to reach */
 function krRow(kr){
-  const pct=krPct(kr), metric=isMetric(kr);
-  return `<div class="kr">
-    <button class="kr-tick ${pct>=100?'on':''}" title="${metric?'':'Mark this key result met'}"
+  const pct=krPct(kr), metric=isMetric(kr), open=krOpen.has(kr.id);
+  const ts=kr.link?krTasks(kr):null;
+  const count=ts?ts.filter(t=>t.done).length+' of '+ts.length:'';
+  const b=kr.link?board(kr.link.boardId):null;
+  return `<div class="kr" onclick="krToggle(event,'${kr.id}')">
+    <button class="kr-tick ${pct>=100?'on':''}" title="${kr.link||metric?'':'Mark this key result met'}"
       onclick="kr_toggle('${kr.id}')">${pct>=100?'◆':'◇'}</button>
     <textarea class="kr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
       onchange="g_rename('${kr.id}',this.value)" placeholder="what gets measured…">${esc(kr.title)}</textarea>
-    <span class="kr-nums">
+    ${metric?`<span class="kr-nums">
       <input class="kr-n" type="number" inputmode="decimal" value="${kr.current??''}" placeholder="0"
         title="where you are now" onchange="kr_set('${kr.id}','current',this.value)">
       <span class="kr-slash">/</span>
       <input class="kr-n" type="number" inputmode="decimal" value="${kr.target??''}" placeholder="target"
-        title="the number that means done" onchange="kr_set('${kr.id}','target',this.value)">
+        onchange="kr_set('${kr.id}','target',this.value)">
       <input class="kr-u" value="${esc(kr.unit||'')}" placeholder="unit"
-        title="pages, kg, calls, quetzales…" onchange="kr_set('${kr.id}','unit',this.value)">
-    </span>
+        onchange="kr_set('${kr.id}','unit',this.value)">
+      <button class="kr-link plain" onclick="kr_picker('${kr.id}')">change</button>
+    </span>`
+    :kr.link?`<button class="kr-link" onclick="kr_picker('${kr.id}')" title="Change what this measures">
+        ${b?`<span class="dot" style="background:${b.accent}"></span>`:''}
+        ${esc(krLinkLabel(kr))}<span class="kr-count">${count}</span></button>`
+    :`<button class="kr-link empty" onclick="kr_picker('${kr.id}')">＋ measure by…</button>`}
     <span class="kr-track"><span class="fill ${pct>=TARGET_PCT?'won':''}" style="width:${pct}%"></span>
       <span class="kr-mark" style="left:${TARGET_PCT}%"></span></span>
     <span class="kr-pct ${pct>=TARGET_PCT?'won':''}">${pct}%</span>
     <button class="more" onclick="g_delete('${kr.id}')" title="Delete key result">×</button>
+    ${open?krPicker(kr):''}
+  </div>`;
+}
+function krPicker(kr){
+  const sug=krSuggest(kr);
+  const cur=kr.link||{};
+  const bOpts=S.boards.map(b=>`<option value="${b.id}" ${cur.boardId===b.id?'selected':''}>${esc(b.name)}</option>`).join('');
+  const cb=cur.boardId?board(cur.boardId):null;
+  const cOpts=cb?(cb.columns||[]).map(c=>`<option value="${c.id}" ${cur.colId===c.id?'selected':''}>${esc(c.name)}</option>`).join(''):'';
+  return `<div class="kr-picker">
+    ${sug.length?`<div class="kp-label">Probably this</div>
+      <div class="kp-chips">${sug.map(x=>`<button class="ch" onclick="kr_link('${kr.id}','${x.kind}','${x.boardId}','${x.colId||''}')">
+        ${esc(x.label)}<span class="kp-n">${x.n} task${x.n===1?'':'s'}</span></button>`).join('')}</div>`:''}
+    <div class="kp-label">Or choose</div>
+    <div class="kp-row">
+      <select onchange="kr_pickBoard('${kr.id}',this.value)">
+        <option value="">— a board —</option>${bOpts}
+      </select>
+      ${cb?`<select onchange="kr_pickCol('${kr.id}',this.value)">
+        <option value="">the whole board</option>${cOpts}
+      </select>`:''}
+    </div>
+    <div class="kp-row foot">
+      <button class="btn-ghost" onclick="kr_manual('${kr.id}')">count it by hand instead</button>
+      ${kr.link||isMetric(kr)?`<button class="btn-ghost" onclick="kr_clear('${kr.id}')">unlink</button>`:''}
+      <button class="btn-ghost" onclick="kr_picker('${kr.id}')">close</button>
+    </div>
   </div>`;
 }
 /* one objective — a lean single line, its bearing off to the right */
@@ -3473,10 +3688,10 @@ function goalBlock(g,opts){
   opts=opts||{};
   const krs=goalKrs(g.id);
   const p=goalPct(g.id);
-  const s=g.starId?star(g.starId):null;
+  const open=goalOpen.has(g.id);
   return `<div class="tr-branch gnode" data-gid="${g.id}"
       ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
-    <div class="tr-node goal${g.achieved?' achieved':''}">
+    <div class="tr-node goal${g.achieved?' achieved':''}${open?' open':''}" onclick="rowToggle(event,'${g.id}')">
       ${opts.nodrag?'':`<span class="grip" title="drag into another chapter"
         onmousedown="gripDown(event)" ontouchstart="gripDown(event)">⠿</span>`}
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
@@ -3486,22 +3701,15 @@ function goalBlock(g,opts){
       <span class="gcol bar">${p===null?'':`<span class="gmini"><span class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></span>
         <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>`}</span>
       <span class="gcol pct ${p!==null&&p>=TARGET_PCT?'won':''}">${p===null?'':p+'%'}</span>
-      <span class="gcol anch">${s
-        ?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
-        :'<span class="anchor none">unanchored</span>'}</span>
-      <button class="more" onclick="g_tools('${g.id}')" title="Anchor, schedule, ask Claude, delete">⋯</button>
+      <span class="gcol anch">${anchorChip(g)}</span>
+      <button class="more" onclick="event.stopPropagation();g_delete('${g.id}')" title="Delete this goal">×</button>
     </div>
-    ${toolsOpen.has(g.id)?`<div class="gcard-tools">
-      ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
-      <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for key results</button>
-      <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
-    </div>`:''}
-    <div class="tr-kids">
+    ${open?`<div class="tr-kids">
       ${krs.map(k=>`<div class="tr-branch"><div class="tr-node kr-node">${krRow(k)}</div></div>`).join('')}
       <div class="tr-branch"><div class="tr-node thin gc-add">
         <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button>
       </div></div>
-    </div>
+    </div>`:''}
   </div>`;
 }
 
@@ -3635,7 +3843,17 @@ function resetCompass(){
   applyReset(); save(); render();
   try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
+/* click the row itself — no caret, no chrome. Controls and text fields are left alone. */
+function rowToggle(ev,id){
+  if(ev.target.closest('input,textarea,button,select,a,.anchor-pick'))return;
+  g_expand(id);
+}
+function krToggle(ev,id){
+  if(ev.target.closest('input,textarea,button,select,a,.kr-picker'))return;
+  kr_picker(id);
+}
 function compassTime(){
+  if(!window.timeInit){window.timeInit=true;S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});}
   const eras=S.plan.map(e=>{
     const gs=S.goals.filter(g=>!g.parentId&&g.era===e.id);
     const got=gs.filter(g=>g.achieved).length;
@@ -3705,7 +3923,7 @@ function mapUp(){
   document.removeEventListener('touchend',mapUp);
 }
 function mapGoalCard(g){
-  const krs=goalKrs(g.id), p=goalPct(g.id), s=g.starId?star(g.starId):null;
+  const krs=goalKrs(g.id), p=goalPct(g.id);
   const open=goalOpen.has(g.id);
   return `<div class="mnode goal${g.achieved?' achieved':''}" data-mid="${g.id}">
     <div class="mn-head">
@@ -3713,22 +3931,17 @@ function mapGoalCard(g){
         onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
       <span class="mn-kind">Objective</span>
-      <button class="more" onclick="g_tools('${g.id}')">⋯</button>
+      <button class="more" onclick="g_delete('${g.id}')" title="Delete this goal">×</button>
     </div>
     <textarea class="mn-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
       onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
-    ${toolsOpen.has(g.id)?`<div class="mn-tools">
-      ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
-      <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ key results</button>
-      <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button></div>`:''}
     <div class="mn-bar"><span class="fill ${(p??0)>=TARGET_PCT?'won':''}" style="width:${p??0}%"></span>
       <span class="mn-mark" style="left:${TARGET_PCT}%"></span></div>
     <div class="mn-foot">
       <span class="mn-pct ${(p??0)>=TARGET_PCT?'won':''}">${p===null?'—':p+'%'}</span>
       <button class="mn-sub" onclick="g_expand('${g.id}')">
         <span class="mn-fold">${open?'▾':'▸'}</span> ${krs.length?krs.length+' key result'+(krs.length>1?'s':''):'no key results'}</button>
-      ${s?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
-        :'<span class="anchor none">unanchored</span>'}
+      ${anchorChip(g)}
     </div>
     ${open?`<div class="mn-krs">
       ${krs.map(krRow).join('')}
@@ -3898,7 +4111,7 @@ function star_del(id){
   tombstone(id);
   S.stars=S.stars.filter(s=>s.id!==id);render();
 }
-function g_setStar(gid,sid){const g=goal(gid);if(g)g.starId=sid||null;save();render();}
+function g_setStar(gid,sid){const g=goal(gid);if(g)g.starId=sid||null;starPickFor=null;save();render();}
 function g_setEra(gid,eid){const g=goal(gid);if(g)g.era=eid||null;save();render();}
 function g_toggle(gid){const g=goal(gid);if(g)g.achieved=g.achieved?null:Date.now();save();render();}
 function g_reward(gid){
