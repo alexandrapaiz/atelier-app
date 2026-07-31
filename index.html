@@ -1434,7 +1434,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·14</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·15</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1585,12 +1585,17 @@ function ensureDefaults(){
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
+  /* One-time, 31 July: a blank Compass — asked for, and repeatedly undone by a stale tab still
+     pushing the old goals around. Baked into the build so one refresh settles it on every device.
+     Anything created after this instant carries a later birthday and is left alone. */
+  if(!S.meta.reset||(S.meta.reset.at||0)<BOOT_RESET)S.meta.reset={at:BOOT_RESET,what:['goals','stars']};
   applyReset();
   /* the shelf got a shorter name */
   S.boards.forEach(b=>b.columns.forEach(c=>{if(/^on the horizon$/i.test((c.name||'').trim()))c.name='Shelved';}));
 }
 /* A merge keeps whatever exists on either side, so it can never carry a deletion.
    A reset stamp can: whoever wrote it wins once, on every device, then goes quiet. */
+const BOOT_RESET=1785505465877;
 function applyReset(){
   const r=S.meta&&S.meta.reset;
   if(!r||!r.at)return;
