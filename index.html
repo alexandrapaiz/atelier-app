@@ -1434,7 +1434,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·16</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·17</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1585,6 +1585,7 @@ function ensureDefaults(){
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
+  purgeBuried();
   /* One-time, 31 July: a blank Compass — asked for, and repeatedly undone by a stale tab still
      pushing the old goals around. Baked into the build so one refresh settles it on every device.
      Anything created after this instant carries a later birthday and is left alone. */
@@ -1596,6 +1597,32 @@ function ensureDefaults(){
 /* A merge keeps whatever exists on either side, so it can never carry a deletion.
    A reset stamp can: whoever wrote it wins once, on every device, then goes quiet. */
 const BOOT_RESET=1785505465877;
+/* A merge keeps whatever exists on either side — so on its own it can never carry a deletion,
+   and anything you delete comes straight back from the other tab. A tombstone is the missing
+   half: the id of the thing you removed, and when. It outranks any copy that shows up later. */
+function tombstone(){
+  S.meta.tomb=S.meta.tomb||{};
+  const now=Date.now();
+  [].slice.call(arguments).forEach(id=>{if(id)S.meta.tomb[id]=now;});
+}
+function isBuried(x){return !!(x&&x.id&&S.meta.tomb&&S.meta.tomb[x.id]);}
+function purgeBuried(){
+  const tomb=S.meta&&S.meta.tomb;
+  if(!tomb)return;
+  const cut=Date.now()-120*864e5;                       // a tombstone stops mattering after four months
+  Object.keys(tomb).forEach(k=>{if(tomb[k]<cut)delete tomb[k];});
+  const live=a=>(a||[]).filter(x=>!isBuried(x));
+  S.masterColumns=live(S.masterColumns);
+  S.boards=live(S.boards);
+  S.boards.forEach(b=>{b.columns=live(b.columns);});
+  S.goals=live(S.goals);
+  S.stars=live(S.stars);
+  S.tasks=live(S.tasks);
+  S.plan=live(S.plan);
+  S.plan.forEach(e=>{e.items=live(e.items);});
+  S.priCols=live(S.priCols);
+  S.rewards=live(S.rewards);
+}
 function applyReset(){
   const r=S.meta&&S.meta.reset;
   if(!r||!r.at)return;
@@ -1604,11 +1631,13 @@ function applyReset(){
      its old copies back, and each of them is older than the reset, so each gets dropped. */
   const older=x=>!x.createdAt||x.createdAt<r.at;
   if(what.indexOf('goals')>=0){
+    S.goals.filter(older).forEach(g=>tombstone(g.id));
     S.goals=S.goals.filter(g=>!older(g));
     const live=new Set(S.goals.map(g=>g.id));
     S.tasks.forEach(t=>{if(t.goalId&&!live.has(t.goalId))t.goalId=null;});
   }
   if(what.indexOf('stars')>=0){
+    (S.stars||[]).filter(older).forEach(x=>tombstone(x.id));
     S.stars=(S.stars||[]).filter(x=>!older(x));
     const live=new Set(S.stars.map(x=>x.id));
     S.goals.forEach(g=>{if(g.starId&&!live.has(g.starId))g.starId=null;});
@@ -2116,6 +2145,7 @@ function renameMCol(id,v){const c=S.masterColumns.find(c=>c.id===id);if(c&&v.tri
 function delMCol(id){
   if(S.boards.some(b=>b.masterCol===id)){alert('Move its boards elsewhere first.');return;}
   if(S.masterColumns.length<=1)return;
+  tombstone(id);
   S.masterColumns=S.masterColumns.filter(c=>c.id!==id);render();
 }
 function newBoard(mcol){
@@ -2327,6 +2357,8 @@ function b_accent(id,a){board(id).accent=a;render();}
 function b_delete(id){
   const n=boardTasks(id).length;
   if(!confirm('Delete this board'+(n?' and its '+n+' task(s)':'')+'?'))return;
+  tombstone.apply(null,[id].concat(boardTasks(id).map(t=>t.id),
+    (board(id).columns||[]).map(c=>c.id)));
   S.tasks=S.tasks.filter(t=>t.boardId!==id);
   S.boards=S.boards.filter(b=>b.id!==id);
   go('master');
@@ -2343,6 +2375,7 @@ function colDel(bid,cid){
   const b=board(bid);
   if(S.tasks.some(t=>t.boardId===bid&&t.colId===cid)){alert('Move or finish its tasks first.');return;}
   if(b.columns.length<=1)return;
+  tombstone(cid);
   b.columns=b.columns.filter(c=>c.id!==cid);render();
 }
 /* one smart composer, used by every quick-add in the app */
@@ -2524,6 +2557,7 @@ function t_setCol(cid){
 }
 function t_delete(){
   if(!confirm('Delete this task?'))return;
+  tombstone(drawerTask);
   S.tasks=S.tasks.filter(t=>t.id!==drawerTask);
   closeDrawer();
 }
@@ -2597,6 +2631,7 @@ function g_delete(id){
   const kids=S.goals.filter(g=>g.parentId===id);
   if(!confirm('Delete this goal'+(kids.length?' and its sub-goals':'')+'? Linked tasks stay, just unlinked.'))return;
   const ids=[id,...kids.map(k=>k.id)];
+  tombstone.apply(null,ids);
   S.tasks.forEach(t=>{if(ids.includes(t.goalId))t.goalId=null;});
   S.goals=S.goals.filter(g=>!ids.includes(g.id));
   render();
@@ -3159,7 +3194,7 @@ function rw_add(){
   t.value='';save();render();
 }
 function rw_claim(id){const r=(S.rewards||[]).find(r=>r.id===id);if(r)r.claimed=Date.now();save();render();}
-function rw_del(id){S.rewards=(S.rewards||[]).filter(r=>r.id!==id);save();render();}
+function rw_del(id){tombstone(id);S.rewards=(S.rewards||[]).filter(r=>r.id!==id);save();render();}
 function rw_clearGoal(gid){const g=goal(gid);if(g){g.reward=null;g.rewardClaimed=null;}save();render();}
 
 /* ============ claude — the resident reviewer ============ */
@@ -3304,6 +3339,7 @@ function clDoNow(id){
 function clStill(id){const t=S.tasks.find(t=>t.id===id);if(!t)return;touch(t);save();render();}
 function clDelete(id){
   if(!confirm('Let this one go? (It disappears, guilt included.)'))return;
+  tombstone(id);
   S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
 }
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
@@ -3859,6 +3895,7 @@ function star_del(id){
   if(!confirm('Remove this north star? Goals and intentions stay — they just become unanchored.'))return;
   S.goals.forEach(g=>{if(g.starId===id)g.starId=null;});
   S.plan.forEach(e=>e.items.forEach(i=>{if(i.starId===id)i.starId=null;}));
+  tombstone(id);
   S.stars=S.stars.filter(s=>s.id!==id);render();
 }
 function g_setStar(gid,sid){const g=goal(gid);if(g)g.starId=sid||null;save();render();}
@@ -3928,6 +3965,7 @@ function era_rename(id,v){const e=S.plan.find(e=>e.id===id);if(e&&v.trim())e.era
 function era_del(id){
   const e=S.plan.find(e=>e.id===id);
   if(e.items.length&&!confirm('Delete this chapter and its '+e.items.length+' intention(s)?'))return;
+  tombstone.apply(null,[id].concat((e.items||[]).map(i=>i.id)));
   S.plan=S.plan.filter(x=>x.id!==id);render();
 }
 function p_add(eraId){
@@ -4046,10 +4084,18 @@ async function reconnectFile(){
 function mergeStates(loc,rem){
   if(!rem||!rem.meta)return loc;
   const preferRem=(rem.meta.updatedAt||0)>(loc.meta.updatedAt||0);
+  /* graves first — every side's deletions, newest wins, before anything is let back in */
+  loc.meta.tomb=loc.meta.tomb||{};
+  if(rem.meta.tomb)Object.keys(rem.meta.tomb).forEach(k=>{
+    if(!loc.meta.tomb[k]||rem.meta.tomb[k]>loc.meta.tomb[k])loc.meta.tomb[k]=rem.meta.tomb[k];
+  });
+  const tomb=loc.meta.tomb;
+  const buried=x=>!!(x&&x.id&&tomb[x.id]);
   const merge=(la,ra)=>{
     if(!la||!ra)return la||ra||[];
     const m=new Map(la.map((x,i)=>[x.id,i]));
     ra.forEach(x=>{
+      if(buried(x))return;                       // it was deleted on purpose; don't resurrect it
       if(!m.has(x.id))la.push(x);
       else if(preferRem)la[m.get(x.id)]=x;
     });
@@ -4063,6 +4109,7 @@ function mergeStates(loc,rem){
   {
     const m=new Map(loc.tasks.map((x,i)=>[x.id,i]));
     (rem.tasks||[]).forEach(x=>{
+      if(buried(x))return;
       if(!m.has(x.id))loc.tasks.push(x);
       else{
         const i=m.get(x.id), l=loc.tasks[i];
@@ -4074,9 +4121,18 @@ function mergeStates(loc,rem){
   merge(loc.rewards=loc.rewards||[],rem.rewards);
   const em=new Map((loc.plan||[]).map(e=>[e.id,e]));
   (rem.plan||[]).forEach(e=>{
+    if(buried(e))return;
     if(!em.has(e.id))loc.plan.push(e);
     else merge(em.get(e.id).items,e.items);
   });
+  /* board columns live one level down and need the same protection */
+  {
+    const bm=new Map(loc.boards.map(b=>[b.id,b]));
+    (rem.boards||[]).forEach(rb=>{
+      const lb=bm.get(rb.id);
+      if(lb&&rb.columns)merge(lb.columns,rb.columns);
+    });
+  }
   if(rem.gcal&&rem.gcal.length&&(preferRem||!(loc.gcal||[]).length))loc.gcal=rem.gcal;
   if(rem.claude){
     if(!loc.claude)loc.claude={notes:[],inbox:[]};
