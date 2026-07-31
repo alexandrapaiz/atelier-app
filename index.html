@@ -1385,6 +1385,32 @@ textarea.chap-t{
   .rw-new input,.rw-new select{flex-basis:100%; max-width:none}
 }
 
+
+.rw-new select{
+  flex:1 1 210px; max-width:250px; min-width:0;
+  text-overflow:ellipsis; white-space:nowrap; overflow:hidden;
+}
+.rw-new .btn-ink{flex-shrink:0}
+.rw-ideas{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:11px}
+.rw-ideas-l{font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--ink-faint); margin-right:2px}
+.rw-ideas .ch{
+  font-size:11.5px; border:1px solid var(--line); background:transparent; color:var(--ink-soft);
+  border-radius:999px; padding:4px 11px; cursor:pointer; transition:.15s; font-family:var(--sans);
+}
+.rw-ideas .ch:hover{border-color:var(--ochre); color:var(--ink)}
+@media (max-width:700px){
+  .rw-new select{flex-basis:100%; max-width:none}
+  .rw-ideas .ch{font-size:11px; padding:4px 9px}
+}
+
+
+.mn-fold-btn{
+  background:none; border:none; cursor:pointer; color:var(--ink-faint);
+  font-size:10px; line-height:1; padding:3px 4px; border-radius:5px; flex-shrink:0;
+}
+.mn-fold-btn:hover{color:var(--ink); background:var(--paper-2)}
+.mnode.chapter .mn-fold-btn{font-size:11px}
+
 </style>
 </head>
 <body>
@@ -1405,7 +1431,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·11</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·13</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1843,7 +1869,30 @@ function go(view,boardId){
   route={view,boardId,mode:route.boardId===boardId?route.mode:'kanban'};
   if(view!=='board')route.boardId=null;
   filters={status:'all',due:'all',goal:'all'};
+  markRoute();
   render();
+}
+/* the current page lives in the address, so a reload puts you back on it */
+function markRoute(){
+  try{
+    const h=route.view==='board'&&route.boardId?'board:'+route.boardId:route.view;
+    history.replaceState(null,'','#'+h);
+    store.set('atelier.route',h);
+  }catch(e){}
+}
+function restoreRoute(){
+  try{
+    let h=(location.hash||'').replace(/^#/,'');
+    if(!h)h=store.get('atelier.route')||'';
+    if(!h)return;
+    if(h.indexOf('board:')===0){
+      const id=h.slice(6);
+      if(S.boards.some(b=>b.id===id)){route={view:'board',boardId:id,mode:'kanban'};return;}
+      return;
+    }
+    if(['master','pri','cal','compass','ach','claude','goals','plan'].includes(h))
+      route={view:h,boardId:null,mode:'kanban'};
+  }catch(e){}
 }
 /* ============ render root ============ */
 const $=id=>document.getElementById(id);
@@ -2384,7 +2433,7 @@ function openDrawer(tid){
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
     <div class="d-actions">
       <span class="small muted">${t.due
-        ?(needsSync(t)?'Goes to Google Calendar next time you press Save.':'On your Google Calendar ✓')
+        ?(needsSync(t)?'Waiting for the calendar — send them from the Calendar page.':'On your Google Calendar ✓')
         :'No date — nothing to put on the calendar.'}</span>
       <button class="d-delete" onclick="t_delete()">Delete task</button>
     </div>`;
@@ -2677,8 +2726,8 @@ function renderCal(){
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
       ${(()=>{const n=syncQueue().length;
-        return n?`<span class="small muted" style="margin-right:8px">${n} change${n>1?'s':''} will go to Google when you press Save</span>
-          <button class="cl-btn" onclick="calSync()" title="Send them now instead of waiting for Save">⟳ Send now</button>`
+        return n?`<span class="small muted" style="margin-right:8px">${n} dated change${n>1?'s':''} not on Google yet</span>
+          <button class="cl-btn" onclick="calSync()" title="Downloads one calendar file you open once — nothing downloads on its own">⟳ Send to Google</button>`
         :`<span class="small muted" style="margin-right:4px">calendar up to date ✓</span>`;})()}
       <div class="cal-nav">
         <div class="seg">
@@ -3019,8 +3068,9 @@ function rewardsBlock(ctx){
     return row('','🜲',esc(r.title),rwWhen(r)+' · '+rwHave(r,ctx)+' of '+r.n,
       `<button class="btn-ghost" onclick="rw_del('${r.id}')">×</button>`);
   }).join('');
+  const clip=(t,n)=>t.length>n?t.slice(0,n-1).trimEnd()+'…':t;
   const goalOpts=S.goals.filter(g=>!g.parentId&&!g.achieved)
-    .map(g=>`<option value="g:${g.id}">${esc(g.title)}</option>`).join('');
+    .map(g=>`<option value="g:${g.id}" title="${esc(g.title)}">${esc(clip(g.title,34))}</option>`).join('');
   return `
     <div class="lau-h">Rewards</div>
     <div class="lau-sub">what you promised yourself — a finished goal is worth more than a finished errand,
@@ -3029,7 +3079,7 @@ function rewardsBlock(ctx){
     ${smallRows?`<div class="rw-lane"><div class="lau-h sm">Smaller ones — for simply keeping at it</div>${smallRows}</div>`:''}
     ${bigRows||smallRows?'':'<div class="empty-note" style="margin:4px 0 0">Nothing promised yet — name one thing you’ll give yourself. It works better than discipline.</div>'}
     <div class="rw-new">
-      <input id="rwT" placeholder="What will you give yourself?  the massage, the trip, the guilt-free weekend…"
+      <input id="rwT" placeholder="What will you give yourself?"
         onkeydown="if(event.key==='Enter')rw_add()">
       <select id="rwTrig" title="What has to happen before you collect">
         ${goalOpts?`<optgroup label="When a goal gets marked — the big ones">${goalOpts}</optgroup>`:''}
@@ -3039,7 +3089,28 @@ function rewardsBlock(ctx){
         </optgroup>
       </select>
       <button class="btn-ink" onclick="rw_add()">Promise it</button>
+    </div>
+    <div class="rw-ideas">
+      <span class="rw-ideas-l">or borrow one:</span>
+      ${RW_IDEAS.map(i=>`<button class="ch" onclick="rw_idea(this)">${esc(i)}</button>`).join('')}
     </div>`;
+}
+/* small, specific, and actually collectable — vague rewards never get claimed */
+const RW_IDEAS=[
+  'A proper massage',
+  'Dinner at the place I keep postponing',
+  'A day with my phone off',
+  'The next book on my list, hardcover',
+  'A weekend in Antigua',
+  'A facial, no rushing',
+  'Coffee alone with a novel',
+  'New gym fit, the good one',
+  'A print for my room',
+  'Flowers, just because',
+];
+function rw_idea(btn){
+  const t=$('rwT'); if(!t)return;
+  t.value=btn.textContent.trim(); t.focus();
 }
 function rw_add(){
   const t=$('rwT'), sel=$('rwTrig');
@@ -3561,6 +3632,8 @@ function mapGoalCard(g){
   const open=goalOpen.has(g.id);
   return `<div class="mnode goal${g.achieved?' achieved':''}" data-mid="${g.id}">
     <div class="mn-head">
+      <button class="mn-fold-btn" title="${open?'Fold its key results':'Unfold its key results'}"
+        onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
       <span class="mn-kind">Objective</span>
       <button class="more" onclick="g_tools('${g.id}')">⋯</button>
@@ -3586,8 +3659,14 @@ function mapGoalCard(g){
     </div>`:''}
   </div>`;
 }
+const chapOpen=new Set();
+function chap_expand(id){chapOpen.has(id)?chapOpen.delete(id):chapOpen.add(id);render();}
 function compassMap(){
-  if(!window.mapInit){window.mapInit=true;S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});}
+  if(!window.mapInit){
+    window.mapInit=true;
+    S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});
+    S.plan.forEach(e=>chapOpen.add(e.id)); chapOpen.add('none');
+  }
   const chapters=S.plan.map(e=>({id:e.id,label:e.era,goals:S.goals.filter(g=>!g.parentId&&g.era===e.id)}));
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
   if(loose.length)chapters.push({id:null,label:'Unscheduled',goals:loose});
@@ -3597,26 +3676,29 @@ function compassMap(){
   const edges=[];
 
   const cols=chapters.map((c,i)=>{
-    edges.push(['mission','era-'+(c.id||'none')]);
-    c.goals.forEach(g=>edges.push(['era-'+(c.id||'none'),g.id]));
+    const key=c.id||'none', open=chapOpen.has(key);
+    edges.push(['mission','era-'+key]);
+    if(open)c.goals.forEach(g=>edges.push(['era-'+key,g.id]));
     return `<div class="map-col" style="left:${i*(MAP_W+MAP_COLGAP)}px;top:${MAP_CHAP_Y}px;width:${MAP_W}px">
-      <div class="mnode chapter" data-mid="era-${c.id||'none'}">
+      <div class="mnode chapter" data-mid="era-${key}">
+        <button class="mn-fold-btn" title="${open?'Fold this chapter':'Unfold this chapter'}"
+          onclick="chap_expand('${key}')">${open?'▾':'▸'}</button>
         <span class="chap-mark">✦</span>
         ${c.id?`<textarea class="chap-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
           onchange="era_rename('${c.id}',this.value)">${esc(c.label)}</textarea>`
           :`<span class="chap-t none">${esc(c.label)}</span>`}
         <span class="col-count">${c.goals.length}</span>
       </div>
-      <div class="map-objs">
+      ${open?`<div class="map-objs">
         ${c.goals.map(mapGoalCard).join('')}
         ${c.id?`<div class="mnode ghost"><button class="add-inline"
           onclick="g_addIn('${c.id}',this.parentElement)">+ Objective</button></div>`:''}
-      </div>
+      </div>`:''}
     </div>`;
   }).join('');
 
   if(!mapPan)mapPan={x:20,y:16,set:false};
-  const anyOpen=S.goals.some(g=>!g.parentId&&goalOpen.has(g.id));
+  const anyOpen=chapOpen.size>0||S.goals.some(g=>!g.parentId&&goalOpen.has(g.id));
   const stars=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
     return `<span class="map-star">
@@ -3629,7 +3711,7 @@ function compassMap(){
     <div class="map-bar">
       <span class="map-hint">drag to pan</span>
       <span class="spacer"></span>
-      <button class="cal-nb" onclick="mapFoldAll(${anyOpen?'true':'false'})">${anyOpen?'Fold key results':'Show key results'}</button>
+      <button class="cal-nb" onclick="mapFoldAll(${anyOpen?'true':'false'})">${anyOpen?'Collapse all':'Expand all'}</button>
       <button class="cal-nb" onclick="mapZoomBy(-.12)">−</button>
       <span class="map-zoom">${Math.round((mapZoom||1)*100)}%</span>
       <button class="cal-nb" onclick="mapZoomBy(.12)">+</button>
@@ -3658,6 +3740,9 @@ function compassMap(){
 }
 function mapFoldAll(fold){
   S.goals.filter(g=>!g.parentId).forEach(g=>{fold?goalOpen.delete(g.id):goalOpen.add(g.id);});
+  S.plan.forEach(e=>{fold?chapOpen.delete(e.id):chapOpen.add(e.id);});
+  fold?chapOpen.delete('none'):chapOpen.add('none');
+  mapZoom=null;mapPan=null;mapNat=null;      // refit, since the shape just changed a lot
   render();
 }
 /* edges are measured from the painted cards, so a long title never breaks the drawing */
@@ -3855,16 +3940,16 @@ async function hardRefresh(){
   try{
     if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}  // push edits out before reloading
   }catch(e){}
-  location.href=location.pathname+'?r='+Date.now();   // cache-busting reload — works in home-screen apps
+  const h=route.view==='board'&&route.boardId?'board:'+route.boardId:route.view;
+  location.href=location.pathname+'?r='+Date.now()+'#'+h;   // cache-busting reload, same page
 }
 async function manualSave(){
   const a=document.activeElement; if(a&&a.blur)a.blur();  // commit any field mid-edit
   save();
   clearTimeout(wTimer); await writeToFile();              // push to the shared file right now
-  const n=syncQueue().length;                             // every calendar change made this session, in one file
-  if(n)calSync();
+  const n=syncQueue().length;                             // queued, never downloaded unbidden
   const btn=$('saveBtn');
-  if(btn){btn.textContent=n?`Saved ✓ · ${n} to calendar`:'Saved ✓';
+  if(btn){btn.textContent=n?`Saved ✓ · ${n} for calendar`:'Saved ✓';
     setTimeout(()=>{if($('saveBtn'))$('saveBtn').textContent='Save';},2400);}
 }
 function flushEdits(){
@@ -4198,6 +4283,7 @@ function updateGhLink(){
 /* ============ init ============ */
 absorbEmbedded();
 dedupeState();
+restoreRoute();
 render();
 updateGhLink();
 if(GH.cfg){ghPull();ghStartPolling();}
