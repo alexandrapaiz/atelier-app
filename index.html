@@ -1272,6 +1272,31 @@ textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; colo
 .counsel-head:hover .counsel-caret{color:var(--ink)}
 @media (max-width:700px){ .anchor{max-width:none} }
 
+
+/* the timeline's right-hand column, so every row lines up */
+.gcol{flex-shrink:0; display:inline-flex; align-items:center}
+.gcol.bar{width:74px; justify-content:flex-start}
+.gcol.pct{width:38px; justify-content:flex-end; font-size:11.5px; color:var(--ink-faint);
+  font-variant-numeric:tabular-nums}
+.gcol.pct.won{color:var(--sage)}
+.gcol.anch{width:172px; justify-content:flex-start; padding-left:14px; overflow:hidden}
+.gnode>.tr-node.goal{gap:6px}
+.gmini{margin-top:0}
+/* map: the fold control */
+button.mn-sub{
+  background:none; border:none; padding:0; cursor:pointer; font-family:var(--sans);
+  font-size:11px; color:var(--ink-faint); display:inline-flex; align-items:center; gap:4px;
+}
+button.mn-sub:hover{color:var(--ink)}
+.mn-fold{font-size:9px}
+@media (max-width:700px){
+  .gcol.anch{width:auto; padding-left:0}
+  .gcol.bar{width:56px}
+}
+
+
+.star-horizon{margin:6px 0 0 27px; font-size:11.5px; color:var(--ink-faint); letter-spacing:.2px}
+
 </style>
 </head>
 <body>
@@ -1292,7 +1317,7 @@ textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; colo
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·8</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·10</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3013,10 +3038,9 @@ function renderClaude(){
   const starRows=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
     let verdict,cls;
-    if(!st.goals.length){verdict='no route plotted — you can’t steer by scenery';cls='drift';}
-    else if(!st.tasks.length){verdict='a route with no steps on it yet';cls='drift';}
-    else if(!st.recent){verdict='nothing moved toward it in two weeks';cls='drift';}
-    else verdict='under way — '+st.recent+' finished these two weeks';
+    if(!st.goals.length){verdict='nothing points here yet — a star you never steer by is only scenery';cls='drift';}
+    else verdict=st.goals.length+(st.goals.length>1?' goals point here':' goal points here')
+      +(st.eras.length?' · '+st.eras.join(' · '):'');
     return `<div class="cl-row">
       <span class="star-mark">✶</span>
       <span class="cl-row-t" onclick="go('compass')">${esc(s.title)}</span>
@@ -3026,11 +3050,12 @@ function renderClaude(){
   const wandering=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!t.goalId).length;
   const northHtml=(S.stars||[]).length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">True north</div>
-    <div class="cl-sub">the honest question — is this week’s work carrying you toward them?</div>
+    <div class="cl-sub">a bearing for the next thirty years — nothing here is measured in weeks.
+      The only question worth asking is whether anything at all is pointed at it.</div>
     ${starRows}
     ${wandering?`<div class="cl-foot" style="margin-top:14px;padding-top:12px">
       ${wandering} open task${wandering>1?'s aren’t':' isn’t'} linked to any goal. Not everything must serve a star —
-      dentists and groceries are their own reward — but if the number keeps climbing, the days are being spent somewhere you didn’t choose.
+      dentists and groceries are their own reward — but if the number keeps climbing, the years are being spent somewhere you didn’t choose.
       <button class="cl-btn" style="margin-left:10px" onclick="go('compass')">Open the Compass</button></div>`:''}`:'';
   const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
     overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
@@ -3131,16 +3156,15 @@ function starStats(sid){
   const gs=S.goals.filter(g=>!g.parentId&&g.starId===sid);
   const krs=gs.flatMap(g=>goalKrs(g.id));
   const items=S.plan.flatMap(e=>e.items.filter(i=>i.starId===sid).map(i=>({...i,era:e.era})));
-  const recent=krs.filter(k=>(k.krTouched||0)>Date.now()-14*864e5).length;
-  const older=krs.filter(k=>(k.krTouched||0)>Date.now()-45*864e5).length;
+  /* No clocks here. A bearing is not late — it is either steered toward or ignored. */
+  const eras=[...new Set(gs.map(g=>g.era).filter(Boolean))]
+    .map(id=>{const e=S.plan.find(x=>x.id===id);return e?e.era:null;}).filter(Boolean);
   const atTarget=gs.filter(g=>(goalPct(g.id)??0)>=TARGET_PCT).length;
-  let heading,drift=false;
-  if(!gs.length){heading='no route plotted';drift=true;}
-  else if(!krs.length){heading='goals without measures';drift=true;}
-  else if(recent){heading='under way';}
-  else if(older){heading='becalmed';drift=true;}
-  else{heading='drifting';drift=true;}
-  return {goals:gs,krs,tasks:[],live:krs.length,items,recent,atTarget,heading,drift};
+  const drift=!gs.length;
+  const heading=gs.length
+    ? gs.length+(gs.length>1?' goals point here':' goal points here')
+    : 'nothing points here yet';
+  return {goals:gs,krs,tasks:[],live:krs.length,items,eras,atTarget,heading,drift};
 }
 function starPicker(cur,fn){
   return `<select class="star-pick" onchange="${fn}">
@@ -3234,13 +3258,12 @@ function goalBlock(g,opts){
       <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
         onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
       <span class="gspacer"></span>
-      ${krs.length?`<span class="gkr-n">${krs.length} KR${krs.length>1?'s':''}</span>`:''}
-      ${p===null?'':`<span class="gmini"><span class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></span>
-        <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>
-        <span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
-      ${opts.showEra&&era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-      ${s?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
-         :'<span class="anchor none">unanchored</span>'}
+      <span class="gcol bar">${p===null?'':`<span class="gmini"><span class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></span>
+        <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>`}</span>
+      <span class="gcol pct ${p!==null&&p>=TARGET_PCT?'won':''}">${p===null?'':p+'%'}</span>
+      <span class="gcol anch">${s
+        ?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
+        :'<span class="anchor none">unanchored</span>'}</span>
       <button class="more" onclick="g_tools('${g.id}')" title="Anchor, schedule, ask Claude, delete">⋯</button>
     </div>
     ${toolsOpen.has(g.id)?`<div class="gcard-tools">
@@ -3364,11 +3387,12 @@ function starsFooter(){
       <div class="star-serving">${gs.length
         ?gs.map(g=>`<span class="star-chip" onclick="compassMode='tree';render()">${esc(g.title)}</span>`).join('')
         :'<span class="small muted" style="font-style:italic">nothing steers by this yet</span>'}</div>
+      ${st.eras.length?`<div class="star-horizon">reaches into ${st.eras.map(esc).join(' · ')}</div>`:''}
     </div>`;
   }).join('');
   const loose=S.goals.filter(g=>!g.parentId&&!g.starId).length;
   return `<div class="stars-footer">
-    <div class="stars-label">✶ North Stars — the bearings everything above is trying to reach</div>
+    <div class="stars-label">✶ North Stars — where the next thirty years are pointed</div>
     ${loose?`<div class="anchor-ask">
       <span>${loose} goal${loose>1?'s aren’t':' isn’t'} anchored to a bearing.</span>
       <button class="cl-btn" onclick="askAnchor()">✶ Ask Claude to anchor them</button>
@@ -3413,6 +3437,10 @@ let mapZoom=.72, mapPan=null, mapDrag=null;
 const MAP_W=248, MAP_HGAP=26, MAP_VGAP=78, MAP_MISS_Y=0, MAP_GOAL_Y=210, MAP_KR_Y=430;
 function mapZoomBy(d){mapZoom=Math.max(.45,Math.min(1.6,+(mapZoom+d).toFixed(2)));applyMap();}
 function mapFit(){mapZoom=.72;mapPan=null;render();}
+function mapFoldAll(fold){
+  S.goals.filter(g=>!g.parentId).forEach(g=>{fold?goalOpen.delete(g.id):goalOpen.add(g.id);});
+  render();
+}
 function applyMap(){
   const inner=document.querySelector('.map-inner');
   if(!inner)return;
@@ -3453,10 +3481,11 @@ function compassMap(){
   const cols=[]; let cursor=0;
   objs.forEach(o=>{
     const krs=goalKrs(o.id);
-    const kids=krs.length+1;                                   // +1 for the "add" card
-    const childW=kids*MAP_W+(kids-1)*MAP_HGAP;
+    const open=goalOpen.has(o.id);
+    const kids=open?krs.length+1:0;                             // folded objectives take one column
+    const childW=kids?kids*MAP_W+(kids-1)*MAP_HGAP:0;
     const w=Math.max(MAP_W,childW);
-    cols.push({o,krs,x:cursor,w});
+    cols.push({o,krs,open,x:cursor,w});
     cursor+=w+MAP_HGAP*2;
   });
   const addX=cursor;
@@ -3491,13 +3520,16 @@ function compassMap(){
         <span class="mn-mark" style="left:${TARGET_PCT}%"></span></div>
       <div class="mn-foot">
         <span class="mn-pct ${(p??0)>=TARGET_PCT?'won':''}">${p===null?'—':p+'%'}</span>
-        <span class="mn-sub">${c.krs.length?c.krs.length+' key result'+(c.krs.length>1?'s':''):'no key results'}</span>
+        <button class="mn-sub" onclick="g_expand('${g.id}')" title="${c.open?'Fold':'Unfold'} its key results">
+          ${c.krs.length?`<span class="mn-fold">${c.open?'▾':'▸'}</span> ${c.krs.length} key result${c.krs.length>1?'s':''}`
+                        :`<span class="mn-fold">${c.open?'▾':'▸'}</span> no key results`}</button>
         ${s?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
           :'<span class="anchor none">unanchored</span>'}
       </div>
     </div>`);
     edges.push(['mission',g.id]);
 
+    if(!c.open)return;
     const kids=c.krs.length+1;
     const rowW=kids*MAP_W+(kids-1)*MAP_HGAP;
     let kx=c.x+(c.w-rowW)/2;
@@ -3539,6 +3571,7 @@ function compassMap(){
   edges.push(['mission','add-goal']);
 
   if(!mapPan)mapPan={x:20,y:16,set:false};
+  const anyOpen=objs.some(o=>goalOpen.has(o.id));
   const stars=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
     return `<span class="map-star"><span class="star-mark">✶</span> ${esc(s.title)}
@@ -3546,8 +3579,9 @@ function compassMap(){
   }).join('');
   return `<div class="map-wrap">
     <div class="map-bar">
-      <span class="map-hint">drag to pan · the bearings sit below</span>
+      <span class="map-hint">drag to pan · tap a card’s key-result count to unfold it</span>
       <span class="spacer"></span>
+      <button class="cal-nb" onclick="mapFoldAll(${anyOpen?'true':'false'})">${anyOpen?'Fold all':'Unfold all'}</button>
       <button class="cal-nb" onclick="mapZoomBy(-.15)">−</button>
       <span class="map-zoom">${Math.round(mapZoom*100)}%</span>
       <button class="cal-nb" onclick="mapZoomBy(.15)">+</button>
