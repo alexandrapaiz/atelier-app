@@ -1567,7 +1567,7 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·24</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·25</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3881,7 +3881,7 @@ function goalBlock(g,opts){
   opts=opts||{};
   const krs=goalKrs(g.id);
   const p=goalPct(g.id);
-  const open=goalOpen.has(g.id);
+  const open=timeOpen(g.id);          // open until you fold it
   return `<div class="tr-branch gnode" data-gid="${g.id}"
       ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
     <div class="tr-node goal${g.achieved?' achieved':''}${open?' open':''}" onclick="rowToggle(event,'${g.id}')">
@@ -3972,17 +3972,19 @@ function resetCompass(){
   applyReset(); save(); render();
   try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
+const timeShut=new Set();
+const timeOpen=id=>!timeShut.has(id);
 /* click the row itself — no caret, no chrome. Controls and text fields are left alone. */
 function rowToggle(ev,id){
   if(ev.target.closest('input,textarea,button,select,a,.anchor-pick'))return;
-  g_expand(id);
+  timeShut.has(id)?timeShut.delete(id):timeShut.add(id);
+  render();
 }
 function krToggle(ev,id){
   if(ev.target.closest('input,textarea,button,select,a,.kr-picker'))return;
   kr_picker(id);
 }
 function compassTime(){
-  if(!window.timeInit){window.timeInit=true;S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});}
   const eras=S.plan.map(e=>{
     const gs=S.goals.filter(g=>!g.parentId&&g.era===e.id);
     const got=gs.filter(g=>g.achieved).length;
