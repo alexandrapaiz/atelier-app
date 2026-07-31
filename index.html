@@ -1425,7 +1425,7 @@ textarea.chap-t{
   <div class="wordmark m-only" onclick="go('master')">A<em>telier</em></div>
   <div class="top-date" id="topDate"></div>
   <button class="btn-ghost" id="saveBtn" style="margin-left:auto" onclick="manualSave()">Save</button>
-  <button class="btn-ghost" onclick="hardRefresh()" title="Save, sync, and reload the freshest version">↻</button>
+  <button class="btn-ghost refresh-btn" onclick="hardRefresh()" title="Save, sync, and reload the freshest version">↻</button>
   <button class="btn-ghost" onclick="themeToggle()" id="themeBtn" title="Day / night">☾</button>
   <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
@@ -1434,7 +1434,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·15</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·16</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3977,12 +3977,20 @@ function themeToggle(){
 }
 async function hardRefresh(){
   const a=document.activeElement; if(a&&a.blur)a.blur();
+  const btn=document.querySelector('.refresh-btn'); if(btn)btn.textContent='…';
   save();
-  try{
-    if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}  // push edits out before reloading
-  }catch(e){}
   const h=route.view==='board'&&route.boardId?'board:'+route.boardId:route.view;
-  location.href=location.pathname+'?r='+Date.now()+'#'+h;   // cache-busting reload, same page
+  const target=location.pathname+'?r='+Date.now()+'#'+h;
+  /* Reload no matter what. A hanging push on a bad connection used to swallow the whole thing. */
+  const jump=()=>{try{location.replace(target);}catch(e){}
+    setTimeout(()=>{try{location.href=target;}catch(e){} setTimeout(()=>location.reload(),700);},900);};
+  try{
+    if(typeof GH!=='undefined'&&GH.cfg){
+      clearTimeout(GH.timer);
+      await Promise.race([ghPush(),new Promise(r=>setTimeout(r,2000))]);   // 2s, then go anyway
+    }
+  }catch(e){}
+  jump();
 }
 async function manualSave(){
   const a=document.activeElement; if(a&&a.blur)a.blur();  // commit any field mid-edit
@@ -4275,7 +4283,7 @@ function ghStatus(s){
 async function ghPull(quiet){
   if(!GH.cfg)return;
   try{
-    const r=await fetch(ghUrl()+'?ref=main&_='+Date.now(),{headers:ghHeaders(),cache:'no-store'});
+    const r=await ghFetch(ghUrl()+'?ref=main&_='+Date.now(),{headers:ghHeaders(),cache:'no-store'});
     if(r.status===404){GH.sha=null;await ghPush();return;}   // empty repo: seed it with current state
     if(!r.ok)throw 0;
     const j=await r.json();
@@ -4291,12 +4299,17 @@ async function ghPull(quiet){
   }catch(e){if(!quiet)ghStatus('offline');}
 }
 function ghSchedulePush(){if(!GH.cfg)return;clearTimeout(GH.timer);GH.timer=setTimeout(ghPush,1500);}
+function ghFetch(url,opts){
+  const ctl=typeof AbortController!=='undefined'?new AbortController():null;
+  const t=setTimeout(()=>{try{ctl&&ctl.abort();}catch(e){}},12000);
+  return fetch(url,Object.assign({},opts,ctl?{signal:ctl.signal}:{})).finally(()=>clearTimeout(t));
+}
 async function ghPush(){
   if(!GH.cfg||GH.busy)return;GH.busy=true;
   try{
     const body={message:'atelier sync',content:b64e(JSON.stringify(S,null,1)),branch:'main'};
     if(GH.sha)body.sha=GH.sha;
-    const r=await fetch(ghUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
+    const r=await ghFetch(ghUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
     if(r.ok){const j=await r.json();GH.sha=j.content.sha;ghStatus('✓');}
     else if(r.status===409||r.status===422){   // someone else pushed first: take theirs, merge, retry
       GH.busy=false;GH.sha=null;await ghPull(true);ghSchedulePush();return;
