@@ -1279,7 +1279,7 @@ textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; colo
 .gcol.pct{width:38px; justify-content:flex-end; font-size:11.5px; color:var(--ink-faint);
   font-variant-numeric:tabular-nums}
 .gcol.pct.won{color:var(--sage)}
-.gcol.anch{width:172px; justify-content:flex-start; padding-left:14px; overflow:hidden}
+.gcol.anch{width:186px; justify-content:flex-start; padding-left:14px; overflow:visible}
 .gnode>.tr-node.goal{gap:6px}
 .gmini{margin-top:0}
 /* map: the fold control */
@@ -1458,13 +1458,19 @@ textarea.chap-t{
 /* the bearing, chosen by clicking it */
 .anchor-wrap{position:relative; display:inline-flex}
 button.anchor{
-  display:inline-flex; align-items:baseline; gap:5px; background:transparent; border:none;
-  padding:2px 4px; margin-left:-4px; border-radius:7px; cursor:pointer; max-width:190px;
+  display:inline-flex; align-items:center; gap:6px; background:transparent;
+  border:1px solid transparent; padding:5px 11px; margin-left:-8px; border-radius:999px;
+  cursor:pointer; max-width:186px; min-height:28px;
 }
-button.anchor:hover{background:var(--paper-2)}
-button.anchor.none{font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--ink-faint)}
+button.anchor:hover{background:var(--paper-2); border-color:var(--line)}
+button.anchor.none{
+  font-family:var(--sans); font-style:normal; font-size:11.5px; color:var(--ink-faint);
+  border:1px dashed var(--line);
+}
+button.anchor.none:hover{border-color:var(--ochre); color:var(--ink); border-style:dashed}
+.anchor-t{max-width:150px}
 .anchor-pick{
-  position:absolute; top:calc(100% + 6px); left:-6px; z-index:40; min-width:190px;
+  position:absolute; top:calc(100% + 6px); left:-8px; z-index:120; min-width:210px;
   background:var(--card); border:1px solid var(--line); border-radius:11px;
   box-shadow:var(--shadow-lift); padding:6px; display:flex; flex-direction:column; gap:1px;
 }
@@ -1532,10 +1538,12 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .kp-chips .ch.bundle .kp-n{border-left:1px solid var(--line); padding-left:7px}
 
 
-.cl-you{position:relative}
-.cl-you-x{position:absolute; top:8px; right:8px; opacity:0; transition:opacity .15s}
-.cl-you:hover .cl-you-x{opacity:1}
-@media (max-width:700px){ .cl-you-x{opacity:1} }
+.cl-you{position:relative; padding-right:38px}
+.cl-you-x{
+  position:absolute; top:9px; right:10px; opacity:1;
+  color:var(--ink-faint) !important; font-size:17px; line-height:1; padding:3px 7px;
+}
+.cl-you-x:hover{color:var(--danger) !important; background:var(--card)}
 
 
 .done-toggle{
@@ -1583,6 +1591,57 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .chapspacer{flex:1 1 40px; min-width:24px; align-self:stretch; cursor:pointer}
 
+
+.gnode>.tr-node.goal,.tr-branch,.chap,.chap-goals,.chapters{overflow:visible}
+.mnode,.map-col{overflow:visible}
+
+
+/* ============ the Claude page, on the Laurels' grid ============ */
+.cl-wrap{max-width:820px}
+.cl-wrap .list-group-name{
+  font-family:var(--sans) !important; font-size:10.5px !important; font-weight:500 !important;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
+  margin:36px 0 4px !important;
+}
+.cl-sub{font-size:13.5px !important; color:var(--ink-faint); margin:0 0 12px; line-height:1.5; max-width:640px}
+/* rows: quiet until you want them */
+.cl-row{padding:8px 6px; border-radius:9px; border-bottom:1px solid var(--line-soft)}
+.cl-row:hover{background:var(--paper-2)}
+.cl-row-btns{gap:2px; opacity:.35; transition:opacity .15s}
+.cl-row:hover .cl-row-btns,.cl-row:focus-within .cl-row-btns{opacity:1}
+.cl-row .cl-btn{
+  border:none; background:transparent; color:var(--ink-faint);
+  padding:4px 9px; font-size:11.5px; border-radius:7px;
+}
+.cl-row .cl-btn:hover{background:var(--ink); color:var(--paper)}
+.cl-row .cl-btn.danger:hover{background:var(--danger)}
+/* a note from me, lighter on the page */
+.cl-note{padding:16px 18px 13px; border-radius:13px; border-left-width:2px; margin-bottom:12px}
+.cl-text{font-size:15.5px; line-height:1.6}
+.cl-actions{margin-top:11px; gap:6px}
+.cl-note .cl-btn{padding:5px 12px; font-size:12px}
+.cl-sig{margin-top:10px; font-size:9.5px; letter-spacing:2px}
+.cl-compose{border-radius:13px; margin-bottom:14px}
+.cl-you{margin-left:0; border-radius:12px; padding:12px 38px 12px 15px}
+/* true north, and the gaps beneath it */
+.cl-verdict{font-size:12.5px !important; font-style:normal; font-family:var(--sans); color:var(--ink-faint)}
+.cl-gaps{
+  margin-top:16px; padding:16px 18px; background:var(--paper-2); border-radius:12px;
+  display:flex; flex-direction:column; gap:14px; align-items:flex-start;
+}
+.cl-gapline{width:100%}
+.cl-gaph{font-size:13px; color:var(--ink-soft); line-height:1.5}
+.cl-gaph b{color:var(--ink); font-weight:500}
+.cl-gap{margin-top:7px}
+.cl-gap .b-tag{cursor:pointer; background:var(--card)}
+.cl-gap .b-tag:hover{border-color:var(--ochre); color:var(--ink)}
+.cl-gaps .cl-btn{background:var(--card)}
+.cl-foot{font-size:13px; line-height:1.6; color:var(--ink-faint); max-width:640px}
+@media (max-width:700px){
+  .cl-row-btns{opacity:1}
+  .cl-you{padding-right:34px}
+}
+
 </style>
 </head>
 <body>
@@ -1603,7 +1662,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·27</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·29</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3602,22 +3661,22 @@ function renderClaude(){
   const loose=objectives.filter(g=>!g.starId);
   const unmeasured=objectives.filter(g=>!goalKrs(g.id).length);
   const unlinked=S.goals.filter(g=>g.parentId&&!g.link&&!isMetric(g));
-  const gap=(label,list,line)=>list.length?`<div class="cl-foot" style="margin-top:14px;padding-top:12px">
-      <b>${list.length} ${label}${list.length>1?'s':''}</b> — ${line}
-      <div class="cl-gap">${list.slice(0,6).map(g=>`<span class="b-tag">${esc(g.title)}</span>`).join('')}
+  const gap=(label,list,line)=>list.length?`<div class="cl-gapline">
+      <div class="cl-gaph"><b>${list.length} ${label}${list.length>1?'s':''}</b> — ${line}</div>
+      <div class="cl-gap">${list.slice(0,6).map(g=>`<span class="b-tag" onclick="go('compass')">${esc(g.title)}</span>`).join('')}
         ${list.length>6?`<span class="small muted">+${list.length-6} more</span>`:''}</div>
-      <button class="cl-btn" style="margin-top:9px" onclick="go('compass')">Open the Compass</button></div>`:'';
+    </div>`:'';
   const northHtml=(S.stars||[]).length||objectives.length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">True north</div>
     <div class="cl-sub">a bearing for the next thirty years — nothing here is measured in weeks.
       The only questions worth asking are whether anything is pointed at it, and whether that thing is being measured at all.</div>
     ${starRows||'<div class="empty-note">No bearings set yet — name the two or three things that would make a decade worth it.</div>'}
-    ${gap('objective without a bearing',loose,
-      'not everything must serve a star, but a goal that serves none is worth saying out loud.')}
-    ${gap('objective with nothing measuring it',unmeasured,
-      'an objective with no key results can’t move — give each one two or three numbers, or a column of work to point at.')}
-    ${gap('key result measuring nothing',unlinked,
-      'link each one to the board, column or handful of tasks that would prove it happened.')}`:'';
+    ${(loose.length||unmeasured.length||unlinked.length)?`<div class="cl-gaps">
+      ${gap('objective without a bearing',loose,'a goal that serves no star is worth saying out loud.')}
+      ${gap('objective with nothing measuring it',unmeasured,'an objective with no key results can’t move.')}
+      ${gap('key result measuring nothing',unlinked,'link each to the work that would prove it happened.')}
+      <button class="cl-btn" onclick="go('compass')">Open the Compass</button>
+    </div>`:''}`:'';
   const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
     overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
     'nothing overdue — a clean conscience');
@@ -3817,7 +3876,7 @@ function anchorChip(g){
   return `<span class="anchor-wrap">
     <button class="anchor ${s?'':'none'}" onclick="event.stopPropagation();anchorPick('${g.id}')"
       title="${s?'Change the bearing':'Choose a bearing'}">
-      ${s?`<span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span>`:'unanchored'}
+      ${s?`<span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span>`:'✶ anchor'}
     </button>
     ${starPickFor===g.id?anchorMenu(g):''}
   </span>`;
