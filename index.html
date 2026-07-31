@@ -404,7 +404,21 @@ main{padding:26px 40px 60px}
 .era-goals{margin-top:6px}
 .era-goals .goal-block{border-top:1px dashed var(--line-soft); padding:14px 0 10px; cursor:grab}
 .era-goals .goal-block:first-child{border-top:none; padding-top:4px}
-.era-goals .goal-title-in{font-size:20px}
+.era-goals .goal-title-in{font-size:21px; line-height:1.3}
+/* the title gets its own line; the controls step below and stay quiet until hovered */
+.goal-row{gap:9px}
+.goal-row .goal-pct{width:auto; margin-left:auto; flex-shrink:0}
+.goal-sub-row{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:5px 0 0 30px; min-height:22px;
+}
+.goal-sub-row .goal-tools{margin-left:auto; opacity:0; transition:opacity .15s}
+.goal-block:hover .goal-sub-row .goal-tools,
+.goal-sub-row:focus-within .goal-tools{opacity:1}
+.goal-block{padding-bottom:8px}
+.era-goals .goal-block{border-top:1px solid var(--line-soft); padding:16px 0 12px}
+.era{padding-left:26px}
+.era-goals{margin-top:2px}
 .goal-row .steer{flex-shrink:0; color:var(--ink-faint); font-size:12px}
 .goal-caret{flex-shrink:0; color:var(--ink-faint); font-size:11px; width:14px; padding:0}
 .goal-caret:hover{color:var(--ink)}
@@ -451,6 +465,40 @@ main{padding:26px 40px 60px}
   display:flex; align-items:center; gap:14px; flex-wrap:wrap;
   background:var(--paper-2); border-radius:12px; padding:11px 16px; margin-bottom:16px;
   font-size:12.5px; color:var(--ink-soft);
+}
+
+/* ---------- laurels statistics ---------- */
+.stats-grid{display:flex; gap:38px; flex-wrap:wrap; align-items:flex-start; margin:16px 0 6px}
+.donut-wrap{display:flex; align-items:center; gap:22px; flex-wrap:wrap}
+.donut{width:140px; height:140px; transform:rotate(-90deg); flex-shrink:0}
+.donut-arc{transition:opacity .15s}
+.donut-arc:hover{opacity:.75}
+.donut-n{font-family:var(--serif); font-size:30px; font-weight:600; fill:var(--ink); transform:rotate(90deg); transform-origin:70px 70px}
+.donut-l{font-size:9px; letter-spacing:2px; fill:var(--ink-faint); text-transform:uppercase; transform:rotate(90deg); transform-origin:70px 70px}
+.legend{display:flex; flex-direction:column; gap:6px; min-width:190px}
+.lg-row{display:flex; align-items:center; gap:9px; font-size:12.5px}
+.lg-dot{width:9px; height:9px; border-radius:3px; flex-shrink:0}
+.lg-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-soft)}
+.lg-n{font-variant-numeric:tabular-nums; font-weight:500}
+.lg-pct{font-variant-numeric:tabular-nums; color:var(--ink-faint); width:34px; text-align:right; font-size:11.5px}
+.mini-stats{display:flex; flex-wrap:wrap; gap:10px 26px; align-content:flex-start}
+.ms{display:flex; flex-direction:column; min-width:78px}
+.ms-n{font-family:var(--serif); font-size:26px; font-weight:600; line-height:1.1}
+.ms-l{font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-faint)}
+.spark-wrap{margin:26px 0 6px; max-width:620px}
+.spark{display:flex; align-items:flex-end; gap:5px; height:56px; margin-top:6px}
+.wk-bar{flex:1; background:var(--sage); border-radius:3px 3px 0 0; min-height:3px}
+.spark-foot{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-faint); margin-top:6px}
+.spark-foot b{color:var(--ink-soft); font-weight:500}
+.bars-wrap{margin:26px 0 6px; max-width:620px}
+.bar-row{display:flex; align-items:center; gap:12px; padding:4px 0}
+.bar-name{width:130px; flex-shrink:0; font-size:12.5px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar-track{flex:1; height:8px; background:var(--line-soft); border-radius:4px; overflow:hidden}
+.bar-fill{display:block; height:100%; border-radius:4px}
+.bar-n{width:26px; text-align:right; font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink-faint)}
+@media (max-width:700px){
+  .stats-grid{gap:22px}
+  .bar-name{width:96px}
 }
 
 /* ---------- rewards ---------- */
@@ -886,6 +934,152 @@ footer button:hover, footer label:hover{color:var(--ink)}
   .practices{gap:6px 8px}
   .practice{font-size:13px; padding:4px 11px}
 }
+
+/* ============ compass, rebuilt: chapters, a real tree, counsel ============ */
+.gcard{border-top:1px solid var(--line-soft); padding:12px 0 11px}
+.gcard:first-child{border-top:none}
+.gcard.achieved{opacity:.5}
+.gcard.achieved .gcard-t{text-decoration:line-through; text-decoration-thickness:1px}
+.gcard.achieved .steer{color:var(--ochre)}
+.gcard-head{display:flex; align-items:center; gap:9px}
+textarea.gcard-t{
+  flex:1; min-width:0; background:transparent; border:none; outline:none; resize:none;
+  font-family:var(--serif); font-size:19px; font-weight:600; color:var(--ink);
+  line-height:1.35; padding:1px 0; overflow:hidden;
+}
+.gcard-head{align-items:flex-start}
+.gcard-head .steer,.gcard-head .goal-caret,.gcard-head .grip,.gcard-head .gcard-pct,.gcard-head .more{margin-top:3px}
+.gcard-pct{font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; flex-shrink:0}
+.gcard-meta{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:5px 0 0 24px; min-height:28px}
+.gcard-count{font-size:11.5px; color:var(--ink-faint)}
+.gcard-tools{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin:9px 0 4px 24px; padding:9px 12px;
+  background:var(--paper-2); border-radius:9px;
+}
+.tree-tools{margin-left:0}
+.more{
+  background:none; border:none; cursor:pointer; color:var(--line);
+  font-size:15px; line-height:1; padding:3px 6px; border-radius:6px; flex-shrink:0;
+}
+.more:hover{color:var(--ink); background:var(--paper-2)}
+.gcard:hover .more,.tr-node:hover .more,.chap-head:hover .more{color:var(--ink-faint)}
+.gcard .track{margin:8px 0 0 24px}
+.gcard-body{margin:10px 0 2px 24px}
+.grip{color:var(--line); cursor:grab; font-size:13px; letter-spacing:-2px; flex-shrink:0; user-select:none}
+.gcard:hover .grip{color:var(--ink-faint)}
+.btn-ghost.ask{color:var(--ochre)}
+.gc-add{padding:4px 0}
+/* chapters — the timeline */
+.chapters{max-width:940px; padding-bottom:10px}
+.chap{border-left:2px solid var(--line); padding:4px 0 14px 20px; margin-bottom:10px; border-radius:0 6px 6px 0}
+.chap.loose{border-left-style:dashed}
+.chap.drag-over-col{background:var(--paper-2)}
+.chap-head{display:flex; align-items:center; gap:10px; padding:6px 0 2px}
+.chap-mark{color:var(--ochre); font-size:11px}
+.chap-title{
+  background:transparent; border:none; outline:none; color:var(--ink);
+  font-family:var(--sans); font-size:11px; font-weight:500;
+  letter-spacing:.16em; text-transform:uppercase; flex:1; min-width:0; padding:2px 0;
+}
+.chap-note{font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--ink-faint); margin:0 0 4px}
+.chap-goals{margin-top:2px}
+.chap-new{padding-left:22px}
+/* the tree proper */
+.tree{max-width:860px; padding:6px 0 10px}
+.tr-node.thin .add-inline{opacity:.55}
+.tr-node.thin:hover .add-inline{opacity:1}
+.tr-branch{position:relative; padding-left:26px}
+.tr-branch::before{content:''; position:absolute; left:0; top:0; bottom:0; width:1px; background:var(--line)}
+.tr-branch:last-child::before{bottom:auto; height:20px}
+.tr-branch::after{content:''; position:absolute; left:0; top:20px; width:17px; height:1px; background:var(--line)}
+.tr-branch.root{padding-left:0}
+.tr-branch.root::before,.tr-branch.root::after{display:none}
+.tr-kids{margin-left:2px}
+.tr-node{display:flex; align-items:center; gap:10px; min-height:40px; padding:6px 0}
+.tr-node.thin{min-height:30px; padding:2px 0}
+.tr-node.dept{font-family:var(--sans); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft)}
+.tr-dept-t{font-weight:500}
+.tr-node.goal.achieved{opacity:.5}
+.tr-node.goal.achieved .tr-t{text-decoration:line-through; text-decoration-thickness:1px}
+textarea.tr-t{
+  flex:1; min-width:0; background:transparent; border:none; outline:none; resize:none;
+  color:var(--ink); font-family:var(--sans); font-size:13.5px; line-height:1.45;
+  padding:2px 0; overflow:hidden;
+}
+.tr-node{align-items:flex-start}
+.tr-node.dept,.tr-node.thin,.tr-node.star-term{align-items:center}
+.tr-node>*:not(textarea){margin-top:4px}
+.tr-t:focus{border-bottom:1px solid var(--ink-faint)}
+.gcard-t:focus{border-bottom:1px solid var(--ink-faint)}
+textarea.tr-t.big{font-family:var(--serif); font-size:19px; font-weight:600; line-height:1.35}
+.mission-node{gap:12px; align-items:baseline; flex-wrap:wrap; padding:0 0 14px}
+.tr-mission-l{font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-faint); flex-shrink:0}
+textarea.tr-mission-t{
+  flex:1; min-width:220px; background:transparent; border:none; outline:none; resize:none;
+  font-family:var(--serif); font-style:italic; font-size:20px; color:var(--ink); line-height:1.4;
+  padding:0; overflow:hidden;
+}
+.star-term{color:var(--ochre)}
+.star-term-t{font-family:var(--serif); font-style:italic; font-size:14.5px}
+.tr-node .sub-track{display:inline-block; width:90px; height:2px; background:var(--line-soft);
+  border-radius:2px; overflow:hidden; flex-shrink:0}
+.tr-node .sub-track .fill{display:block; height:100%; background:var(--ink); border-radius:2px}
+/* Claude, in the compass */
+.counsel{border:1px solid var(--line); border-radius:12px; padding:14px 16px 12px;
+  margin:0 0 22px; background:var(--card); max-width:940px}
+.counsel-head{display:flex; align-items:center; gap:9px; cursor:pointer}
+.counsel-t{font-family:var(--serif); font-size:17px; font-weight:600}
+.counsel-n{font-size:10.5px; background:var(--ochre); color:#fff; border-radius:999px; padding:1px 7px}
+.counsel-sub{font-family:var(--serif); font-style:italic; font-size:13px; color:var(--ink-faint); margin:3px 0 0 24px}
+.counsel-chips{display:flex; flex-wrap:wrap; gap:7px; margin:12px 0 10px}
+.counsel-chips .ch{
+  font-size:12px; border:1px solid var(--line); background:transparent; color:var(--ink-soft);
+  border-radius:999px; padding:5px 13px; cursor:pointer; transition:.15s;
+}
+.counsel-chips .ch:hover{border-color:var(--ochre); color:var(--ink)}
+.counsel textarea{
+  width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 12px;
+  font-family:var(--sans); font-size:13.5px; color:var(--ink); background:var(--paper); resize:vertical;
+}
+.counsel textarea:focus{outline:none; border-color:var(--ink-faint)}
+.counsel-row{display:flex; justify-content:flex-end; gap:8px; margin-top:9px}
+/* rewards, in the laurels */
+.rw-lane{margin:6px 0 14px}
+.rw-right{margin-left:auto; flex-shrink:0}
+.reward-row.big{border-left:2px solid var(--ochre); padding-left:11px}
+.reward-row.big .ach-t{font-family:var(--serif); font-size:16px}
+.reward-row.big.earned{border-left-color:var(--ochre)}
+.rw-new{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;
+  border-top:1px dashed var(--line); padding-top:12px}
+.rw-new input{
+  flex:1; min-width:220px; border:1px solid var(--line); border-radius:9px; padding:9px 12px;
+  font-family:var(--sans); font-size:13.5px; background:var(--paper); color:var(--ink);
+}
+.rw-new input:focus{outline:none; border-color:var(--ink-faint)}
+.rw-new select{
+  border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:12.5px;
+  background:var(--paper); color:var(--ink-soft); max-width:230px;
+}
+@media (max-width:700px){
+  .gcard-t{font-size:18px}
+  .gcard-meta{margin-left:0}
+  .gcard .track,.gcard-body{margin-left:0}
+  .gcard-tools{margin-left:0}
+  .more{color:var(--ink-faint)}
+  .chap{padding-left:14px}
+  .tr-branch{padding-left:18px}
+  .tr-branch::after{width:11px}
+  .tr-node{flex-wrap:wrap; gap:7px}
+  .tr-t.big{font-size:17px}
+  .mission-node{gap:6px}
+  textarea.tr-mission-t{flex-basis:100%; font-size:18px}
+  .tr-node .gcard-tools{margin-left:0}
+  .tr-node .sub-track{width:64px}
+  .counsel-chips .ch{font-size:11.5px; padding:5px 11px}
+  .rw-new select{max-width:none; flex:1}
+}
+
 </style>
 </head>
 <body>
@@ -1015,8 +1209,8 @@ try{S=JSON.parse(store.get(KEY));}catch(e){}
 if(!S){S=seed();FRESH=true;}   // FRESH: embedded data (if present) replaces the sample seed outright
 if(FRESH&&HOSTED){S={meta:{mission:'A calm, intentional season — health, faith, and work that matters.'},masterColumns:[{id:uid(),name:'Now'},{id:uid(),name:'This season'},{id:uid(),name:'Work'},{id:uid(),name:'Someday'}],boards:[],goals:[],tasks:[],plan:[],priCols:null};}
 function addHorizonCol(b){
-  if(b.columns.some(c=>/on the horizon/i.test(c.name)))return;
-  const col={id:uid(),name:'On the horizon'};
+  if(b.columns.some(c=>/on the horizon|^shelved$/i.test(c.name)))return;
+  const col={id:uid(),name:'Shelved'};
   const last=b.columns[b.columns.length-1];
   if(last&&/^done$/i.test(last.name))b.columns.splice(b.columns.length-1,0,col);
   else b.columns.push(col);
@@ -1054,6 +1248,9 @@ function ensureDefaults(){
   }
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
+  if(!S.rewards)S.rewards=[];
+  /* the shelf got a shorter name */
+  S.boards.forEach(b=>b.columns.forEach(c=>{if(/^on the horizon$/i.test((c.name||'').trim()))c.name='Shelved';}));
 }
 ensureDefaults();
 /* Claude's updates ride inside this file — merged on every load, no file link needed */
@@ -1093,7 +1290,7 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
    Anything with a start time is one, unless explicitly kept a task. */
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 /* a column named "on the horizon" is a shelf — it asks nothing of you today */
-const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon/i.test(c.name));};
+const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon|^shelved$/i.test(c.name));};
 const plusHour=hm=>{           // an appointment with no stated end runs an hour
   let [h,m]=hm.split(':').map(Number);
   h=(h+1)%24;
@@ -1357,6 +1554,7 @@ function render(){
   else if(route.view==='ach')m.innerHTML=renderAch();
   else if(route.view==='claude')m.innerHTML=renderClaude();
   else m.innerHTML=renderBoard();
+  document.querySelectorAll('textarea.grow').forEach(fitTA);
   save();
 }
 
@@ -1533,7 +1731,7 @@ function newBoard(mcol){
   const name=prompt('Name this board — a domain of your life:');
   if(!name||!name.trim())return;
   S.boards.push({id:uid(),name:name.trim(),accent:ACCENTS[S.boards.length%ACCENTS.length],
-    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'On the horizon'},{id:uid(),name:'Done'}]});
+    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'Shelved'},{id:uid(),name:'Done'}]});
   render();
 }
 
@@ -1977,7 +2175,7 @@ function renderGoals(){
       </div>
       <div class="track"><div class="fill" style="width:${p??0}%"></div></div>
       <div class="subgoals">${subRows}
-        <button class="add-inline" onclick="g_add('${g.id}')">+ Sub-goal</button></div>
+        <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Sub-goal</button></div>
       ${own.length?`<div class="linked-tasks">
         ${subs.length?'<div class="d-label" style="margin:12px 0 2px">Linked directly to the goal</div>':''}
         ${linkedRows}</div>`:''}
@@ -1989,15 +2187,18 @@ function renderGoals(){
     </div>
     <div class="goals-list">${blocks}
       <div class="goal-block" style="border-bottom:1px solid var(--line)">
-        <button class="btn-ghost" onclick="g_add(null)" style="font-size:13.5px">+ New goal</button>
+        <button class="btn-ghost" onclick="g_add(null,this.parentElement)" style="font-size:13.5px">+ New goal</button>
       </div>
     </div>`;
 }
-function g_add(parentId,starId){
-  const title=prompt(parentId?'Name this sub-goal:':'Name this goal:');
-  if(!title||!title.trim())return;
-  S.goals.push({id:uid(),parentId,title:title.trim(),note:'',starId:starId||null});
-  render();
+function g_add(parentId,host,starId){
+  const make=v=>{
+    const g={id:uid(),parentId:parentId||null,title:v,note:'',starId:starId||null};
+    if(parentId){const pg=goal(parentId); if(pg&&pg.era)g.era=null; goalOpen.add(parentId);}
+    S.goals.push(g);
+  };
+  if(host&&host.nodeType===1)textComposer(host,parentId?'Name this sub-goal…':'Name this goal…',make);
+  else{make(parentId?'New sub-goal':'New goal');save();render();}
 }
 function g_rename(id,v){const g=goal(id);if(g&&v.trim())g.title=v.trim();save();}
 function g_delete(id){
@@ -2268,7 +2469,7 @@ function renderPriorities(){
   }).join('');
   return `<div class="view-head">
       <div class="view-title">Priorities</div>
-      <div class="view-sub">every task you can act on — urgent jumps to Do now!, undated or far out drifts to Later; anything shelved on a board’s horizon stays out</div>
+      <div class="view-sub">every task you can act on — urgent jumps to Do now!, undated or far out drifts to Later; anything shelved on a board stays out</div>
       <div class="spacer"></div>
       <button class="btn-ghost" onclick="priAdd()">+ Column</button>
     </div>
@@ -2340,27 +2541,91 @@ function renderAch(){
       `<div class="ach-stat"><div class="ach-n h-serif">${n}</div><div class="d-label" style="margin:0">${l}</div></div>`).join('')}
   </div>`;
   /* intentions realized */
-  /* rewards — promises you've made yourself */
-  const rewarded=S.goals.filter(g=>g.reward);
-  const rEarned=rewarded.filter(g=>!g.rewardClaimed&&progress(goalTaskSet(g.id))===100);
-  const rWaiting=rewarded.filter(g=>!g.rewardClaimed&&progress(goalTaskSet(g.id))!==100);
-  const rClaimed=rewarded.filter(g=>g.rewardClaimed);
-  const rewardHtml=rewarded.length?`
-    <div class="list-group-name" style="cursor:default;margin-top:4px">Rewards</div>
-    <div class="cl-sub">what you promised yourself — collecting is part of the work</div>
-    ${rEarned.map(g=>`<div class="reward-row earned">
-      <span class="reward-mark">🜲</span>
-      <span class="ach-t"><b>${esc(g.reward)}</b> — earned. ${esc(g.title)} is done.</span>
-      <button class="cl-btn" onclick="g_claim('${g.id}')">Claim it</button></div>`).join('')}
-    ${rWaiting.map(g=>{const p=progress(goalTaskSet(g.id));
-      return `<div class="reward-row">
-      <span class="reward-mark" style="opacity:.4">🜲</span>
-      <span class="ach-t">${esc(g.reward)}</span>
-      <span class="muted small" style="margin-left:auto">${esc(g.title)} · ${p===null?'not started':p+'%'}</span></div>`;}).join('')}
-    ${rClaimed.map(g=>`<div class="reward-row claimed">
-      <span class="reward-mark">🜲</span>
-      <span class="ach-t">${esc(g.reward)}</span>
-      <span class="muted small" style="margin-left:auto">claimed ${new Date(g.rewardClaimed).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></div>`).join('')}`:'';
+  /* ── the record, counted ─────────────────────────────── */
+  const wk=Date.now()-7*864e5, mo=Date.now()-30*864e5;
+  const kept=done.filter(x=>isAppt(x.t)), fin=done.filter(x=>!isAppt(x.t));
+  const byBoard={};
+  fin.forEach(x=>{const b=board(x.t.boardId);if(!b)return;
+    (byBoard[b.id]=byBoard[b.id]||{b,n:0,recent:0}).n++;
+    if(x.at>=mo)byBoard[b.id].recent++;});
+  const ranked=Object.values(byBoard).sort((a,b)=>b.n-a.n);
+  const totalFin=fin.length;
+  /* streak of consecutive days with something finished */
+  const dayset=new Set(done.filter(x=>x.at).map(x=>ymd(x.at)));
+  let streak=0; {const d=new Date();
+    if(!dayset.has(ymd(d.getTime())))d.setDate(d.getDate()-1);
+    while(dayset.has(ymd(d.getTime()))){streak++;d.setDate(d.getDate()-1);}}
+  /* busiest weekday */
+  const dow=[0,0,0,0,0,0,0];
+  done.forEach(x=>{if(x.at)dow[new Date(x.at).getDay()]++;});
+  const bestDow=dow.indexOf(Math.max(...dow));
+  const DOWN=['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+  /* donut — top five domains, the rest gathered, so the eye can actually compare */
+  const TOP=5;
+  const slices=ranked.slice(0,TOP).map(r=>({label:r.b.name,n:r.n,color:r.b.accent}));
+  const restN=ranked.slice(TOP).reduce((s,r)=>s+r.n,0);
+  if(restN)slices.push({label:'Everything else',n:restN,color:'#b9b0a0'});
+  const C=2*Math.PI*54;
+  let acc=0;
+  const arcs=slices.map(s=>{
+    const len=totalFin?C*s.n/totalFin:0;
+    const el=`<circle class="donut-arc" cx="70" cy="70" r="54" fill="none" stroke="${s.color}"
+      stroke-width="20" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}"
+      stroke-dashoffset="${(-acc).toFixed(2)}"><title>${esc(s.label)}: ${s.n}</title></circle>`;
+    acc+=len; return el;
+  }).join('');
+  const legend=slices.map(s=>`<div class="lg-row">
+    <span class="lg-dot" style="background:${s.color}"></span>
+    <span class="lg-name">${esc(s.label)}</span>
+    <span class="lg-n">${s.n}</span>
+    <span class="lg-pct">${totalFin?Math.round(100*s.n/totalFin):0}%</span>
+  </div>`).join('');
+  const maxN=ranked.length?ranked[0].n:1;
+  const bars=ranked.map(r=>`<div class="bar-row">
+    <span class="bar-name">${esc(r.b.name)}</span>
+    <span class="bar-track"><span class="bar-fill" style="width:${Math.round(100*r.n/maxN)}%;background:${r.b.accent}"></span></span>
+    <span class="bar-n">${r.n}</span>
+  </div>`).join('');
+  /* last twelve weeks of finishing */
+  const weeks=[...Array(12)].map((_,i)=>{
+    const end=Date.now()-i*7*864e5, start=end-7*864e5;
+    return done.filter(x=>x.at>start&&x.at<=end).length;
+  }).reverse();
+  const wmax=Math.max(1,...weeks);
+  const spark=weeks.map((n,i)=>`<span class="wk-bar" title="${n} finished"
+    style="height:${Math.max(3,Math.round(100*n/wmax))}%;opacity:${0.45+0.55*(i/11)}"></span>`).join('');
+  const headline=ranked.length
+    ? `<b>${esc(ranked[0].b.name)}</b> carried the season — ${ranked[0].n} of your ${totalFin} finished there.`
+    : 'Nothing counted yet — the first checkmark writes this line.';
+  const statsHtml=totalFin+kept.length?`
+    <div class="list-group-name" style="cursor:default;margin-top:6px">By the numbers</div>
+    <div class="cl-sub">${headline}</div>
+    <div class="stats-grid">
+      <div class="donut-wrap">
+        <svg viewBox="0 0 140 140" class="donut">${arcs}
+          <text x="70" y="66" text-anchor="middle" class="donut-n">${totalFin}</text>
+          <text x="70" y="84" text-anchor="middle" class="donut-l">finished</text>
+        </svg>
+        <div class="legend">${legend}</div>
+      </div>
+      <div class="mini-stats">
+        <div class="ms"><span class="ms-n">${streak}</span><span class="ms-l">day streak</span></div>
+        <div class="ms"><span class="ms-n">${done.filter(x=>x.at>=wk).length}</span><span class="ms-l">this week</span></div>
+        <div class="ms"><span class="ms-n">${done.filter(x=>x.at>=mo).length}</span><span class="ms-l">this month</span></div>
+        <div class="ms"><span class="ms-n">${kept.length}</span><span class="ms-l">appointments kept</span></div>
+        <div class="ms"><span class="ms-n">${S.goals.filter(g=>g.achieved).length}</span><span class="ms-l">goals achieved</span></div>
+        <div class="ms"><span class="ms-n">${S.goals.filter(g=>g.rewardClaimed).length+(S.rewards||[]).filter(r=>r.claimed).length}</span><span class="ms-l">rewards claimed</span></div>
+      </div>
+    </div>
+    <div class="spark-wrap">
+      <div class="d-label">The last twelve weeks</div>
+      <div class="spark">${spark}</div>
+      <div class="spark-foot"><span>12 weeks ago</span><span>you finish most things on <b>${DOWN[bestDow]}</b></span><span>this week</span></div>
+    </div>
+    ${ranked.length>1?`<div class="bars-wrap"><div class="d-label">Every domain, ranked</div>${bars}</div>`:''}`:'';
+
+  /* promises — set, tracked and claimed here, where the finishing is counted */
+  const rewardHtml=rewardsBlock({streak,fin:totalFin});
   const intentions=planDone.length?`
     <div class="list-group-name" style="cursor:default">Intentions realized</div>
     ${planDone.map(p=>`<div class="ach-row"><span class="ach-check" style="color:var(--ochre)">◆</span>
@@ -2400,8 +2665,86 @@ function renderAch(){
     <div class="ach-hero">${hero}</div>
     ${stats}
     <div class="badges">${badges}${nextBadge}</div>
-    <div class="ach-wrap">${rewardHtml}${intentions}${timeline||''}</div>`;
+    <div class="ach-wrap">${statsHtml}${rewardHtml}${intentions}${timeline||''}</div>`;
 }
+
+/* ============ rewards — promises, kept where the record is kept ============ */
+const RW_MILES=[[10,'10 things finished'],[25,'25 things finished'],[50,'50 things finished'],
+                [100,'100 things finished'],[250,'250 things finished']];
+const RW_STREAK=[[3,'a 3-day streak'],[7,'a 7-day streak'],[14,'a 14-day streak'],[30,'a 30-day streak']];
+const rwHave=(r,ctx)=>r.kind==='streak'?ctx.streak:ctx.fin;
+const rwEarned=(r,ctx)=>rwHave(r,ctx)>=r.n;
+const rwWhen=r=>r.kind==='streak'
+  ? 'when you string '+r.n+' days together'
+  : 'when '+r.n+' things are finished';
+const dshort=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+function rewardsBlock(ctx){
+  const row=(cls,mark,title,right,btn)=>`<div class="reward-row ${cls}">
+    <span class="reward-mark">${mark}</span>
+    <span class="ach-t">${title}</span>
+    ${right?`<span class="muted small rw-right">${right}</span>`:'<span class="rw-right"></span>'}
+    ${btn||''}</div>`;
+  const promised=S.goals.filter(g=>!g.parentId&&g.reward);
+  const bigRows=promised.map(g=>{
+    const p=progress(goalTaskSet(g.id));
+    const earned=!!(g.achieved||p===100);
+    if(g.rewardClaimed)return row('big claimed','✦✦',esc(g.reward),'claimed '+dshort(g.rewardClaimed),
+      `<button class="btn-ghost" onclick="rw_clearGoal('${g.id}')">×</button>`);
+    if(earned)return row('big earned','✦✦',
+      `<b>${esc(g.reward)}</b> — earned. <i>${esc(g.title)}</i> is done.`,'',
+      `<button class="cl-btn" onclick="g_claim('${g.id}')">Claim it</button>`);
+    return row('big','✦✦',esc(g.reward),
+      esc(g.title)+' · '+(p===null?'not started':p+'%'),
+      `<button class="btn-ghost" onclick="rw_clearGoal('${g.id}')">×</button>`);
+  }).join('');
+  const smallRows=(S.rewards||[]).map(r=>{
+    if(r.claimed)return row('claimed','🜲',esc(r.title),'claimed '+dshort(r.claimed),
+      `<button class="btn-ghost" onclick="rw_del('${r.id}')">×</button>`);
+    if(rwEarned(r,ctx))return row('earned','🜲',
+      `<b>${esc(r.title)}</b> — earned. You said ${rwWhen(r)}, and you did.`,'',
+      `<button class="cl-btn" onclick="rw_claim('${r.id}')">Claim it</button>`);
+    return row('','🜲',esc(r.title),rwWhen(r)+' · '+rwHave(r,ctx)+' of '+r.n,
+      `<button class="btn-ghost" onclick="rw_del('${r.id}')">×</button>`);
+  }).join('');
+  const goalOpts=S.goals.filter(g=>!g.parentId&&!g.achieved)
+    .map(g=>`<option value="g:${g.id}">${esc(g.title)}</option>`).join('');
+  return `
+    <div class="list-group-name" style="cursor:default;margin-top:4px">Rewards</div>
+    <div class="cl-sub">what you promised yourself — collecting is part of the work.
+      A finished goal is worth more than a finished errand, so the big ones sit on top.</div>
+    ${bigRows?`<div class="rw-lane"><div class="d-label">The big ones — when a whole goal gets marked</div>${bigRows}</div>`:''}
+    ${smallRows?`<div class="rw-lane"><div class="d-label">Smaller ones — for simply keeping at it</div>${smallRows}</div>`:''}
+    ${bigRows||smallRows?'':'<div class="empty-note">Nothing promised yet — name one thing you’ll give yourself. It works better than discipline.</div>'}
+    <div class="rw-new">
+      <input id="rwT" placeholder="What will you give yourself?  the massage, the trip, the guilt-free weekend…"
+        onkeydown="if(event.key==='Enter')rw_add()">
+      <select id="rwTrig">
+        ${goalOpts?`<optgroup label="When a goal gets marked — the big ones">${goalOpts}</optgroup>`:''}
+        <optgroup label="Smaller milestones">
+          ${RW_MILES.map(([n,l])=>`<option value="count:${n}">${l}</option>`).join('')}
+          ${RW_STREAK.map(([n,l])=>`<option value="streak:${n}">${l}</option>`).join('')}
+        </optgroup>
+      </select>
+      <button class="btn-ink" onclick="rw_add()">Promise it</button>
+    </div>`;
+}
+function rw_add(){
+  const t=$('rwT'), sel=$('rwTrig');
+  if(!t||!t.value.trim()||!sel)return;
+  const v=sel.value, title=t.value.trim();
+  if(v.slice(0,2)==='g:'){
+    const g=goal(v.slice(2));
+    if(g){g.reward=title;g.rewardClaimed=null;}
+  }else{
+    const parts=v.split(':');
+    S.rewards=S.rewards||[];
+    S.rewards.push({id:uid(),title,kind:parts[0],n:+parts[1],claimed:null,createdAt:Date.now()});
+  }
+  t.value='';save();render();
+}
+function rw_claim(id){const r=(S.rewards||[]).find(r=>r.id===id);if(r)r.claimed=Date.now();save();render();}
+function rw_del(id){S.rewards=(S.rewards||[]).filter(r=>r.id!==id);save();render();}
+function rw_clearGoal(gid){const g=goal(gid);if(g){g.reward=null;g.rewardClaimed=null;}save();render();}
 
 /* ============ claude — the resident reviewer ============ */
 function renderClaude(){
@@ -2413,6 +2756,7 @@ function renderClaude(){
   /* my letters — written from our sessions, actionable in place */
   const notes=((S.claude&&S.claude.notes)||[]).filter(n=>{
     if(n.resolved)return false;
+    if(n.topic==='compass')return false;      // those live in the Compass, next to the goals
     if(n.taskId){const t=taskOf(n.taskId);if(!t||t.done)return false;}
     return true;
   });
@@ -2517,7 +2861,7 @@ function renderClaude(){
           </span>
         </div>
       </div>
-      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>{
+      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.topic!=='compass').map(m=>{
         const rn=m.re?((S.claude&&S.claude.notes)||[]).find(n=>n.id===m.re):null;
         return `<div class="cl-you">
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
@@ -2605,13 +2949,59 @@ function starPicker(cur,fn){
     ${(S.stars||[]).map(s=>`<option value="${s.id}" ${cur===s.id?'selected':''}>✶ ${esc(s.title)}</option>`).join('')}
   </select>`;
 }
+function eraPicker(g){
+  return `<select class="star-pick" onchange="g_setEra('${g.id}',this.value)">
+    <option value="">— unscheduled —</option>
+    ${S.plan.map(e=>`<option value="${e.id}" ${g.era===e.id?'selected':''}>${esc(e.era)}</option>`).join('')}
+  </select>`;
+}
+/* a small inline field — never prompt(), which a home-screen web app silently swallows */
+function textComposer(host,ph,cb){
+  if(!host)return;
+  const ex=host.querySelector('.ghost-new');
+  if(ex){ex.focus();return;}
+  const inp=document.createElement('input');
+  inp.className='ghost-new'; inp.placeholder=ph;
+  host.appendChild(inp);
+  setTimeout(()=>inp.focus(),0);
+  let closed=false;
+  const commit=()=>{
+    if(closed)return; closed=true;
+    const v=inp.value.trim();
+    if(v)cb(v);
+    save();render();
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();commit();}
+    if(e.key==='Escape'){closed=true;render();}
+  });
+  inp.addEventListener('blur',commit);
+}
+/* drag only from the grip — a draggable ancestor makes the inputs inside it uneditable */
+function gripDown(ev){
+  const c=ev.currentTarget.closest('[data-gid]');
+  if(c)c.setAttribute('draggable','true');
+}
+function gripOff(){document.querySelectorAll('[data-gid][draggable]').forEach(c=>c.removeAttribute('draggable'));}
+document.addEventListener('mouseup',gripOff);
+document.addEventListener('touchend',gripOff);
+
+function fitTA(el){el.style.height='auto';el.style.height=(el.scrollHeight+1)+'px';}
+const TA_KEYS="if(event.key==='Enter'){event.preventDefault();this.blur();}";
 const goalOpen=new Set();
 function g_expand(id){goalOpen.has(id)?goalOpen.delete(id):goalOpen.add(id);render();}
-function goalBlock(g,compact){
+const toolsOpen=new Set();
+function g_tools(id){toolsOpen.has(id)?toolsOpen.delete(id):toolsOpen.add(id);render();}
+
+/* one goal node — the same shape on the Timeline and in the Tree */
+function goalBlock(g,opts){
+  opts=opts||{};
   const subs=S.goals.filter(s=>s.parentId===g.id);
   const all=goalTaskSet(g.id), p=progress(all);
   const open=goalOpen.has(g.id);
   const own=S.tasks.filter(t=>t.goalId===g.id&&!isRoutine(t)&&!isAppt(t));
+  const s=g.starId?star(g.starId):null;
+  const era=g.era?S.plan.find(e=>e.id===g.era):null;
   const taskRow=t=>{
     const b=board(t.boardId);
     return `<div class="linked-t ${t.done?'done':''}" onclick="go('board','${t.boardId}');openDrawer('${t.id}')">
@@ -2621,49 +3011,117 @@ function goalBlock(g,compact){
       ${t.urgent?'<span class="chip urgent-chip">!</span>':''}
     </div>`;
   };
-  const subRows=subs.map(s=>{
-    const st=S.tasks.filter(t=>t.goalId===s.id&&!isRoutine(t)&&!isAppt(t)), sp=progress(st);
-    return `<div class="sub-block">
-      <div class="sub-row">
-        <input class="sub-title-in" value="${esc(s.title)}" onchange="g_rename('${s.id}',this.value)">
-        <span class="small muted">${st.length?st.filter(t=>t.done).length+' / '+st.length:'no tasks yet'}</span>
-        <div class="sub-track"><div class="fill" style="width:${sp??0}%"></div></div>
-        <div class="goal-tools"><button class="btn-ghost" onclick="g_delete('${s.id}')">×</button></div>
+  const subRows=subs.map(sg=>{
+    const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t)), sp=progress(st);
+    const so=goalOpen.has(sg.id);
+    return `<div class="tr-branch">
+      <div class="tr-node">
+        <button class="caret goal-caret" onclick="g_expand('${sg.id}')">${so?'▾':'▸'}</button>
+        <textarea class="tr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+          onchange="g_rename('${sg.id}',this.value)">${esc(sg.title)}</textarea>
+        <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
+        <span class="sub-track"><span class="fill" style="width:${sp??0}%"></span></span>
+        <button class="more" onclick="g_delete('${sg.id}')" title="Delete sub-goal">×</button>
       </div>
-      <div class="sub-tasks">${st.map(taskRow).join('')||'<div class="sub-empty">no tasks yet — link some from any task’s drawer</div>'}</div>
+      ${so?`<div class="tr-kids">${st.map(taskRow).join('')
+        ||'<div class="sub-empty">no tasks yet — link some from any task’s drawer</div>'}</div>`:''}
     </div>`;
   }).join('');
-  const s=g.starId?star(g.starId):null;
-  return `<div class="goal-block ${g.achieved?'goal-achieved':''}" draggable="true" data-gid="${g.id}"
-      ondragstart="dragGoal(event,'${g.id}')" ondragend="dragEnd(event)">
-    <div class="goal-row">
+  return `<div class="gcard${g.achieved?' achieved':''}" data-gid="${g.id}"
+      ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
+    <div class="gcard-head">
+      ${opts.nodrag?'':`<span class="grip" title="drag into another chapter"
+        onmousedown="gripDown(event)" ontouchstart="gripDown(event)">⠿</span>`}
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
-      <button class="caret goal-caret" title="${open?'Collapse':'Expand'}" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
-      <input class="goal-title-in" value="${esc(g.title)}" onchange="g_rename('${g.id}',this.value)">
-      ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
-      <span class="goal-pct">${p===null?'no tasks yet':p+'% · '+all.filter(t=>t.done).length+' of '+all.length}</span>
-      <div class="goal-tools">${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${compact?'':eraPicker(g)}
-        <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button></div>
+      <button class="caret goal-caret" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
+      <textarea class="gcard-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+        onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
+      ${p===null?'':`<span class="gcard-pct">${p}%</span>`}
     </div>
-    <div class="track"><div class="fill" style="width:${p??0}%"></div></div>
-    ${g.reward?`<div class="reward-line ${p===100?'earned':''}">
-      <span class="reward-mark">🜲</span>
-      <span class="reward-t">${esc(g.reward)}</span>
-      ${g.rewardClaimed?'<span class="reward-state">claimed ✓</span>'
-        :p===100?`<button class="cl-btn" onclick="g_claim('${g.id}')">Claim it</button>`
-        :`<span class="reward-state">waiting${p!=null?' on '+(100-p)+'% more':''}</span>`}
-      <button class="btn-ghost" onclick="g_reward('${g.id}')">edit</button>
-    </div>`:`<button class="add-inline reward-add" onclick="g_reward('${g.id}')">+ Promise yourself a reward</button>`}
-    ${open?`<div class="subgoals">${subRows}
-      <button class="add-inline" onclick="g_add('${g.id}')">+ Sub-goal</button></div>
-    ${own.length?`<div class="linked-tasks">
-      ${subs.length?'<div class="d-label" style="margin:12px 0 2px">Linked directly to the goal</div>':''}
-      ${own.map(taskRow).join('')}</div>`:''}`
-    :`<button class="goal-summary" onclick="g_expand('${g.id}')">${
-        subs.length?subs.length+' sub-goal'+(subs.length>1?'s':''):'no sub-goals'}
-        ${all.length?' · '+all.length+' task'+(all.length>1?'s':''):''}</button>`}
+    <div class="gcard-meta">
+      ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
+      ${opts.showEra&&era?`<span class="b-tag">${esc(era.era)}</span>`:''}
+      <span class="gcard-count">${subs.length?subs.length+' sub-goal'+(subs.length>1?'s':''):'no sub-goals'}${
+        all.length?' · '+all.filter(t=>t.done).length+'/'+all.length+' tasks':''}</span>
+      <button class="more" title="Anchor, schedule, ask Claude, delete" onclick="g_tools('${g.id}')">⋯</button>
+    </div>
+    ${toolsOpen.has(g.id)?`<div class="gcard-tools">
+      ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
+      <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for sub-goals</button>
+      <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
+    </div>`:''}
+    ${all.length?`<div class="track"><div class="fill" style="width:${p??0}%"></div></div>`:''}
+    ${open?`<div class="gcard-body">
+      ${subRows}
+      <div class="gc-add"><button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Sub-goal</button></div>
+      ${own.length?`<div class="linked-tasks">
+        ${subs.length?'<div class="d-label" style="margin:10px 0 2px">Linked straight to the goal</div>':''}
+        ${own.map(taskRow).join('')}</div>`:''}
+    </div>`:''}
   </div>`;
 }
+
+/* ---- Claude, in the Compass: help deciding what the goals should be ---- */
+const CQ=[
+  {l:'Name goals for a chapter',
+   q:'Look at the chapters on my Compass timeline and propose 2–4 real goals for any chapter that is thin. Goals, not tasks — things that are either achieved or not by the end of that season.'},
+  {l:'Break my goals into sub-goals',
+   q:'Go through my top-level goals and propose sub-goals for the ones that have none. Each sub-goal should be small enough that three or four tasks finish it.'},
+  {l:'Am I steering by the right stars?',
+   q:'Look honestly at my north stars and my goals. Is anything I am spending time on serving no bearing? Is a bearing missing? Say it plainly, even if the answer is that a goal should be dropped.'},
+  {l:'Anchor the unanchored',q:''},
+  {l:'What should I drop?',
+   q:'Read my goals and tell me which one or two I should let go of this season, and why. I would rather do fewer things well.'}
+];
+let counselOpen=null;
+function cpPush(text,goalId){
+  S.claude.inbox=S.claude.inbox||[];
+  S.claude.inbox.push({id:uid(),createdAt:Date.now(),text,topic:'compass',goalId:goalId||null});
+  save();render();
+}
+function cpAsk(i){
+  if(i===3){askAnchor();return;}
+  cpPush(CQ[i].q);
+}
+function cpSend(){
+  const el=$('cpMsg'); if(!el||!el.value.trim())return;
+  const v=el.value.trim(); window.cpDraft='';
+  cpPush(v);
+}
+function askSubgoals(gid){
+  const g=goal(gid); if(!g)return;
+  counselOpen=true;
+  cpPush('In the Compass: break the goal “'+g.title+'” into 2–4 concrete sub-goals, and suggest the first task under each. If the goal itself is too vague to decompose, say that instead and propose a sharper version.',gid);
+}
+function compassCounsel(){
+  const notes=((S.claude&&S.claude.notes)||[]).filter(n=>!n.resolved&&n.topic==='compass');
+  const sent=((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.topic==='compass');
+  const open=counselOpen===null?(notes.length>0||sent.length>0):counselOpen;
+  return `<div class="counsel">
+    <div class="counsel-head" onclick="counselOpen=${open?'false':'true'};render()">
+      <span class="cl-mark">✦</span>
+      <span class="counsel-t">Claude, on the goals themselves</span>
+      ${notes.length?`<span class="counsel-n">${notes.length}</span>`:''}
+      <span class="caret" style="margin-left:auto">${open?'▾':'▸'}</span>
+    </div>
+    <div class="counsel-sub">not for doing the work — for deciding what the work should be</div>
+    ${open?`
+      <div class="counsel-chips">${CQ.map((c,i)=>`<button class="ch" onclick="cpAsk(${i})">${esc(c.l)}</button>`).join('')}</div>
+      <textarea id="cpMsg" rows="2" oninput="window.cpDraft=this.value"
+        placeholder="Or ask in your own words — “is ‘decide my professional lane’ really a goal?”, “what should the fall chapter hold?”">${esc(window.cpDraft||'')}</textarea>
+      <div class="counsel-row">
+        <button class="cl-btn" onclick="clPing()">⚡ Deliver now</button>
+        <button class="btn-ink" onclick="cpSend()">Ask Claude</button>
+      </div>
+      ${sent.map(m=>`<div class="cl-you"><div class="cl-you-t">${esc(m.text)}</div>
+        <div class="cl-you-s">sent ✓ — answered here at Claude’s next check</div></div>`).join('')}
+      ${notes.map(n=>`<div class="cl-note">
+        <div class="cl-text">${esc(n.text)}</div>
+        <div class="cl-actions"><button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Got it</button></div>
+        <div class="cl-sig">— Claude</div></div>`).join('')}`:''}
+  </div>`;
+}
+
 function renderCompass(){
   if(compassMode==='stars')compassMode='time';
   const head=`<div class="view-head">
@@ -2675,10 +3133,11 @@ function renderCompass(){
         <button class="${compassMode==='tree'?'on':''}" onclick="compassMode='tree';render()">Tree</button>
       </div>
     </div>
-    <div class="mission-wrap">
+    ${compassMode==='tree'?'':`<div class="mission-wrap">
       <div class="mission-label">Mission</div>
       <textarea class="mission-input" rows="2" onchange="S.meta.mission=this.value;save()">${esc(S.meta.mission)}</textarea>
-    </div>`;
+    </div>`}
+    ${compassCounsel()}`;
   return head+(compassMode==='tree'?compassTree():compassTime())+starsFooter();
 }
 /* which domain a goal really lives in — inferred from where its tasks are */
@@ -2689,12 +3148,6 @@ function goalDept(g){
   let best=null,n=0;
   Object.keys(c).forEach(k=>{if(c[k]>n){n=c[k];best=k;}});
   return best;
-}
-function eraPicker(g){
-  return `<select class="star-pick" onchange="g_setEra('${g.id}',this.value)">
-    <option value="">— unscheduled —</option>
-    ${S.plan.map(e=>`<option value="${e.id}" ${g.era===e.id?'selected':''}>${esc(e.era)}</option>`).join('')}
-  </select>`;
 }
 /* the bearings — always last, never decomposed */
 function starsFooter(){
@@ -2721,74 +3174,116 @@ function starsFooter(){
       <button class="cl-btn" onclick="askAnchor()">✶ Ask Claude to anchor them</button>
     </div>`:''}
     ${stars||'<div class="empty-note">No bearings set yet.</div>'}
-    <button class="add-inline" onclick="star_add()">+ New north star</button>
+    <div class="gc-add"><button class="add-inline" onclick="star_add(this.parentElement)">+ New north star</button></div>
   </div>`;
 }
 function compassTime(){
   const eras=S.plan.map(e=>{
     const gs=S.goals.filter(g=>!g.parentId&&g.era===e.id);
-    return `<div class="era" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
-      <div class="era-head">
-        <input class="era-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)">
-        <span class="col-count">${gs.length}</span>
-        <div class="goal-tools"><button class="btn-ghost" onclick="era_del('${e.id}')">delete</button></div>
+    const got=gs.filter(g=>g.achieved).length;
+    return `<div class="chap" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
+      <div class="chap-head">
+        <span class="chap-mark">◈</span>
+        <input class="chap-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()">
+        <span class="col-count">${got}/${gs.length}</span>
+        <button class="more" onclick="era_del('${e.id}')" title="Delete chapter">×</button>
       </div>
-      <div class="era-goals">
+      <div class="chap-goals">
         ${gs.map(g=>goalBlock(g)).join('')||'<div class="sub-empty">no goals in this chapter yet</div>'}
-        <button class="add-inline" onclick="g_addIn('${e.id}')">+ Goal for this chapter</button>
+        <div class="gc-add"><button class="add-inline" onclick="g_addIn('${e.id}',this.parentElement)">+ Goal for this chapter</button></div>
       </div>
     </div>`;
   }).join('');
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
-  return `<div class="plan">${eras}
-    ${loose.length?`<div class="era era-loose">
-      <div class="era-head"><span class="era-title" style="color:var(--ink-faint)">Unscheduled</span>
+  return `<div class="chapters">${eras}
+    ${loose.length?`<div class="chap loose">
+      <div class="chap-head"><span class="chap-mark" style="color:var(--ink-faint)">◇</span>
+        <span class="chap-title" style="color:var(--ink-faint)">Unscheduled</span>
         <span class="col-count">${loose.length}</span></div>
-      <div class="star-meta">real goals with no season — give each one a chapter, or let it go</div>
-      <div class="era-goals">${loose.map(g=>goalBlock(g)).join('')}</div>
+      <div class="chap-note">goals with no season — give each one a chapter, or let it go</div>
+      <div class="chap-goals">${loose.map(g=>goalBlock(g,{showEra:true})).join('')}</div>
     </div>`:''}
-    <div class="era" style="border-left-color:transparent;padding-bottom:6px">
-      <button class="btn-ghost" onclick="era_add()">+ Chapter</button></div></div>`;
+    <div class="gc-add chap-new"><button class="add-inline" onclick="era_add(this.parentElement)">+ Chapter</button></div>
+  </div>`;
 }
+/* the tree proper — mission at the root, bearings at the tip of every branch */
 function compassTree(){
   const tops=S.goals.filter(g=>!g.parentId);
   const groups={};
   tops.forEach(g=>{const d=goalDept(g)||'none';(groups[d]=groups[d]||[]).push(g);});
   const order=[...S.boards.map(b=>b.id).filter(id=>groups[id]),...(groups.none?['none']:[])];
-  const html=order.map(did=>{
+  const branches=order.map(did=>{
     const b=did==='none'?null:board(did);
     const gs=groups[did];
-    return `<div class="tree-dept">
-      <div class="tree-dept-head">
-        ${b?`<span class="dot" style="background:${b.accent}"></span>`:''}
-        ${esc(b?b.name:'No domain yet')}
+    return `<div class="tr-branch">
+      <div class="tr-node dept">
+        <span class="dot" style="background:${b?b.accent:'#b9b0a0'}"></span>
+        <span class="tr-dept-t">${esc(b?b.name:'No domain yet')}</span>
+        <span class="col-count">${gs.length}</span>
       </div>
-      ${gs.map(g=>{
-        const subs=S.goals.filter(s=>s.parentId===g.id);
-        const all=goalTaskSet(g.id), p=progress(all);
-        const s=g.starId?star(g.starId):null;
-        const era=g.era?S.plan.find(e=>e.id===g.era):null;
-        return `<div class="tree-goal">
-          <div class="tree-goal-head">
-            <span class="tree-goal-t" onclick="compassMode='time';render()">${esc(g.title)}</span>
-            ${era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-            ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
-            <span class="goal-pct">${p===null?'—':p+'%'}</span>
-          </div>
-          <div class="tree-subs">
-            ${subs.map(sg=>{
-              const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t));
-              const sp=progress(st);
-              return `<div class="tree-sub">
-                <span class="tree-sub-t">${esc(sg.title)}</span>
-                <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
-                <div class="sub-track"><div class="fill" style="width:${sp??0}%"></div></div>
-              </div>`;}).join('')||'<div class="sub-empty">no sub-goals</div>'}
-          </div>
-        </div>`;}).join('')}
+      <div class="tr-kids">
+        ${gs.map(g=>{
+          const subs=S.goals.filter(s=>s.parentId===g.id);
+          const all=goalTaskSet(g.id), p=progress(all);
+          const s=g.starId?star(g.starId):null;
+          const era=g.era?S.plan.find(e=>e.id===g.era):null;
+          return `<div class="tr-branch">
+            <div class="tr-node goal${g.achieved?' achieved':''}">
+              <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
+              <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+                onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
+              ${era?`<span class="b-tag">${esc(era.era)}</span>`:''}
+              ${p===null?'':`<span class="gcard-pct">${p}%</span>`}
+              <button class="more" onclick="g_tools('${g.id}')">⋯</button>
+            </div>
+            ${toolsOpen.has(g.id)?`<div class="gcard-tools tree-tools">
+              ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
+              <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for sub-goals</button>
+              <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
+            </div>`:''}
+            <div class="tr-kids">
+              ${subs.map(sg=>{
+                const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t));
+                const sp=progress(st);
+                return `<div class="tr-branch">
+                  <div class="tr-node">
+                    <textarea class="tr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+                      onchange="g_rename('${sg.id}',this.value)">${esc(sg.title)}</textarea>
+                    <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
+                    <span class="sub-track"><span class="fill" style="width:${sp??0}%"></span></span>
+                    <button class="more" onclick="g_delete('${sg.id}')" title="Delete sub-goal">×</button>
+                  </div>
+                </div>`;}).join('')}
+              <div class="tr-branch">
+                <div class="tr-node thin gc-add">
+                  <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Sub-goal</button>
+                </div>
+              </div>
+              ${s?`<div class="tr-branch">
+                <div class="tr-node thin star-term">
+                  <span class="star-mark">✶</span><span class="star-term-t">${esc(s.title)}</span>
+                </div>
+              </div>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
   }).join('');
-  return `<div class="tree">${html||'<div class="empty-note">No goals yet.</div>'}</div>`;
+  return `<div class="tree">
+    <div class="tr-branch root">
+      <div class="tr-node mission-node">
+        <span class="tr-mission-l">Mission</span>
+        <textarea class="tr-mission-t grow" rows="1" oninput="fitTA(this)" onchange="S.meta.mission=this.value;save()"
+          placeholder="the one sentence everything below is in service of…">${esc(S.meta.mission||'')}</textarea>
+      </div>
+      <div class="tr-kids">${branches}
+        <div class="tr-branch"><div class="tr-node thin gc-add">
+          <button class="add-inline" onclick="g_add(null,this.parentElement)">+ New goal</button></div></div>
+      </div>
+    </div>
+  </div>`;
 }
 function compassStarsOld(){
   const stars=(S.stars||[]).map(s=>{
@@ -2805,7 +3300,7 @@ function compassStarsOld(){
         · ${st.recent?st.recent+' finished these two weeks':'nothing finished in two weeks'}</div>
       <div class="star-goals">
         ${st.goals.map(g=>goalBlock(g,true)).join('')||'<div class="empty-note">No route plotted toward this bearing yet — a star you never steer by is only scenery.</div>'}
-        <button class="add-inline" onclick="g_add(null,'${s.id}')">+ Plot a route toward this star</button>
+        <button class="add-inline" onclick="g_add(null,this.parentElement,'${s.id}')">+ Plot a route toward this star</button>
       </div>
       ${st.items.length?`<div class="star-items"><div class="d-label">Intentions pointing here</div>
         ${st.items.map(i=>`<div class="linked-t ${i.done?'done':''}"><span>${i.done?'◆':'◇'}</span>
@@ -2815,20 +3310,20 @@ function compassStarsOld(){
   const orphan=S.goals.filter(g=>!g.parentId&&!g.starId);
   return `<div class="goals-list">
     ${stars||'<div class="empty-note">No north stars yet — name the two or three things that would make a decade worth it.</div>'}
-    <div class="star-block star-new"><button class="add-inline" onclick="star_add()" style="font-size:13.5px">+ New north star</button></div>
+    <div class="star-block star-new"><button class="add-inline" onclick="star_add(this.parentElement)" style="font-size:13.5px">+ New north star</button></div>
     ${orphan.length?`<div class="star-block orphan">
       <div class="star-head"><span class="star-mark" style="color:var(--ink-faint)">◦</span>
         <span class="star-title" style="color:var(--ink-soft)">Unanchored goals</span></div>
       <div class="star-meta">worth asking: which star does each of these serve — or should it go?</div>
       <div class="star-goals">${orphan.map(g=>goalBlock(g)).join('')}</div>
     </div>`:''}
-    <div class="star-block star-new"><button class="add-inline" onclick="g_add(null)" style="font-size:13.5px">+ New goal</button></div>
+    <div class="star-block star-new"><button class="add-inline" onclick="g_add(null,this.parentElement)" style="font-size:13.5px">+ New goal</button></div>
   </div>`;
 }
 async function askAnchor(){
   const loose=S.goals.filter(g=>!g.parentId&&!g.starId).map(g=>g.title);
   S.claude.inbox=S.claude.inbox||[];
-  S.claude.inbox.push({id:uid(),createdAt:Date.now(),
+  S.claude.inbox.push({id:uid(),createdAt:Date.now(),topic:'compass',
     text:'Please anchor my unanchored goals to the right north stars, using your judgment — '
       +loose.join('; ')+'. If one genuinely serves no star, say so rather than forcing it, '
       +'and tell me if you think I\'m missing a bearing.'});
@@ -2837,10 +3332,10 @@ async function askAnchor(){
   render();
   alert('Sent to Claude — his anchoring, and any thoughts about a missing star, will appear on the Claude page. You can always override with the ✶ picker.');
 }
-function star_add(){
-  const t=prompt('Name a north star — a bearing you steer by:');
-  if(!t||!t.trim())return;
-  S.stars.push({id:uid(),title:t.trim(),note:''});render();
+function star_add(host){
+  const make=v=>S.stars.push({id:uid(),title:v,note:''});
+  if(host&&host.nodeType===1)textComposer(host,'A bearing you steer by…',make);
+  else{make('New north star');save();render();}
 }
 function star_rename(id,v){const s=star(id);if(s&&v.trim())s.title=v.trim();save();}
 function star_del(id){
@@ -2864,10 +3359,10 @@ function g_claim(gid){
   g.rewardClaimed=Date.now(); if(!g.achieved)g.achieved=Date.now();
   save();render();
 }
-function g_addIn(eraId){
-  const t=prompt('Name the goal for this chapter:');
-  if(!t||!t.trim())return;
-  S.goals.push({id:uid(),parentId:null,title:t.trim(),note:'',era:eraId,starId:null});render();
+function g_addIn(eraId,host){
+  const make=v=>S.goals.push({id:uid(),parentId:null,title:v,note:'',era:eraId,starId:null});
+  if(host&&host.nodeType===1)textComposer(host,'Name the goal for this chapter…',make);
+  else{make('New goal');save();render();}
 }
 function dragGoal(ev,id){drag={type:'goal',id};ev.dataTransfer.effectAllowed='move';ev.stopPropagation();}
 function dropGoal(ev,eraId){
@@ -2907,10 +3402,10 @@ function renderPlan(){
     <div class="plan">${eras||'<div class="empty-note">Add a chapter — a month, a season, a year, a someday.</div>'}</div>`;
 }
 function planFind(id){for(const e of S.plan){const it=e.items.find(i=>i.id===id);if(it)return{era:e,it};}return null;}
-function era_add(){
-  const n=prompt('Name this chapter — a month, a season, a year, a someday:');
-  if(!n||!n.trim())return;
-  S.plan.push({id:uid(),era:n.trim(),items:[]});render();
+function era_add(host){
+  const make=v=>S.plan.push({id:uid(),era:v,items:[]});
+  if(host&&host.nodeType===1)textComposer(host,'A month, a season, a year, a someday…',make);
+  else{make('New chapter');save();render();}
 }
 function era_rename(id,v){const e=S.plan.find(e=>e.id===id);if(e&&v.trim())e.era=v.trim();save();}
 function era_del(id){
@@ -3048,6 +3543,7 @@ function mergeStates(loc,rem){
     });
   }
   merge(loc.priCols,rem.priCols);
+  merge(loc.rewards=loc.rewards||[],rem.rewards);
   const em=new Map((loc.plan||[]).map(e=>[e.id,e]));
   (rem.plan||[]).forEach(e=>{
     if(!em.has(e.id))loc.plan.push(e);
@@ -3291,7 +3787,7 @@ function ghConnect(){
   if(!token||!token.trim())return;
   GH.cfg={user:user.trim(),token:token.trim()};
   store.set('atelier.sync',JSON.stringify(GH.cfg));
-  const bn=$('syncBanner');if(bn)bn.innerHTML='';ghStatus('connecting…');ghPull();ghStartPolling();
+  ghStatus('connecting…');ghPull();ghStartPolling();
 }
 function ghDisconnect(){
   GH.cfg=null;GH.sha=null;clearInterval(GH.poll);
@@ -3300,11 +3796,7 @@ function ghDisconnect(){
 function updateGhLink(){
   const el=$('ghLink');if(!el)return;
   if(GH.cfg){ghStatus('✓');}
-  else{
-    el.innerHTML='· <button onclick="ghConnect()" title="Sync across your devices via your private GitHub repo">Connect GitHub sync</button>';
-    const bn=$('syncBanner');
-    if(typeof HOSTED!=='undefined'&&bn)bn.innerHTML='<div class="sync-banner"><span>Connect your sync to load your Atelier — a one-time step on each device.</span><button class="btn-ink" onclick="ghConnect()">Connect</button></div>';
-  }
+  else el.innerHTML='· <button onclick="ghConnect()" title="Sync across your devices via your private GitHub repo">Connect GitHub sync</button>';
 }
 
 /* ============ init ============ */
