@@ -1023,7 +1023,9 @@ function addHorizonCol(b){
 }
 function ensureDefaults(){
   if(!S.plan)S.plan=[];
-  if(!S.priCols)S.priCols=[{id:uid(),name:'Do now!'},{id:uid(),name:'Do soon'},{id:uid(),name:'On the horizon'}];
+  if(!S.priCols)S.priCols=[{id:uid(),name:'Do now!'},{id:uid(),name:'Do soon'},{id:uid(),name:'Later'}];
+  /* "On the horizon" means shelved on a board — so the triage bucket takes a different word */
+  (S.priCols||[]).forEach(c=>{if(/^on the horizon$/i.test(c.name.trim()))c.name='Later';});
   if(!S.meta.horizonCols){S.boards.forEach(addHorizonCol);S.meta.horizonCols=true;}
   if(!S.gcal)S.gcal=[];
   /* north stars become first-class — promoted out of the Life Plan chapter that held them */
@@ -2236,7 +2238,7 @@ function renderPriorities(){
   /* triage is for live work only: no appointments, no shelved horizons */
   const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
   const valid=id=>S.priCols.some(c=>c.id===id);
-  const horizon=S.priCols.find(c=>/horizon/i.test(c.name));
+  const horizon=S.priCols.find(c=>/horizon|later|someday|eventual/i.test(c.name));
   const wk=new Date();wk.setDate(wk.getDate()+7);
   const wkS=wk.getFullYear()+'-'+String(wk.getMonth()+1).padStart(2,'0')+'-'+String(wk.getDate()).padStart(2,'0');
   const unassigned=t=>!t.priCol||!valid(t.priCol);
@@ -2266,7 +2268,7 @@ function renderPriorities(){
   }).join('');
   return `<div class="view-head">
       <div class="view-title">Priorities</div>
-      <div class="view-sub">every task you can actually act on — urgent jumps to Do now!, undated or far out drifts to On the horizon</div>
+      <div class="view-sub">every task you can act on — urgent jumps to Do now!, undated or far out drifts to Later; anything shelved on a board’s horizon stays out</div>
       <div class="spacer"></div>
       <button class="btn-ghost" onclick="priAdd()">+ Column</button>
     </div>
