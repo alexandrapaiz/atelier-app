@@ -1524,6 +1524,19 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .cl-gap{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
 .cl-gap .b-tag{font-size:11px; border:1px solid var(--line); border-radius:999px; padding:2px 9px; color:var(--ink-soft)}
 
+
+.kp-chips .ch.task{padding-left:8px}
+.kp-chips .ch.task .kp-box{width:14px; height:14px; margin-right:3px}
+.kp-chips .ch.task.on{border-color:var(--ochre); background:var(--paper-2)}
+.kp-chips .ch.bundle{border-style:dashed}
+.kp-chips .ch.bundle .kp-n{border-left:1px solid var(--line); padding-left:7px}
+
+
+.cl-you{position:relative}
+.cl-you-x{position:absolute; top:8px; right:8px; opacity:0; transition:opacity .15s}
+.cl-you:hover .cl-you-x{opacity:1}
+@media (max-width:700px){ .cl-you-x{opacity:1} }
+
 </style>
 </head>
 <body>
@@ -1544,7 +1557,7 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·21</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·23</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1732,6 +1745,7 @@ function purgeBuried(){
   S.plan.forEach(e=>{e.items=live(e.items);});
   S.priCols=live(S.priCols);
   S.rewards=live(S.rewards);
+  if(S.claude){S.claude.notes=live(S.claude.notes);S.claude.inbox=live(S.claude.inbox);}
 }
 function applyReset(){
   const r=S.meta&&S.meta.reset;
@@ -1997,27 +2011,56 @@ function krWords(t){
   return String(t||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
     .filter(w=>w.length>2&&!KR_STOP.has(w));
 }
+/* any scope that fits: a whole board, one of its columns, a bundle of matching tasks, or a single task */
 function krSuggest(kr){
   const parent=kr.parentId?goal(kr.parentId):null;
   const q=new Set(krWords(kr.title).concat(krWords(parent&&parent.title)));
   if(!q.size)return [];
+  const live=t=>!isRoutine(t)&&!isAppt(t);
   const out=[];
   S.boards.forEach(b=>{
     const bs=krWords(b.name).filter(w=>q.has(w)).length;
-    const live=t=>!isRoutine(t)&&!isAppt(t);
     (b.columns||[]).forEach(c=>{
       if(/^(done|shelved)$/i.test(String(c.name).trim()))return;
       const cs=krWords(c.name).filter(w=>q.has(w)).length;
       const n=S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id&&live(t)).length;
-      const score=cs*3+bs*2+(n?.5:0);
-      if(score>0)out.push({score,kind:'col',boardId:b.id,colId:c.id,label:b.name+' · '+c.name,n});
+      if(!cs&&!bs)return;
+      out.push({score:cs*3+bs*2+(n?.5:0),kind:'col',boardId:b.id,colId:c.id,label:b.name+' · '+c.name,n});
     });
     if(bs>0){
       const n=S.tasks.filter(t=>t.boardId===b.id&&live(t)).length;
       out.push({score:bs*2+(n?.5:0),kind:'board',boardId:b.id,label:b.name,n});
     }
   });
-  return out.sort((a,b)=>b.score-a.score).slice(0,4);
+  /* individual tasks whose own words match — often the sharpest scope of all.
+     A word that shows up all over the boards ("buy", "finish") is worth almost nothing;
+     a rare one ("Nature", "diploma") is worth a great deal. */
+  const pool=S.tasks.filter(live);
+  const freq={};
+  pool.forEach(t=>new Set(krWords(t.title)).forEach(w=>{freq[w]=(freq[w]||0)+1;}));
+  const weight=w=>{const f=freq[w]||0;return f<=2?2.5:f<=5?1.4:f<=10?.6:.15;};
+  const hits=pool
+    .map(t=>({t,score:krWords(t.title).filter(w=>q.has(w)).reduce((a,w)=>a+weight(w),0)}))
+    .filter(x=>x.score>=1.4)
+    .sort((a,b)=>b.score-a.score||(a.t.done?1:0)-(b.t.done?1:0));
+  if(hits.length>1){
+    const ids=hits.slice(0,8).map(x=>x.t.id);
+    out.push({score:hits[0].score*2+1.5,kind:'tasks',ids,boardId:hits[0].t.boardId,
+      label:'these '+ids.length+' tasks',n:ids.length});
+  }
+  hits.slice(0,3).forEach(x=>{
+    const b=board(x.t.boardId);
+    out.push({score:x.score*2,kind:'task',taskId:x.t.id,boardId:x.t.boardId,
+      label:x.t.title,sub:b?b.name:'',n:1});
+  });
+  return out.sort((a,b)=>b.score-a.score).slice(0,6);
+}
+function kr_linkTasks(id,ids,bid){
+  const k=goal(id); if(!k)return;
+  k.link={kind:'tasks',taskIds:String(ids).split(','),boardId:bid||null,colId:null};
+  k.mode=null;k.krTouched=Date.now();
+  if(bid)krBrowse.set(id,bid);
+  krOpen.delete(id);save();render();
 }
 const krOpen=new Set(), krBrowse=new Map();
 function kr_picker(id){krOpen.has(id)?krOpen.delete(id):krOpen.add(id);render();}
@@ -3544,6 +3587,7 @@ function renderClaude(){
       ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>{
         const rn=m.re?((S.claude&&S.claude.notes)||[]).find(n=>n.id===m.re):null;
         return `<div class="cl-you">
+          <button class="more cl-you-x" title="Delete this message" onclick="clUnsend('${m.id}')">×</button>
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
           <div class="cl-you-t">${esc(m.text)}</div>
           <div class="cl-you-s">waiting for Claude — he’ll read this the next time you open a conversation with him
@@ -3570,6 +3614,13 @@ function clDelete(id){
   if(!confirm('Let this one go? (It disappears, guilt included.)'))return;
   tombstone(id);
   S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
+}
+function clUnsend(mid){
+  if(!confirm('Delete this message? If I have already read it, it stays read — this only removes it from here.'))return;
+  tombstone(mid);
+  S.claude.inbox=(S.claude.inbox||[]).filter(m=>m.id!==mid);
+  save();render();
+  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
 function clReply(nid){
@@ -3747,18 +3798,29 @@ function krRow(kr){
 function krPicker(kr){
   const sug=krSuggest(kr);
   const cur=kr.link||{};
+  const picked=(cur.kind==='tasks'&&cur.taskIds)||[];
   const bid=cur.boardId||krBrowse.get(kr.id)||null;
   const cb=bid?board(bid):null;
   const bOpts=S.boards.map(b=>`<option value="${b.id}" ${bid===b.id?'selected':''}>${esc(b.name)}</option>`).join('');
   const cOpts=cb?(cb.columns||[]).map(c=>`<option value="${c.id}" ${cur.colId===c.id?'selected':''}>${esc(c.name)}</option>`).join(''):'';
-  const picked=(cur.kind==='tasks'&&cur.taskIds)||[];
   /* the tasks you could hand-pick — narrowed to a column once one is chosen */
   const pool=cb?S.tasks.filter(t=>t.boardId===cb.id&&!isRoutine(t)&&!isAppt(t)
       &&(cur.kind==='col'&&cur.colId?t.colId===cur.colId:true)):[];
   return `<div class="kr-picker">
     ${sug.length?`<div class="kp-label">Probably this</div>
-      <div class="kp-chips">${sug.map(x=>`<button class="ch" onclick="kr_link('${kr.id}','${x.kind}','${x.boardId}','${x.colId||''}')">
-        ${esc(x.label)}<span class="kp-n">${x.n} task${x.n===1?'':'s'}</span></button>`).join('')}</div>`:''}
+      <div class="kp-chips">${sug.map(x=>{
+        if(x.kind==='task'){
+          const on=picked.indexOf(x.taskId)>=0;
+          return `<button class="ch task ${on?'on':''}" onclick="kr_toggleTask('${kr.id}','${x.taskId}')"
+            title="One task${x.sub?' · '+esc(x.sub):''}">
+            <span class="kp-box">${on?'✓':''}</span>${esc(x.label)}</button>`;
+        }
+        if(x.kind==='tasks')
+          return `<button class="ch bundle" onclick="kr_linkTasks('${kr.id}','${x.ids.join(',')}','${x.boardId}')">
+            ${esc(x.label)}<span class="kp-n">${x.n}</span></button>`;
+        return `<button class="ch" onclick="kr_link('${kr.id}','${x.kind}','${x.boardId}','${x.colId||''}')">
+          ${esc(x.label)}<span class="kp-n">${x.n} task${x.n===1?'':'s'}</span></button>`;
+      }).join('')}</div>`:''}
     <div class="kp-label">Or choose</div>
     <div class="kp-row">
       <select onchange="kr_browse('${kr.id}',this.value)">
