@@ -1520,6 +1520,10 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
   .gspacer,.krspacer{flex-basis:100%; min-height:12px}
 }
 
+
+.cl-gap{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.cl-gap .b-tag{font-size:11px; border:1px solid var(--line); border-radius:999px; padding:2px 9px; color:var(--ink-soft)}
+
 </style>
 </head>
 <body>
@@ -1540,7 +1544,7 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·20</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·21</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3416,7 +3420,6 @@ function renderClaude(){
   /* my letters — written from our sessions, actionable in place */
   const notes=((S.claude&&S.claude.notes)||[]).filter(n=>{
     if(n.resolved)return false;
-    if(n.topic==='compass')return false;      // those live in the Compass, next to the goals
     if(n.taskId){const t=taskOf(n.taskId);if(!t||t.done)return false;}
     return true;
   });
@@ -3470,29 +3473,46 @@ function renderClaude(){
         <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
         ${blk?`<span class="b-tag">focus time</span>`:`<span class="b-tag">${esc(b?b.name:'')}</span>`}
       </div>`;}),''):'';
-  /* is your daily work actually pointing at your stars? */
+  /* the bearings, read the way the Compass actually works now */
+  const objectives=S.goals.filter(g=>!g.parentId);
   const starRows=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
+    const at=st.atTarget;
     let verdict,cls;
     if(!st.goals.length){verdict='nothing points here yet — a star you never steer by is only scenery';cls='drift';}
-    else verdict=st.goals.length+(st.goals.length>1?' goals point here':' goal points here')
-      +(st.eras.length?' · '+st.eras.join(' · '):'');
+    else{
+      const measured=st.goals.filter(g=>goalKrs(g.id).length).length;
+      verdict=st.goals.length+(st.goals.length>1?' objectives':' objective')
+        +(st.eras.length?' · '+st.eras.join(' · '):'')
+        +(at?' · '+at+' at target':measured?'':' · none measured yet');
+      if(!measured)cls='drift';
+    }
     return `<div class="cl-row">
       <span class="star-mark">✶</span>
       <input class="cl-star-in" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
       <span class="cl-verdict ${cls||''}">${verdict}</span>
     </div>`;
   }).join('');
-  const wandering=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!t.goalId).length;
-  const northHtml=(S.stars||[]).length?`
+  /* the two honest gaps in an OKR compass: a goal with no bearing, and a goal with nothing measuring it */
+  const loose=objectives.filter(g=>!g.starId);
+  const unmeasured=objectives.filter(g=>!goalKrs(g.id).length);
+  const unlinked=S.goals.filter(g=>g.parentId&&!g.link&&!isMetric(g));
+  const gap=(label,list,line)=>list.length?`<div class="cl-foot" style="margin-top:14px;padding-top:12px">
+      <b>${list.length} ${label}${list.length>1?'s':''}</b> — ${line}
+      <div class="cl-gap">${list.slice(0,6).map(g=>`<span class="b-tag">${esc(g.title)}</span>`).join('')}
+        ${list.length>6?`<span class="small muted">+${list.length-6} more</span>`:''}</div>
+      <button class="cl-btn" style="margin-top:9px" onclick="go('compass')">Open the Compass</button></div>`:'';
+  const northHtml=(S.stars||[]).length||objectives.length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">True north</div>
     <div class="cl-sub">a bearing for the next thirty years — nothing here is measured in weeks.
-      The only question worth asking is whether anything at all is pointed at it.</div>
-    ${starRows}
-    ${wandering?`<div class="cl-foot" style="margin-top:14px;padding-top:12px">
-      ${wandering} open task${wandering>1?'s aren’t':' isn’t'} linked to any goal. Not everything must serve a star —
-      dentists and groceries are their own reward — but if the number keeps climbing, the years are being spent somewhere you didn’t choose.
-      <button class="cl-btn" style="margin-left:10px" onclick="go('compass')">Open the Compass</button></div>`:''}`:'';
+      The only questions worth asking are whether anything is pointed at it, and whether that thing is being measured at all.</div>
+    ${starRows||'<div class="empty-note">No bearings set yet — name the two or three things that would make a decade worth it.</div>'}
+    ${gap('objective without a bearing',loose,
+      'not everything must serve a star, but a goal that serves none is worth saying out loud.')}
+    ${gap('objective with nothing measuring it',unmeasured,
+      'an objective with no key results can’t move — give each one two or three numbers, or a column of work to point at.')}
+    ${gap('key result measuring nothing',unlinked,
+      'link each one to the board, column or handful of tasks that would prove it happened.')}`:'';
   const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
     overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
     'nothing overdue — a clean conscience');
@@ -3521,7 +3541,7 @@ function renderClaude(){
           </span>
         </div>
       </div>
-      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.topic!=='compass').map(m=>{
+      ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>{
         const rn=m.re?((S.claude&&S.claude.notes)||[]).find(n=>n.id===m.re):null;
         return `<div class="cl-you">
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
@@ -3799,69 +3819,6 @@ function goalBlock(g,opts){
 }
 
 /* ---- Claude, in the Compass: help deciding what the goals should be ---- */
-const CQ=[
-  {l:'Name goals for a chapter',
-   q:'Look at the chapters on my Compass timeline and propose 2–4 real objectives for any chapter that is thin. Objectives, not tasks — things that are either achieved or not by the end of that season.'},
-  {l:'Write key results for my goals',
-   q:'Go through my objectives and propose 2–4 key results for each — every one a number with a unit, calibrated so that 80% is a genuine win and 100% would mean I set the bar too low. Tell me what to measure and where to put the bar.'},
-  {l:'Am I steering by the right stars?',
-   q:'Look honestly at my north stars and my objectives. Is anything I am spending time on serving no bearing? Is a bearing missing? Say it plainly, even if the answer is that a goal should be dropped.'},
-  {l:'Anchor the unanchored',q:''},
-  {l:'What should I drop?',
-   q:'Read my objectives and tell me which one or two I should let go of this season, and why. I would rather do fewer things well.'}
-];
-function counselIsOpen(){return S.meta.counsel!==false;}
-function counselToggle(){S.meta.counsel=!counselIsOpen();save();render();}
-function cpPush(text,goalId){
-  S.claude.inbox=S.claude.inbox||[];
-  S.claude.inbox.push({id:uid(),createdAt:Date.now(),text,topic:'compass',goalId:goalId||null});
-  save();render();
-}
-function cpAsk(i){
-  if(i===3){askAnchor();return;}
-  cpPush(CQ[i].q);
-}
-function cpSend(){
-  const el=$('cpMsg'); if(!el||!el.value.trim())return;
-  const v=el.value.trim(); window.cpDraft='';
-  cpPush(v);
-}
-function askSubgoals(gid){
-  const g=goal(gid); if(!g)return;
-  S.meta.counsel=true;
-  cpPush('In the Compass: give the objective “'+g.title+'” 2–4 key results in OKR form — each one a number with a unit, '
-    +'set so that hitting 80% is a real win and 100% would have meant I aimed too low. Say what to measure and where the bar goes. '
-    +'If the objective itself is too vague to measure, say so and propose a sharper one.',gid);
-}
-function compassCounsel(){
-  const notes=((S.claude&&S.claude.notes)||[]).filter(n=>!n.resolved&&n.topic==='compass');
-  const sent=((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.topic==='compass');
-  const open=counselIsOpen();
-  return `<div class="counsel${open?'':' shut'}">
-    <div class="counsel-head" onclick="counselToggle()">
-      <span class="cl-mark">✦</span>
-      <span class="counsel-t">Claude, on the goals themselves</span>
-      ${notes.length?`<span class="counsel-n">${notes.length}</span>`:''}
-      <span class="caret counsel-caret" title="${open?'Hide':'Show'}">${open?'▾':'▸'}</span>
-    </div>
-    ${open?'<div class="counsel-sub">not for doing the work — for deciding what the work should be</div>':''}
-    ${open?`
-      <div class="counsel-chips">${CQ.map((c,i)=>`<button class="ch" onclick="cpAsk(${i})">${esc(c.l)}</button>`).join('')}</div>
-      <textarea id="cpMsg" rows="2" oninput="window.cpDraft=this.value"
-        placeholder="Or ask in your own words — “is ‘decide my professional lane’ really a goal?”, “what should the fall chapter hold?”">${esc(window.cpDraft||'')}</textarea>
-      <div class="counsel-row">
-        <button class="cl-btn" onclick="clPing()">⚡ Save for Claude</button>
-        <button class="btn-ink" onclick="cpSend()">Ask Claude</button>
-      </div>
-      ${sent.map(m=>`<div class="cl-you"><div class="cl-you-t">${esc(m.text)}</div>
-        <div class="cl-you-s">waiting for Claude — his answer lands here after you two talk</div></div>`).join('')}
-      ${notes.map(n=>`<div class="cl-note">
-        <div class="cl-text">${esc(n.text)}</div>
-        <div class="cl-actions"><button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Got it</button></div>
-        <div class="cl-sig">— Claude</div></div>`).join('')}`:''}
-  </div>`;
-}
-
 function renderCompass(){
   if(compassMode==='stars')compassMode='time';
   const head=`<div class="view-head">
@@ -3877,7 +3834,7 @@ function renderCompass(){
       <div class="mission-label">Mission</div>
       <textarea class="mission-input" rows="2" onchange="S.meta.mission=this.value;save()">${esc(S.meta.mission)}</textarea>
     </div>`}
-    ${compassCounsel()}`;
+`;
   return head+(compassMode==='tree'?compassMap():compassTime())
     +(compassMode==='tree'?'':starsFooter());
 }
@@ -3913,7 +3870,6 @@ function starsFooter(){
     <div class="stars-label">✶ North Stars — where the next thirty years are pointed</div>
     ${loose?`<div class="anchor-ask">
       <span>${loose} goal${loose>1?'s aren’t':' isn’t'} anchored to a bearing.</span>
-      <button class="cl-btn" onclick="askAnchor()">✶ Ask Claude to anchor them</button>
     </div>`:''}
     ${stars||'<div class="empty-note">No bearings set yet.</div>'}
     <div class="gc-add"><button class="add-inline" onclick="star_add(this.parentElement)">+ New north star</button>
@@ -4170,18 +4126,6 @@ function drawMapEdges(){
     mapPan.y=16; mapPan.set=true;
     applyMap();
   }
-}
-async function askAnchor(){
-  const loose=S.goals.filter(g=>!g.parentId&&!g.starId).map(g=>g.title);
-  S.claude.inbox=S.claude.inbox||[];
-  S.claude.inbox.push({id:uid(),createdAt:Date.now(),topic:'compass',
-    text:'Please anchor my unanchored goals to the right north stars, using your judgment — '
-      +loose.join('; ')+'. If one genuinely serves no star, say so rather than forcing it, '
-      +'and tell me if you think I\'m missing a bearing.'});
-  save();
-  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}}catch(e){}
-  render();
-  alert('Sent to Claude — his anchoring, and any thoughts about a missing star, will appear on the Claude page. You can always override with the ✶ picker.');
 }
 function star_add(host){
   const make=v=>S.stars.push({id:uid(),title:v,note:'',createdAt:Date.now()});
