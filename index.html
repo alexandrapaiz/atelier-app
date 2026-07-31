@@ -275,6 +275,8 @@ main{padding:26px 40px 60px}
 .kind-seg button{flex:1; padding:9px 10px}
 .kind-note{font-size:11.5px; color:var(--ink-faint); margin-top:7px; font-style:italic; line-height:1.45}
 .cl-when{font-size:11px; color:var(--ink-faint); font-variant-numeric:tabular-nums; white-space:nowrap; min-width:104px}
+.cl-verdict{margin-left:auto; font-size:12px; color:var(--ink-soft); font-family:var(--serif); font-style:italic; font-size:13.5px}
+.cl-verdict.drift{color:var(--danger); opacity:.85}
 [data-theme=dark] .chip.due-past{background:var(--paper-2); color:var(--ink-faint)}
 .urgent-toggle{
   width:100%; text-align:left; border:1px solid var(--line); background:var(--card);
@@ -356,6 +358,34 @@ main{padding:26px 40px 60px}
 .linked-t:hover{color:var(--ink)}
 .linked-t .b-tag{font-size:10.5px; color:var(--ink-faint); border:1px solid var(--line); padding:1px 7px; border-radius:999px}
 .linked-t.done{color:var(--ink-faint); text-decoration:line-through}
+
+/* ---------- compass ---------- */
+.star-block{border-top:1px solid var(--line); padding:26px 0 20px}
+.star-block.orphan{border-top-style:dashed}
+.star-new{border-top:1px solid var(--line); padding:16px 0}
+.star-head{display:flex; align-items:baseline; gap:12px}
+.star-mark{color:var(--ochre); font-size:15px}
+.star-title{
+  font-family:var(--serif); font-size:26px; font-weight:600; flex:1; min-width:0;
+  background:transparent; border:none; outline:none; font-style:italic;
+}
+.star-meta{font-size:12px; color:var(--ink-faint); margin-top:8px; letter-spacing:.2px}
+.star-goals{margin:14px 0 0 20px}
+.star-goals .goal-block{border-top:1px dashed var(--line-soft); padding:16px 0 12px}
+.star-goals .goal-block:first-child{border-top:none; padding-top:4px}
+.star-goals .goal-title-in{font-size:19px}
+.star-items{margin:12px 0 0 20px}
+.star-items .linked-t{cursor:default}
+.star-pick{
+  border:1px solid var(--line); background:var(--card); border-radius:8px;
+  padding:3px 7px; font-size:11.5px; color:var(--ink-soft); outline:none; max-width:170px;
+}
+.star-chip{
+  font-size:11px; color:var(--ochre); border:1px solid var(--line); border-radius:999px;
+  padding:2px 9px; white-space:nowrap; font-family:var(--serif); font-style:italic; font-size:12.5px;
+}
+.star-chip.drift{color:var(--ink-faint); border-style:dashed}
+.plan-item .goal-tools{display:flex; align-items:center; gap:6px}
 
 /* ---------- the laurels ---------- */
 .ach-hero{
@@ -911,6 +941,15 @@ function ensureDefaults(){
   if(!S.priCols)S.priCols=[{id:uid(),name:'Do now!'},{id:uid(),name:'Do soon'},{id:uid(),name:'On the horizon'}];
   if(!S.meta.horizonCols){S.boards.forEach(addHorizonCol);S.meta.horizonCols=true;}
   if(!S.gcal)S.gcal=[];
+  /* north stars become first-class — promoted out of the Life Plan chapter that held them */
+  if(!S.stars){
+    S.stars=[];
+    const ns=(S.plan||[]).find(e=>/north star/i.test(e.era));
+    if(ns){
+      ns.items.forEach(it=>S.stars.push({id:uid(),title:it.text,note:''}));
+      S.plan=S.plan.filter(e=>e!==ns);
+    }
+  }
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
 }
@@ -1208,8 +1247,7 @@ function render(){
       if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY+6.5*48-170});});
   }
   if(route.view==='master')m.innerHTML=renderMaster();
-  else if(route.view==='goals')m.innerHTML=renderGoals();
-  else if(route.view==='plan')m.innerHTML=renderPlan();
+  else if(route.view==='compass'||route.view==='goals'||route.view==='plan')m.innerHTML=renderCompass();
   else if(route.view==='pri')m.innerHTML=renderPriorities();
   else if(route.view==='cal')m.innerHTML=renderCal();
   else if(route.view==='ach')m.innerHTML=renderAch();
@@ -1248,8 +1286,7 @@ function renderSidebar(){
     <button class="snav ${route.view==='master'?'on':''}" onclick="go('master')">The Studio</button>
     <button class="snav ${route.view==='pri'?'on':''}" onclick="go('pri')">Priorities</button>
     <button class="snav ${route.view==='cal'?'on':''}" onclick="go('cal')">Calendar</button>
-    <button class="snav ${route.view==='plan'?'on':''}" onclick="go('plan')">Life Plan</button>
-    <button class="snav ${route.view==='goals'?'on':''}" onclick="go('goals')">Goals</button>
+    <button class="snav ${route.view==='compass'?'on':''}" onclick="go('compass')">Compass</button>
     <button class="snav ${route.view==='ach'?'on':''}" onclick="go('ach')">The Laurels</button>
     <button class="snav ${route.view==='claude'?'on':''}" onclick="go('claude')"><span style="color:var(--ochre)">✦</span> Claude</button>
     <div class="side-label">Boards</div>
@@ -1804,10 +1841,10 @@ function renderGoals(){
       </div>
     </div>`;
 }
-function g_add(parentId){
+function g_add(parentId,starId){
   const title=prompt(parentId?'Name this sub-goal:':'Name this goal:');
   if(!title||!title.trim())return;
-  S.goals.push({id:uid(),parentId,title:title.trim(),note:''});
+  S.goals.push({id:uid(),parentId,title:title.trim(),note:'',starId:starId||null});
   render();
 }
 function g_rename(id,v){const g=goal(id);if(g&&v.trim())g.title=v.trim();save();}
@@ -2255,6 +2292,29 @@ function renderClaude(){
         <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
         ${blk?`<span class="b-tag">focus time</span>`:`<span class="b-tag">${esc(b?b.name:'')}</span>`}
       </div>`;}),''):'';
+  /* is your daily work actually pointing at your stars? */
+  const starRows=(S.stars||[]).map(s=>{
+    const st=starStats(s.id);
+    let verdict,cls;
+    if(!st.goals.length){verdict='no goal serves it — a star without a goal is a wish';cls='drift';}
+    else if(!st.tasks.length){verdict='goals exist, but no task is linked to them yet';cls='drift';}
+    else if(!st.recent){verdict='nothing finished toward it in two weeks';cls='drift';}
+    else verdict=st.recent+' finished these two weeks · '+(st.pct??0)+'% of the way';
+    return `<div class="cl-row">
+      <span class="star-mark">✶</span>
+      <span class="cl-row-t" onclick="go('compass')">${esc(s.title)}</span>
+      <span class="cl-verdict ${cls||''}">${verdict}</span>
+    </div>`;
+  }).join('');
+  const wandering=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!t.goalId).length;
+  const northHtml=(S.stars||[]).length?`
+    <div class="list-group-name" style="cursor:default;margin-top:30px">True north</div>
+    <div class="cl-sub">the honest question — is this week’s work carrying you toward them?</div>
+    ${starRows}
+    ${wandering?`<div class="cl-foot" style="margin-top:14px;padding-top:12px">
+      ${wandering} open task${wandering>1?'s aren’t':' isn’t'} linked to any goal. Not everything must serve a star —
+      dentists and groceries are their own reward — but if the number keeps climbing, the days are being spent somewhere you didn’t choose.
+      <button class="cl-btn" style="margin-left:10px" onclick="go('compass')">Open the Compass</button></div>`:''}`:'';
   const overdueHtml=sec('Slipped past their date','honest accounting — reschedule or finish, but don’t let them haunt',
     overdue.map(t=>row(t,btn('Move to today',`clToday('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),
     'nothing overdue — a clean conscience');
@@ -2293,6 +2353,7 @@ function renderClaude(){
           </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
+      ${northHtml}
       ${comingHtml}
       ${overdueHtml}
       ${winsHtml}
@@ -2344,6 +2405,154 @@ function clNoteAct(nid,i){
   else if(a.act==='open'&&n.taskId){openDrawer(n.taskId);return;}
   n.resolved=Date.now();save();render();
 }
+
+/* ============ compass — stars, goals, and the plan as one instrument ============ */
+let compassMode='stars';
+const star=id=>(S.stars||[]).find(s=>s.id===id);
+function starStats(sid){
+  const gs=S.goals.filter(g=>!g.parentId&&g.starId===sid);
+  const all=gs.flatMap(g=>goalTaskSet(g.id));
+  const done=all.filter(t=>t.done).length;
+  const items=S.plan.flatMap(e=>e.items.filter(i=>i.starId===sid).map(i=>({...i,era:e.era})));
+  const recent=all.filter(t=>t.done&&(t.completedAt||0)>Date.now()-14*864e5).length;
+  return {goals:gs,tasks:all,done,pct:all.length?Math.round(100*done/all.length):null,items,recent};
+}
+function starPicker(cur,fn){
+  return `<select class="star-pick" onchange="${fn}">
+    <option value="">— unanchored —</option>
+    ${(S.stars||[]).map(s=>`<option value="${s.id}" ${cur===s.id?'selected':''}>✶ ${esc(s.title)}</option>`).join('')}
+  </select>`;
+}
+function goalBlock(g,compact){
+  const subs=S.goals.filter(s=>s.parentId===g.id);
+  const all=goalTaskSet(g.id), p=progress(all);
+  const own=S.tasks.filter(t=>t.goalId===g.id&&!isRoutine(t)&&!isAppt(t));
+  const taskRow=t=>{
+    const b=board(t.boardId);
+    return `<div class="linked-t ${t.done?'done':''}" onclick="go('board','${t.boardId}');openDrawer('${t.id}')">
+      <span>${t.done?'✓':'○'}</span><span>${esc(t.title)}</span>
+      <span class="b-tag">${esc(b?b.name:'')}</span>
+      ${t.due?`<span class="small muted">${fmtDue(t.due)}</span>`:''}
+      ${t.urgent?'<span class="chip urgent-chip">!</span>':''}
+    </div>`;
+  };
+  const subRows=subs.map(s=>{
+    const st=S.tasks.filter(t=>t.goalId===s.id&&!isRoutine(t)&&!isAppt(t)), sp=progress(st);
+    return `<div class="sub-block">
+      <div class="sub-row">
+        <input class="sub-title-in" value="${esc(s.title)}" onchange="g_rename('${s.id}',this.value)">
+        <span class="small muted">${st.length?st.filter(t=>t.done).length+' / '+st.length:'no tasks yet'}</span>
+        <div class="sub-track"><div class="fill" style="width:${sp??0}%"></div></div>
+        <div class="goal-tools"><button class="btn-ghost" onclick="g_delete('${s.id}')">×</button></div>
+      </div>
+      <div class="sub-tasks">${st.map(taskRow).join('')||'<div class="sub-empty">no tasks yet — link some from any task’s drawer</div>'}</div>
+    </div>`;
+  }).join('');
+  return `<div class="goal-block">
+    <div class="goal-row">
+      <input class="goal-title-in" value="${esc(g.title)}" onchange="g_rename('${g.id}',this.value)">
+      <span class="goal-pct">${p===null?'no tasks yet':p+'% · '+all.filter(t=>t.done).length+' of '+all.length}</span>
+      <div class="goal-tools">${compact?'':starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}
+        <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button></div>
+    </div>
+    <div class="track"><div class="fill" style="width:${p??0}%"></div></div>
+    <div class="subgoals">${subRows}
+      <button class="add-inline" onclick="g_add('${g.id}')">+ Sub-goal</button></div>
+    ${own.length?`<div class="linked-tasks">
+      ${subs.length?'<div class="d-label" style="margin:12px 0 2px">Linked directly to the goal</div>':''}
+      ${own.map(taskRow).join('')}</div>`:''}
+  </div>`;
+}
+function renderCompass(){
+  const head=`<div class="view-head">
+      <div class="view-title">Compass</div>
+      <div class="view-sub">north stars, the goals that serve them, and the plan that gets you there</div>
+      <div class="spacer"></div>
+      <div class="seg">
+        <button class="${compassMode==='stars'?'on':''}" onclick="compassMode='stars';render()">By star</button>
+        <button class="${compassMode==='time'?'on':''}" onclick="compassMode='time';render()">By time</button>
+      </div>
+    </div>
+    <div class="mission-wrap">
+      <div class="mission-label">Mission</div>
+      <textarea class="mission-input" rows="2" onchange="S.meta.mission=this.value;save()">${esc(S.meta.mission)}</textarea>
+    </div>`;
+  return head+(compassMode==='time'?compassTime():compassStars());
+}
+function compassStars(){
+  const stars=(S.stars||[]).map(s=>{
+    const st=starStats(s.id);
+    return `<div class="star-block">
+      <div class="star-head">
+        <span class="star-mark">✶</span>
+        <input class="star-title" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
+        <span class="goal-pct">${st.pct===null?'nothing linked yet':st.pct+'% · '+st.done+' of '+st.tasks.length}</span>
+        <div class="goal-tools"><button class="btn-ghost" onclick="star_del('${s.id}')">delete</button></div>
+      </div>
+      <div class="track"><div class="fill" style="width:${st.pct??0};background:var(--ochre);width:${st.pct??0}%"></div></div>
+      <div class="star-meta">${st.goals.length?st.goals.length+' goal'+(st.goals.length>1?'s':''):'no goals yet'}
+        · ${st.recent?st.recent+' finished these two weeks':'nothing finished in two weeks'}</div>
+      <div class="star-goals">
+        ${st.goals.map(g=>goalBlock(g,true)).join('')||'<div class="empty-note">No goal serves this star yet — a star without a goal is a wish.</div>'}
+        <button class="add-inline" onclick="g_add(null,'${s.id}')">+ Goal for this star</button>
+      </div>
+      ${st.items.length?`<div class="star-items"><div class="d-label">Intentions pointing here</div>
+        ${st.items.map(i=>`<div class="linked-t ${i.done?'done':''}"><span>${i.done?'◆':'◇'}</span>
+          <span>${esc(i.text)}</span><span class="b-tag">${esc(i.era)}</span></div>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  const orphan=S.goals.filter(g=>!g.parentId&&!g.starId);
+  return `<div class="goals-list">
+    ${stars||'<div class="empty-note">No north stars yet — name the two or three things that would make a decade worth it.</div>'}
+    <div class="star-block star-new"><button class="add-inline" onclick="star_add()" style="font-size:13.5px">+ New north star</button></div>
+    ${orphan.length?`<div class="star-block orphan">
+      <div class="star-head"><span class="star-mark" style="color:var(--ink-faint)">◦</span>
+        <span class="star-title" style="color:var(--ink-soft)">Unanchored goals</span></div>
+      <div class="star-meta">worth asking: which star does each of these serve — or should it go?</div>
+      <div class="star-goals">${orphan.map(g=>goalBlock(g)).join('')}</div>
+    </div>`:''}
+    <div class="star-block star-new"><button class="add-inline" onclick="g_add(null)" style="font-size:13.5px">+ New goal</button></div>
+  </div>`;
+}
+function compassTime(){
+  const eras=S.plan.map(e=>{
+    const items=e.items.map(it=>{
+      const s=it.starId?star(it.starId):null;
+      return `<div class="plan-item ${it.done?'done-card':''}" draggable="true" data-pid="${it.id}"
+        ondragstart="dragPlan(event,'${it.id}')" ondragend="dragEnd(event)">
+        <button class="steer" title="${it.done?'Achieved — click to reopen':'Mark as achieved'}" onclick="p_toggle('${it.id}')">${it.done?'◆':'◇'}</button>
+        <input class="p-text" value="${esc(it.text)}" onchange="p_edit('${it.id}',this.value)">
+        ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
+        <div class="goal-tools">${starPicker(it.starId,`p_setStar('${it.id}',this.value)`)}
+          <button class="btn-ghost" onclick="p_del('${it.id}')">×</button></div>
+      </div>`;
+    }).join('');
+    return `<div class="era" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropPlan(event,'${e.id}')">
+      <div class="era-head">
+        <input class="era-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)">
+        <div class="goal-tools"><button class="btn-ghost" onclick="era_del('${e.id}')">delete</button></div>
+      </div>
+      ${items}
+      <button class="add-inline" onclick="p_add('${e.id}')">+ Intention</button>
+    </div>`;
+  }).join('');
+  return `<div class="plan">${eras||'<div class="empty-note">Add a chapter — a month, a season, a year, a someday.</div>'}
+    <div class="era" style="border-left-color:transparent"><button class="btn-ghost" onclick="era_add()">+ Chapter</button></div></div>`;
+}
+function star_add(){
+  const t=prompt('Name a north star — a bearing you steer by:');
+  if(!t||!t.trim())return;
+  S.stars.push({id:uid(),title:t.trim(),note:''});render();
+}
+function star_rename(id,v){const s=star(id);if(s&&v.trim())s.title=v.trim();save();}
+function star_del(id){
+  if(!confirm('Remove this north star? Goals and intentions stay — they just become unanchored.'))return;
+  S.goals.forEach(g=>{if(g.starId===id)g.starId=null;});
+  S.plan.forEach(e=>e.items.forEach(i=>{if(i.starId===id)i.starId=null;}));
+  S.stars=S.stars.filter(s=>s.id!==id);render();
+}
+function g_setStar(gid,sid){const g=goal(gid);if(g)g.starId=sid||null;save();render();}
+function p_setStar(pid,sid){const f=planFind(pid);if(f)f.it.starId=sid||null;save();render();}
 
 /* ============ life plan ============ */
 function renderPlan(){
@@ -2501,6 +2710,7 @@ function mergeStates(loc,rem){
   };
   merge(loc.masterColumns,rem.masterColumns);
   merge(loc.boards,rem.boards);
+  merge(loc.stars=loc.stars||[],rem.stars);
   merge(loc.goals,rem.goals);
   /* tasks resolve per-item: newer touch wins, regardless of which side is globally newer */
   {
