@@ -1547,6 +1547,42 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .done-toggle.on{background:#eef1e9; border-color:var(--sage); color:#4d5b45}
 [data-theme=dark] .done-toggle.on{background:#242a20; color:#a9bb9c}
 
+
+/* chapters open and close */
+.chap-caret{
+  background:none; border:none; cursor:pointer; color:var(--ink-faint); flex-shrink:0;
+  font-size:13px; line-height:1; padding:6px 4px 0 0; margin-top:8px;
+}
+.chap-head{cursor:pointer; border-radius:9px}
+.chap-head:hover{background:var(--paper-2)}
+.chap-head:hover .chap-caret{color:var(--ink)}
+.chap-head textarea,.chap-head .more{cursor:auto}
+.chap:not(.open) .chap-head{padding-bottom:14px}
+/* the bearings, given their proper weight */
+.stars-footer{margin-top:44px; padding-top:30px}
+.stars-label{
+  font-family:var(--serif); font-style:italic; font-weight:600;
+  font-size:27px; line-height:1.2; letter-spacing:-.2px; text-transform:none;
+  color:var(--ochre); margin-bottom:6px; display:block;
+}
+.stars-sub{
+  font-family:var(--sans); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:20px;
+}
+.star-row{padding:18px 0}
+.star-title{font-size:26px !important; line-height:1.25}
+.star-head{gap:14px}
+.star-mark{font-size:19px}
+.star-heading{font-size:12.5px}
+@media (max-width:700px){
+  .stars-label{font-size:23px}
+  .star-title{font-size:22px !important}
+}
+
+
+textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
+.chapspacer{flex:1 1 40px; min-width:24px; align-self:stretch; cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -1567,7 +1603,7 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·25</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·26</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3955,7 +3991,8 @@ function starsFooter(){
   }).join('');
   const loose=S.goals.filter(g=>!g.parentId&&!g.starId).length;
   return `<div class="stars-footer">
-    <div class="stars-label">✶ North Stars — where the next thirty years are pointed</div>
+    <div class="stars-label">✶ North Stars</div>
+    <div class="stars-sub">where the next thirty years are pointed</div>
     ${loose?`<div class="anchor-ask">
       <span>${loose} goal${loose>1?'s aren’t':' isn’t'} anchored to a bearing.</span>
     </div>`:''}
@@ -3973,6 +4010,12 @@ function resetCompass(){
   try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
 const timeShut=new Set();
+const chapShown=new Set();                 // chapters start closed; this remembers the ones you opened
+function chapToggle(ev,id){
+  if(ev&&ev.target.closest('input,textarea,select,a'))return;
+  chapShown.has(id)?chapShown.delete(id):chapShown.add(id);
+  render();
+}
 const timeOpen=id=>!timeShut.has(id);
 /* click the row itself — no caret, no chrome. Controls and text fields are left alone. */
 function rowToggle(ev,id){
@@ -3988,27 +4031,33 @@ function compassTime(){
   const eras=S.plan.map(e=>{
     const gs=S.goals.filter(g=>!g.parentId&&g.era===e.id);
     const got=gs.filter(g=>g.achieved).length;
-    return `<div class="chap" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
-      <div class="chap-head">
+    const open=chapShown.has(e.id);
+    return `<div class="chap${open?' open':''}" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
+      <div class="chap-head" onclick="chapToggle(event,'${e.id}')">
+        <button class="chap-caret" title="${open?'Fold this chapter':'Open this chapter'}">${open?'▾':'▸'}</button>
         <span class="chap-mark">✦</span>
-        <textarea class="chap-title grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+        <textarea class="chap-title grow fitw" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
           onchange="era_rename('${e.id}',this.value)">${esc(e.era)}</textarea>
+        <span class="chapspacer"></span>
         <span class="col-count">${got}/${gs.length}</span>
-        <button class="more" onclick="era_del('${e.id}')" title="Delete chapter">×</button>
+        <button class="more" onclick="event.stopPropagation();era_del('${e.id}')" title="Delete chapter">×</button>
       </div>
-      <div class="chap-goals">
+      ${open?`<div class="chap-goals">
         ${gs.map(g=>goalBlock(g)).join('')||'<div class="sub-empty">no goals in this chapter yet</div>'}
         <div class="gc-add"><button class="add-inline" onclick="g_addIn('${e.id}',this.parentElement)">+ Goal for this chapter</button></div>
-      </div>
+      </div>`:''}
     </div>`;
   }).join('');
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
   return `<div class="chapters">${eras}
-    ${loose.length?`<div class="chap loose">
-      <div class="chap-head"><span class="chap-mark dim">✦</span><span class="chap-title">Unscheduled</span>
+    ${loose.length?`<div class="chap loose${chapShown.has('loose')?' open':''}">
+      <div class="chap-head" onclick="chapToggle(event,'loose')">
+        <button class="chap-caret">${chapShown.has('loose')?'▾':'▸'}</button>
+        <span class="chap-mark dim">✦</span><span class="chap-title">Unscheduled</span>
+        <span class="chapspacer"></span>
         <span class="col-count">${loose.length}</span></div>
-      <div class="chap-note">goals with no season — give each one a chapter, or let it go</div>
-      <div class="chap-goals">${loose.map(g=>goalBlock(g,{showEra:true})).join('')}</div>
+      ${chapShown.has('loose')?`<div class="chap-note">goals with no season — give each one a chapter, or let it go</div>
+      <div class="chap-goals">${loose.map(g=>goalBlock(g,{showEra:true})).join('')}</div>`:''}
     </div>`:''}
     <div class="gc-add chap-new"><button class="add-inline" onclick="era_add(this.parentElement)">+ Chapter</button></div>
   </div>`;
@@ -4085,8 +4134,7 @@ function chap_expand(id){chapOpen.has(id)?chapOpen.delete(id):chapOpen.add(id);r
 function compassMap(){
   if(!window.mapInit){
     window.mapInit=true;
-    S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});
-    S.plan.forEach(e=>chapOpen.add(e.id)); chapOpen.add('none');
+    S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});   // key results open once a chapter is
   }
   const chapters=S.plan.map(e=>({id:e.id,label:e.era,goals:S.goals.filter(g=>!g.parentId&&g.era===e.id)}));
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
@@ -4255,6 +4303,7 @@ function dropGoal(ev,eraId){
   ev.preventDefault();ev.currentTarget.classList.remove('drag-over-col');
   if(!drag||drag.type!=='goal')return;
   const g=goal(drag.id); if(g)g.era=eraId;
+  chapShown.add(eraId);
   drag=null;save();render();
 }
 function p_setStar(pid,sid){const f=planFind(pid);if(f)f.it.starId=sid||null;save();render();}
