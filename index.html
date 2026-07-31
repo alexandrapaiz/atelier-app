@@ -2856,7 +2856,7 @@ function renderClaude(){
             return rn?`replying to: “${esc(exc(rn.text,60))}” <button class="cl-cancel" onclick="clCancelReply()">×</button>`:'';
           })()}</span>
           <span style="display:flex;gap:8px">
-            <button class="cl-btn" onclick="clPing()" title="Deliver everything to Claude immediately">⚡ Deliver now</button>
+            <button class="cl-btn" onclick="clPing()" title="Push everything up so it’s waiting for me">⚡ Save for Claude</button>
             <button class="btn-ink" onclick="clSend()">Send to Claude</button>
           </span>
         </div>
@@ -2866,8 +2866,8 @@ function renderClaude(){
         return `<div class="cl-you">
           ${rn?`<div class="cl-quote">↪ replying to: “${esc(exc(rn.text,110))}”</div>`:''}
           <div class="cl-you-t">${esc(m.text)}</div>
-          <div class="cl-you-s">sent ✓ — read &amp; acted on at Claude’s next check
-            <button class="cl-btn" style="margin-left:10px;padding:3px 11px;font-size:11px" onclick="clPing()">⚡ Deliver now</button>
+          <div class="cl-you-s">waiting for Claude — he’ll read this the next time you open a conversation with him
+            <button class="cl-btn" style="margin-left:10px;padding:3px 11px;font-size:11px" onclick="clPing()">⚡ Save for Claude</button>
           </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
@@ -2903,7 +2903,7 @@ async function clPing(){
   try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();ok=true;}}catch(e){}
   const tag=$('clReplyTag');
   if(tag)tag.innerHTML=ok
-    ?'<b>delivered to Claude ✓</b> — picked up at his next check (every few hours)'
+    ?'<b>saved for Claude ✓</b> — he reads it next time you two talk'
     :'saved — will reach Claude when sync reconnects';
 }
 function clSend(){
@@ -3110,11 +3110,11 @@ function compassCounsel(){
       <textarea id="cpMsg" rows="2" oninput="window.cpDraft=this.value"
         placeholder="Or ask in your own words — “is ‘decide my professional lane’ really a goal?”, “what should the fall chapter hold?”">${esc(window.cpDraft||'')}</textarea>
       <div class="counsel-row">
-        <button class="cl-btn" onclick="clPing()">⚡ Deliver now</button>
+        <button class="cl-btn" onclick="clPing()">⚡ Save for Claude</button>
         <button class="btn-ink" onclick="cpSend()">Ask Claude</button>
       </div>
       ${sent.map(m=>`<div class="cl-you"><div class="cl-you-t">${esc(m.text)}</div>
-        <div class="cl-you-s">sent ✓ — answered here at Claude’s next check</div></div>`).join('')}
+        <div class="cl-you-s">waiting for Claude — his answer lands here after you two talk</div></div>`).join('')}
       ${notes.map(n=>`<div class="cl-note">
         <div class="cl-text">${esc(n.text)}</div>
         <div class="cl-actions"><button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Got it</button></div>
