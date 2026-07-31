@@ -1753,7 +1753,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·34</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·35</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3024,7 +3024,7 @@ function openDrawer(tid){
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
     <div class="d-actions">
       <span class="small muted">${t.due
-        ?(needsSync(t)?'Claude adds this to your Google Calendar on his next pass.':'On your Google Calendar ✓')
+        ?(needsSync(t)?'Claude puts this on your Google Calendar next time you two talk.':'On your Google Calendar ✓')
         :'No date — nothing to put on the calendar.'}</span>
       <button class="d-delete" onclick="t_delete()">Delete task</button>
     </div>`;
@@ -3320,7 +3320,7 @@ function renderCal(){
       <div class="spacer"></div>
       ${(()=>{const n=syncQueue().length;
         return n?`<button class="cl-btn" onclick="calAsk()" title="Claude writes these straight onto your Google Calendar">
-            ✦ ${n} for Claude to add</button>`
+            ✦ ${n} waiting for Claude</button>`
         :`<span class="small muted" style="margin-right:4px">on your Google Calendar ✓</span>`;})()}
       <div class="cal-nav">
         <div class="seg">
@@ -3336,8 +3336,8 @@ function renderCal(){
       </div>
     </div>
     ${window.calAsked?`<div class="sync-banner" style="margin:12px 0 0">
-      <span><b>${window.calAsked} sent to Claude.</b> He writes them onto your Google Calendar directly —
-      nothing downloads, and an edited item updates its event rather than duplicating it.</span>
+      <span><b>${window.calAsked} saved for Claude.</b> Mention the calendar next time you two talk and he
+      writes them straight onto Google — nothing downloads, and an edit updates its event rather than duplicating it.</span>
       <button class="btn-ink" onclick="window.calAsked=0;render()">Got it</button></div>`:''}
     <div class="cal-month h-serif">${label}</div>
     ${body}`;
