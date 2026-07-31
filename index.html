@@ -1411,6 +1411,9 @@ textarea.chap-t{
 .mn-fold-btn:hover{color:var(--ink); background:var(--paper-2)}
 .mnode.chapter .mn-fold-btn{font-size:11px}
 
+.btn-ghost.wipe{margin-left:16px; color:var(--ink-faint); font-size:11.5px}
+.btn-ghost.wipe:hover{color:var(--danger)}
+
 </style>
 </head>
 <body>
@@ -1431,7 +1434,7 @@ textarea.chap-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·13</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·14</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1582,8 +1585,32 @@ function ensureDefaults(){
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
+  applyReset();
   /* the shelf got a shorter name */
   S.boards.forEach(b=>b.columns.forEach(c=>{if(/^on the horizon$/i.test((c.name||'').trim()))c.name='Shelved';}));
+}
+/* A merge keeps whatever exists on either side, so it can never carry a deletion.
+   A reset stamp can: whoever wrote it wins once, on every device, then goes quiet. */
+function applyReset(){
+  const r=S.meta&&S.meta.reset;
+  if(!r||!r.at)return;
+  const what=r.what||[];
+  /* Runs on every load, not once: a device that hasn't synced yet will keep pushing
+     its old copies back, and each of them is older than the reset, so each gets dropped. */
+  const older=x=>!x.createdAt||x.createdAt<r.at;
+  if(what.indexOf('goals')>=0){
+    S.goals=S.goals.filter(g=>!older(g));
+    const live=new Set(S.goals.map(g=>g.id));
+    S.tasks.forEach(t=>{if(t.goalId&&!live.has(t.goalId))t.goalId=null;});
+  }
+  if(what.indexOf('stars')>=0){
+    S.stars=(S.stars||[]).filter(x=>!older(x));
+    const live=new Set(S.stars.map(x=>x.id));
+    S.goals.forEach(g=>{if(g.starId&&!live.has(g.starId))g.starId=null;});
+    (S.plan||[]).forEach(e=>(e.items||[]).forEach(i=>{if(i.starId&&!live.has(i.starId))i.starId=null;}));
+  }
+  if(what.indexOf('rewards')>=0)S.rewards=(S.rewards||[]).filter(x=>!older(x));
+  S.meta.resetAck=r.at;
 }
 ensureDefaults();
 /* Claude's updates ride inside this file — merged on every load, no file link needed */
@@ -2551,7 +2578,7 @@ function renderGoals(){
 }
 function g_add(parentId,host,starId){
   const make=v=>{
-    const g={id:uid(),parentId:parentId||null,title:v,note:''};
+    const g={id:uid(),parentId:parentId||null,title:v,note:'',createdAt:Date.now()};
     if(parentId){g.current=0;g.target=null;g.unit=null;goalOpen.add(parentId);}   // a key result, not a bearing-holder
     else g.starId=starId||null;                                                   // only objectives anchor to a star
     S.goals.push(g);
@@ -3555,8 +3582,17 @@ function starsFooter(){
       <button class="cl-btn" onclick="askAnchor()">✶ Ask Claude to anchor them</button>
     </div>`:''}
     ${stars||'<div class="empty-note">No bearings set yet.</div>'}
-    <div class="gc-add"><button class="add-inline" onclick="star_add(this.parentElement)">+ New north star</button></div>
+    <div class="gc-add"><button class="add-inline" onclick="star_add(this.parentElement)">+ New north star</button>
+      ${(S.goals.length||(S.stars||[]).length)?`<button class="btn-ghost wipe" onclick="resetCompass()"
+        title="Delete every objective, key result and north star — tasks are untouched">start these fresh</button>`:''}
+    </div>
   </div>`;
+}
+function resetCompass(){
+  if(!confirm('Delete every objective, key result and north star?\n\nYour tasks, boards and chapters stay exactly as they are. This travels to your other devices too.'))return;
+  S.meta.reset={at:Date.now(),what:['goals','stars']};
+  applyReset(); save(); render();
+  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
 function compassTime(){
   const eras=S.plan.map(e=>{
@@ -3809,7 +3845,7 @@ async function askAnchor(){
   alert('Sent to Claude — his anchoring, and any thoughts about a missing star, will appear on the Claude page. You can always override with the ✶ picker.');
 }
 function star_add(host){
-  const make=v=>S.stars.push({id:uid(),title:v,note:''});
+  const make=v=>S.stars.push({id:uid(),title:v,note:'',createdAt:Date.now()});
   if(host&&host.nodeType===1)textComposer(host,'A bearing you steer by…',make);
   else{make('New north star');save();render();}
 }
@@ -3836,7 +3872,7 @@ function g_claim(gid){
   save();render();
 }
 function g_addIn(eraId,host){
-  const make=v=>S.goals.push({id:uid(),parentId:null,title:v,note:'',era:eraId,starId:null});
+  const make=v=>S.goals.push({id:uid(),parentId:null,title:v,note:'',era:eraId,starId:null,createdAt:Date.now()});
   if(host&&host.nodeType===1)textComposer(host,'Name the goal for this chapter…',make);
   else{make('New goal');save();render();}
 }
@@ -4043,6 +4079,9 @@ function mergeStates(loc,rem){
     sticky(loc.claude.inbox=loc.claude.inbox||[],rem.claude.inbox,'processed');
   }
   if(preferRem&&rem.meta.mission)loc.meta.mission=rem.meta.mission;
+  /* a reset always travels, newest wins, whichever side is globally newer */
+  if(rem.meta.reset&&(rem.meta.reset.at||0)>((loc.meta.reset&&loc.meta.reset.at)||0))
+    loc.meta.reset=rem.meta.reset;
   return loc;
 }
 async function adoptNewer(){
