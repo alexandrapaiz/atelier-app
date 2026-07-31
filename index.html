@@ -370,6 +370,11 @@ main{padding:26px 40px 60px}
   background:transparent; border:none; outline:none; font-style:italic;
 }
 .star-meta{font-size:12px; color:var(--ink-faint); margin-top:8px; letter-spacing:.2px}
+.star-heading{
+  font-family:var(--serif); font-style:italic; font-size:15px; color:var(--sage);
+  white-space:nowrap;
+}
+.star-heading.drift{color:var(--ink-faint)}
 .star-goals{margin:14px 0 0 20px}
 .star-goals .goal-block{border-top:1px dashed var(--line-soft); padding:16px 0 12px}
 .star-goals .goal-block:first-child{border-top:none; padding-top:4px}
@@ -2296,10 +2301,10 @@ function renderClaude(){
   const starRows=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
     let verdict,cls;
-    if(!st.goals.length){verdict='no goal serves it — a star without a goal is a wish';cls='drift';}
-    else if(!st.tasks.length){verdict='goals exist, but no task is linked to them yet';cls='drift';}
-    else if(!st.recent){verdict='nothing finished toward it in two weeks';cls='drift';}
-    else verdict=st.recent+' finished these two weeks · '+(st.pct??0)+'% of the way';
+    if(!st.goals.length){verdict='no route plotted — you can’t steer by scenery';cls='drift';}
+    else if(!st.tasks.length){verdict='a route with no steps on it yet';cls='drift';}
+    else if(!st.recent){verdict='nothing moved toward it in two weeks';cls='drift';}
+    else verdict='under way — '+st.recent+' finished these two weeks';
     return `<div class="cl-row">
       <span class="star-mark">✶</span>
       <span class="cl-row-t" onclick="go('compass')">${esc(s.title)}</span>
@@ -2409,13 +2414,21 @@ function clNoteAct(nid,i){
 /* ============ compass — stars, goals, and the plan as one instrument ============ */
 let compassMode='stars';
 const star=id=>(S.stars||[]).find(s=>s.id===id);
+/* A star is a bearing, not a destination — so it reports heading, never progress. */
 function starStats(sid){
   const gs=S.goals.filter(g=>!g.parentId&&g.starId===sid);
   const all=gs.flatMap(g=>goalTaskSet(g.id));
-  const done=all.filter(t=>t.done).length;
+  const live=all.filter(t=>!t.done).length;
   const items=S.plan.flatMap(e=>e.items.filter(i=>i.starId===sid).map(i=>({...i,era:e.era})));
   const recent=all.filter(t=>t.done&&(t.completedAt||0)>Date.now()-14*864e5).length;
-  return {goals:gs,tasks:all,done,pct:all.length?Math.round(100*done/all.length):null,items,recent};
+  const older=all.filter(t=>t.done&&(t.completedAt||0)>Date.now()-45*864e5).length;
+  let heading,drift=false;
+  if(!gs.length){heading='no route plotted';drift=true;}
+  else if(!all.length){heading='route without steps';drift=true;}
+  else if(recent){heading='under way';}
+  else if(older){heading='becalmed';drift=true;}
+  else{heading='drifting';drift=true;}
+  return {goals:gs,tasks:all,live,items,recent,heading,drift};
 }
 function starPicker(cur,fn){
   return `<select class="star-pick" onchange="${fn}">
@@ -2486,15 +2499,15 @@ function compassStars(){
       <div class="star-head">
         <span class="star-mark">✶</span>
         <input class="star-title" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
-        <span class="goal-pct">${st.pct===null?'nothing linked yet':st.pct+'% · '+st.done+' of '+st.tasks.length}</span>
+        <span class="star-heading ${st.drift?'drift':''}">${st.heading}</span>
         <div class="goal-tools"><button class="btn-ghost" onclick="star_del('${s.id}')">delete</button></div>
       </div>
-      <div class="track"><div class="fill" style="width:${st.pct??0};background:var(--ochre);width:${st.pct??0}%"></div></div>
-      <div class="star-meta">${st.goals.length?st.goals.length+' goal'+(st.goals.length>1?'s':''):'no goals yet'}
+      <div class="star-meta">${st.goals.length?st.goals.length+' route'+(st.goals.length>1?'s':''):'no route'}
+        · ${st.live} step${st.live===1?'':'s'} live
         · ${st.recent?st.recent+' finished these two weeks':'nothing finished in two weeks'}</div>
       <div class="star-goals">
-        ${st.goals.map(g=>goalBlock(g,true)).join('')||'<div class="empty-note">No goal serves this star yet — a star without a goal is a wish.</div>'}
-        <button class="add-inline" onclick="g_add(null,'${s.id}')">+ Goal for this star</button>
+        ${st.goals.map(g=>goalBlock(g,true)).join('')||'<div class="empty-note">No route plotted toward this bearing yet — a star you never steer by is only scenery.</div>'}
+        <button class="add-inline" onclick="g_add(null,'${s.id}')">+ Plot a route toward this star</button>
       </div>
       ${st.items.length?`<div class="star-items"><div class="d-label">Intentions pointing here</div>
         ${st.items.map(i=>`<div class="linked-t ${i.done?'done':''}"><span>${i.done?'◆':'◇'}</span>
