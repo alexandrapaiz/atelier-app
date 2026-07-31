@@ -391,6 +391,65 @@ main{padding:26px 40px 60px}
 }
 .star-chip.drift{color:var(--ink-faint); border-style:dashed}
 .plan-item .goal-tools{display:flex; align-items:center; gap:6px}
+/* timeline of goals */
+.era-goals{margin-top:6px}
+.era-goals .goal-block{border-top:1px dashed var(--line-soft); padding:14px 0 10px; cursor:grab}
+.era-goals .goal-block:first-child{border-top:none; padding-top:4px}
+.era-goals .goal-title-in{font-size:20px}
+.goal-row .steer{flex-shrink:0; color:var(--ink-faint); font-size:12px}
+.goal-achieved{opacity:.5}
+.goal-achieved .goal-title-in{text-decoration:line-through; text-decoration-thickness:1px}
+.goal-achieved .steer{color:var(--ochre)}
+.era-loose{border-left-style:dashed}
+.goal-tools{flex-wrap:wrap}
+/* tree */
+.tree{max-width:900px}
+.tree-dept{border-top:1px solid var(--line); padding:20px 0 6px}
+.tree-dept-head{
+  display:flex; align-items:center; gap:9px; font-size:11px; letter-spacing:2.2px;
+  text-transform:uppercase; color:var(--ink-faint); margin-bottom:10px;
+}
+.tree-goal{border-left:1px solid var(--line); margin:0 0 12px 8px; padding:2px 0 2px 18px; position:relative}
+.tree-goal::before{content:''; position:absolute; left:-4px; top:9px; width:7px; height:7px;
+  border-radius:50%; background:var(--paper); border:1.5px solid var(--ink-soft)}
+.tree-goal-head{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.tree-goal-t{font-family:var(--serif); font-size:18px; font-weight:600; cursor:pointer}
+.tree-goal-t:hover{text-decoration:underline}
+.tree-goal-head .goal-pct{width:auto; margin-left:auto}
+.tree-subs{margin:6px 0 0 14px}
+.tree-sub{display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px dashed var(--line-soft)}
+.tree-sub-t{font-size:13px; flex:1; min-width:0}
+/* stars footer — the far horizon */
+.stars-footer{
+  max-width:900px; margin-top:44px; padding:22px 0 10px;
+  border-top:2px double var(--line);
+}
+.stars-label{
+  font-size:11px; letter-spacing:2.2px; text-transform:uppercase; color:var(--ochre);
+  margin-bottom:16px;
+}
+.star-row{padding:14px 0; border-bottom:1px dashed var(--line-soft)}
+.star-serving{display:flex; flex-wrap:wrap; gap:7px; margin:8px 0 0 27px}
+.star-serving .star-chip{cursor:pointer}
+
+/* ---------- rewards ---------- */
+.reward-line{
+  display:flex; align-items:center; gap:9px; margin:10px 0 2px;
+  font-size:12.5px; color:var(--ink-soft); flex-wrap:wrap;
+}
+.reward-mark{color:var(--ochre); font-size:13px}
+.reward-t{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink)}
+.reward-state{font-size:11.5px; color:var(--ink-faint); font-style:italic}
+.reward-line.earned .reward-t{color:var(--ochre)}
+.reward-add{font-size:11.5px; opacity:.65; padding:6px 0}
+.reward-row{
+  display:flex; align-items:center; gap:11px; padding:10px 4px;
+  border-bottom:1px solid var(--line-soft);
+}
+.reward-row.earned{background:#f7f0dd; border-radius:10px; padding:12px 12px; border-bottom:none; margin-bottom:6px}
+.reward-row.claimed{opacity:.45}
+.reward-row.claimed .ach-t{text-decoration:line-through}
+[data-theme=dark] .reward-row.earned{background:#332c1c}
 
 /* ---------- the laurels ---------- */
 .ach-hero{
@@ -954,6 +1013,20 @@ function ensureDefaults(){
       ns.items.forEach(it=>S.stars.push({id:uid(),title:it.text,note:''}));
       S.plan=S.plan.filter(e=>e!==ns);
     }
+  }
+  /* the plan's items were always goals — promote them, chapters keep only the time */
+  if(!S.meta.planGoals){
+    (S.plan||[]).forEach(ch=>{
+      (ch.items||[]).forEach(it=>{
+        let g=S.goals.find(x=>!x.parentId&&x.title.trim().toLowerCase()===String(it.text||'').trim().toLowerCase());
+        if(!g){g={id:uid(),parentId:null,title:it.text,note:''};S.goals.push(g);}
+        g.era=ch.id;
+        if(it.starId&&!g.starId)g.starId=it.starId;
+        if(it.done)g.achieved=it.done===true?Date.now():it.done;
+      });
+      ch.items=[];
+    });
+    S.meta.planGoals=true;
   }
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
@@ -2192,6 +2265,27 @@ function renderAch(){
       `<div class="ach-stat"><div class="ach-n h-serif">${n}</div><div class="d-label" style="margin:0">${l}</div></div>`).join('')}
   </div>`;
   /* intentions realized */
+  /* rewards — promises you've made yourself */
+  const rewarded=S.goals.filter(g=>g.reward);
+  const rEarned=rewarded.filter(g=>!g.rewardClaimed&&progress(goalTaskSet(g.id))===100);
+  const rWaiting=rewarded.filter(g=>!g.rewardClaimed&&progress(goalTaskSet(g.id))!==100);
+  const rClaimed=rewarded.filter(g=>g.rewardClaimed);
+  const rewardHtml=rewarded.length?`
+    <div class="list-group-name" style="cursor:default;margin-top:4px">Rewards</div>
+    <div class="cl-sub">what you promised yourself — collecting is part of the work</div>
+    ${rEarned.map(g=>`<div class="reward-row earned">
+      <span class="reward-mark">🜲</span>
+      <span class="ach-t"><b>${esc(g.reward)}</b> — earned. ${esc(g.title)} is done.</span>
+      <button class="cl-btn" onclick="g_claim('${g.id}')">Claim it</button></div>`).join('')}
+    ${rWaiting.map(g=>{const p=progress(goalTaskSet(g.id));
+      return `<div class="reward-row">
+      <span class="reward-mark" style="opacity:.4">🜲</span>
+      <span class="ach-t">${esc(g.reward)}</span>
+      <span class="muted small" style="margin-left:auto">${esc(g.title)} · ${p===null?'not started':p+'%'}</span></div>`;}).join('')}
+    ${rClaimed.map(g=>`<div class="reward-row claimed">
+      <span class="reward-mark">🜲</span>
+      <span class="ach-t">${esc(g.reward)}</span>
+      <span class="muted small" style="margin-left:auto">claimed ${new Date(g.rewardClaimed).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></div>`).join('')}`:'';
   const intentions=planDone.length?`
     <div class="list-group-name" style="cursor:default">Intentions realized</div>
     ${planDone.map(p=>`<div class="ach-row"><span class="ach-check" style="color:var(--ochre)">◆</span>
@@ -2231,7 +2325,7 @@ function renderAch(){
     <div class="ach-hero">${hero}</div>
     ${stats}
     <div class="badges">${badges}${nextBadge}</div>
-    <div class="ach-wrap">${intentions}${timeline||''}</div>`;
+    <div class="ach-wrap">${rewardHtml}${intentions}${timeline||''}</div>`;
 }
 
 /* ============ claude — the resident reviewer ============ */
@@ -2461,14 +2555,26 @@ function goalBlock(g,compact){
       <div class="sub-tasks">${st.map(taskRow).join('')||'<div class="sub-empty">no tasks yet — link some from any task’s drawer</div>'}</div>
     </div>`;
   }).join('');
-  return `<div class="goal-block">
+  const s=g.starId?star(g.starId):null;
+  return `<div class="goal-block ${g.achieved?'goal-achieved':''}" draggable="true" data-gid="${g.id}"
+      ondragstart="dragGoal(event,'${g.id}')" ondragend="dragEnd(event)">
     <div class="goal-row">
+      <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
       <input class="goal-title-in" value="${esc(g.title)}" onchange="g_rename('${g.id}',this.value)">
+      ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
       <span class="goal-pct">${p===null?'no tasks yet':p+'% · '+all.filter(t=>t.done).length+' of '+all.length}</span>
-      <div class="goal-tools">${compact?'':starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}
+      <div class="goal-tools">${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${compact?'':eraPicker(g)}
         <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button></div>
     </div>
     <div class="track"><div class="fill" style="width:${p??0}%"></div></div>
+    ${g.reward?`<div class="reward-line ${p===100?'earned':''}">
+      <span class="reward-mark">🜲</span>
+      <span class="reward-t">${esc(g.reward)}</span>
+      ${g.rewardClaimed?'<span class="reward-state">claimed ✓</span>'
+        :p===100?`<button class="cl-btn" onclick="g_claim('${g.id}')">Claim it</button>`
+        :`<span class="reward-state">waiting${p!=null?' on '+(100-p)+'% more':''}</span>`}
+      <button class="btn-ghost" onclick="g_reward('${g.id}')">edit</button>
+    </div>`:`<button class="add-inline reward-add" onclick="g_reward('${g.id}')">+ Promise yourself a reward</button>`}
     <div class="subgoals">${subRows}
       <button class="add-inline" onclick="g_add('${g.id}')">+ Sub-goal</button></div>
     ${own.length?`<div class="linked-tasks">
@@ -2477,22 +2583,127 @@ function goalBlock(g,compact){
   </div>`;
 }
 function renderCompass(){
+  if(compassMode==='stars')compassMode='time';
   const head=`<div class="view-head">
       <div class="view-title">Compass</div>
-      <div class="view-sub">north stars, the goals that serve them, and the plan that gets you there</div>
+      <div class="view-sub">goals across time, the tree they form, and the bearings they all serve</div>
       <div class="spacer"></div>
       <div class="seg">
-        <button class="${compassMode==='stars'?'on':''}" onclick="compassMode='stars';render()">By star</button>
-        <button class="${compassMode==='time'?'on':''}" onclick="compassMode='time';render()">By time</button>
+        <button class="${compassMode==='time'?'on':''}" onclick="compassMode='time';render()">Timeline</button>
+        <button class="${compassMode==='tree'?'on':''}" onclick="compassMode='tree';render()">Tree</button>
       </div>
     </div>
     <div class="mission-wrap">
       <div class="mission-label">Mission</div>
       <textarea class="mission-input" rows="2" onchange="S.meta.mission=this.value;save()">${esc(S.meta.mission)}</textarea>
     </div>`;
-  return head+(compassMode==='time'?compassTime():compassStars());
+  return head+(compassMode==='tree'?compassTree():compassTime())+starsFooter();
 }
-function compassStars(){
+/* which domain a goal really lives in — inferred from where its tasks are */
+function goalDept(g){
+  const ids=[g.id,...S.goals.filter(s=>s.parentId===g.id).map(s=>s.id)];
+  const c={};
+  S.tasks.filter(t=>ids.includes(t.goalId)).forEach(t=>{c[t.boardId]=(c[t.boardId]||0)+1;});
+  let best=null,n=0;
+  Object.keys(c).forEach(k=>{if(c[k]>n){n=c[k];best=k;}});
+  return best;
+}
+function eraPicker(g){
+  return `<select class="star-pick" onchange="g_setEra('${g.id}',this.value)">
+    <option value="">— unscheduled —</option>
+    ${S.plan.map(e=>`<option value="${e.id}" ${g.era===e.id?'selected':''}>${esc(e.era)}</option>`).join('')}
+  </select>`;
+}
+/* the bearings — always last, never decomposed */
+function starsFooter(){
+  const stars=(S.stars||[]).map(s=>{
+    const st=starStats(s.id);
+    const gs=S.goals.filter(g=>!g.parentId&&g.starId===s.id);
+    return `<div class="star-row">
+      <div class="star-head">
+        <span class="star-mark">✶</span>
+        <input class="star-title" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
+        <span class="star-heading ${st.drift?'drift':''}">${st.heading}</span>
+        <div class="goal-tools"><button class="btn-ghost" onclick="star_del('${s.id}')">delete</button></div>
+      </div>
+      <div class="star-serving">${gs.length
+        ?gs.map(g=>`<span class="star-chip" onclick="compassMode='tree';render()">${esc(g.title)}</span>`).join('')
+        :'<span class="small muted" style="font-style:italic">nothing steers by this yet</span>'}</div>
+    </div>`;
+  }).join('');
+  return `<div class="stars-footer">
+    <div class="stars-label">✶ North Stars — the bearings everything above is trying to reach</div>
+    ${stars||'<div class="empty-note">No bearings set yet.</div>'}
+    <button class="add-inline" onclick="star_add()">+ New north star</button>
+  </div>`;
+}
+function compassTime(){
+  const eras=S.plan.map(e=>{
+    const gs=S.goals.filter(g=>!g.parentId&&g.era===e.id);
+    return `<div class="era" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
+      <div class="era-head">
+        <input class="era-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)">
+        <span class="col-count">${gs.length}</span>
+        <div class="goal-tools"><button class="btn-ghost" onclick="era_del('${e.id}')">delete</button></div>
+      </div>
+      <div class="era-goals">
+        ${gs.map(g=>goalBlock(g)).join('')||'<div class="sub-empty">no goals in this chapter yet</div>'}
+        <button class="add-inline" onclick="g_addIn('${e.id}')">+ Goal for this chapter</button>
+      </div>
+    </div>`;
+  }).join('');
+  const loose=S.goals.filter(g=>!g.parentId&&!g.era);
+  return `<div class="plan">${eras}
+    ${loose.length?`<div class="era era-loose">
+      <div class="era-head"><span class="era-title" style="color:var(--ink-faint)">Unscheduled</span>
+        <span class="col-count">${loose.length}</span></div>
+      <div class="star-meta">real goals with no season — give each one a chapter, or let it go</div>
+      <div class="era-goals">${loose.map(g=>goalBlock(g)).join('')}</div>
+    </div>`:''}
+    <div class="era" style="border-left-color:transparent;padding-bottom:6px">
+      <button class="btn-ghost" onclick="era_add()">+ Chapter</button></div></div>`;
+}
+function compassTree(){
+  const tops=S.goals.filter(g=>!g.parentId);
+  const groups={};
+  tops.forEach(g=>{const d=goalDept(g)||'none';(groups[d]=groups[d]||[]).push(g);});
+  const order=[...S.boards.map(b=>b.id).filter(id=>groups[id]),...(groups.none?['none']:[])];
+  const html=order.map(did=>{
+    const b=did==='none'?null:board(did);
+    const gs=groups[did];
+    return `<div class="tree-dept">
+      <div class="tree-dept-head">
+        ${b?`<span class="dot" style="background:${b.accent}"></span>`:''}
+        ${esc(b?b.name:'No domain yet')}
+      </div>
+      ${gs.map(g=>{
+        const subs=S.goals.filter(s=>s.parentId===g.id);
+        const all=goalTaskSet(g.id), p=progress(all);
+        const s=g.starId?star(g.starId):null;
+        const era=g.era?S.plan.find(e=>e.id===g.era):null;
+        return `<div class="tree-goal">
+          <div class="tree-goal-head">
+            <span class="tree-goal-t" onclick="compassMode='time';render()">${esc(g.title)}</span>
+            ${era?`<span class="b-tag">${esc(era.era)}</span>`:''}
+            ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
+            <span class="goal-pct">${p===null?'—':p+'%'}</span>
+          </div>
+          <div class="tree-subs">
+            ${subs.map(sg=>{
+              const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t));
+              const sp=progress(st);
+              return `<div class="tree-sub">
+                <span class="tree-sub-t">${esc(sg.title)}</span>
+                <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
+                <div class="sub-track"><div class="fill" style="width:${sp??0}%"></div></div>
+              </div>`;}).join('')||'<div class="sub-empty">no sub-goals</div>'}
+          </div>
+        </div>`;}).join('')}
+    </div>`;
+  }).join('');
+  return `<div class="tree">${html||'<div class="empty-note">No goals yet.</div>'}</div>`;
+}
+function compassStarsOld(){
   const stars=(S.stars||[]).map(s=>{
     const st=starStats(s.id);
     return `<div class="star-block">
@@ -2527,31 +2738,6 @@ function compassStars(){
     <div class="star-block star-new"><button class="add-inline" onclick="g_add(null)" style="font-size:13.5px">+ New goal</button></div>
   </div>`;
 }
-function compassTime(){
-  const eras=S.plan.map(e=>{
-    const items=e.items.map(it=>{
-      const s=it.starId?star(it.starId):null;
-      return `<div class="plan-item ${it.done?'done-card':''}" draggable="true" data-pid="${it.id}"
-        ondragstart="dragPlan(event,'${it.id}')" ondragend="dragEnd(event)">
-        <button class="steer" title="${it.done?'Achieved — click to reopen':'Mark as achieved'}" onclick="p_toggle('${it.id}')">${it.done?'◆':'◇'}</button>
-        <input class="p-text" value="${esc(it.text)}" onchange="p_edit('${it.id}',this.value)">
-        ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
-        <div class="goal-tools">${starPicker(it.starId,`p_setStar('${it.id}',this.value)`)}
-          <button class="btn-ghost" onclick="p_del('${it.id}')">×</button></div>
-      </div>`;
-    }).join('');
-    return `<div class="era" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropPlan(event,'${e.id}')">
-      <div class="era-head">
-        <input class="era-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)">
-        <div class="goal-tools"><button class="btn-ghost" onclick="era_del('${e.id}')">delete</button></div>
-      </div>
-      ${items}
-      <button class="add-inline" onclick="p_add('${e.id}')">+ Intention</button>
-    </div>`;
-  }).join('');
-  return `<div class="plan">${eras||'<div class="empty-note">Add a chapter — a month, a season, a year, a someday.</div>'}
-    <div class="era" style="border-left-color:transparent"><button class="btn-ghost" onclick="era_add()">+ Chapter</button></div></div>`;
-}
 function star_add(){
   const t=prompt('Name a north star — a bearing you steer by:');
   if(!t||!t.trim())return;
@@ -2565,6 +2751,32 @@ function star_del(id){
   S.stars=S.stars.filter(s=>s.id!==id);render();
 }
 function g_setStar(gid,sid){const g=goal(gid);if(g)g.starId=sid||null;save();render();}
+function g_setEra(gid,eid){const g=goal(gid);if(g)g.era=eid||null;save();render();}
+function g_toggle(gid){const g=goal(gid);if(g)g.achieved=g.achieved?null:Date.now();save();render();}
+function g_reward(gid){
+  const g=goal(gid); if(!g)return;
+  const v=prompt('What will you give yourself when this is done?\n(the massage, the dinner, the trip, the guilt-free weekend…)',g.reward||'');
+  if(v===null)return;
+  g.reward=v.trim()||null; if(!g.reward)g.rewardClaimed=null;
+  save();render();
+}
+function g_claim(gid){
+  const g=goal(gid); if(!g)return;
+  g.rewardClaimed=Date.now(); if(!g.achieved)g.achieved=Date.now();
+  save();render();
+}
+function g_addIn(eraId){
+  const t=prompt('Name the goal for this chapter:');
+  if(!t||!t.trim())return;
+  S.goals.push({id:uid(),parentId:null,title:t.trim(),note:'',era:eraId,starId:null});render();
+}
+function dragGoal(ev,id){drag={type:'goal',id};ev.dataTransfer.effectAllowed='move';ev.stopPropagation();}
+function dropGoal(ev,eraId){
+  ev.preventDefault();ev.currentTarget.classList.remove('drag-over-col');
+  if(!drag||drag.type!=='goal')return;
+  const g=goal(drag.id); if(g)g.era=eraId;
+  drag=null;save();render();
+}
 function p_setStar(pid,sid){const f=planFind(pid);if(f)f.it.starId=sid||null;save();render();}
 
 /* ============ life plan ============ */
