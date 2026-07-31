@@ -1537,6 +1537,16 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .cl-you:hover .cl-you-x{opacity:1}
 @media (max-width:700px){ .cl-you-x{opacity:1} }
 
+
+.done-toggle{
+  display:block; width:100%; margin-top:8px; text-align:left;
+  border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
+  border-radius:9px; padding:10px 12px; font-family:var(--sans); font-size:13px; cursor:pointer;
+}
+.done-toggle:hover{border-color:var(--ink-faint); color:var(--ink)}
+.done-toggle.on{background:#eef1e9; border-color:var(--sage); color:#4d5b45}
+[data-theme=dark] .done-toggle.on{background:#242a20; color:#a9bb9c}
+
 </style>
 </head>
 <body>
@@ -1557,7 +1567,7 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·23</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·24</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1670,9 +1680,7 @@ if(FRESH&&HOSTED){S={meta:{mission:'A calm, intentional season — health, faith
 function addHorizonCol(b){
   if(b.columns.some(c=>/on the horizon|^shelved$/i.test(c.name)))return;
   const col={id:uid(),name:'Shelved'};
-  const last=b.columns[b.columns.length-1];
-  if(last&&/^done$/i.test(last.name))b.columns.splice(b.columns.length-1,0,col);
-  else b.columns.push(col);
+  b.columns.push(col);
 }
 function ensureDefaults(){
   if(!S.plan)S.plan=[];
@@ -1709,6 +1717,24 @@ function ensureDefaults(){
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
   purgeBuried();
+  if(!S.meta.doneIsStatus){
+    S.boards.forEach(b=>{
+      const done=(b.columns||[]).filter(c=>/^done$/i.test(String(c.name).trim()));
+      if(!done.length)return;
+      const home=(b.columns||[]).find(c=>!/^done$/i.test(String(c.name).trim())&&c.kind!=='routine');
+      done.forEach(dc=>{
+        S.tasks.forEach(t=>{
+          if(t.boardId!==b.id||t.colId!==dc.id)return;
+          const prev=t.prevColId&&b.columns.some(c=>c.id===t.prevColId&&c.id!==dc.id)?t.prevColId:null;
+          t.colId=prev||(home?home.id:t.colId);
+          t.prevColId=null;
+        });
+        tombstone(dc.id);
+      });
+      b.columns=(b.columns||[]).filter(c=>!/^done$/i.test(String(c.name).trim()));
+    });
+    S.meta.doneIsStatus=true;
+  }
   /* One-time, 31 July: a blank Compass — asked for, and repeatedly undone by a stale tab still
      pushing the old goals around. Baked into the build so one refresh settles it on every device.
      Anything created after this instant carries a later birthday and is left alone. */
@@ -2326,14 +2352,14 @@ function dropSideGroup(ev,mcolId){
 /* ============ master (studio) ============ */
 /* how much a board still asks of you: 0 = live work, 1 = only scheduled, 2 = at rest */
 function boardTier(b){
-  const all=boardTasks(b.id).filter(t=>!isRoutine(t)&&!isShelved(t));
+  const all=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)&&!isShelved(t));
   const open=all.filter(t=>!isAppt(t)&&!t.done).length;
   if(open)return 0;
   const appt=all.filter(t=>isAppt(t)&&!t.done&&(!t.due||t.due>=todayStr())).length;
   return appt?1:2;
 }
 function boardCard(b){
-  const all=boardTasks(b.id), rn=all.filter(isRoutine).length;
+  const all=boardTasks(b.id).filter(t=>!t.done), rn=all.filter(isRoutine).length;
   const shelved=all.filter(t=>!isRoutine(t)&&isShelved(t)&&!t.done).length;
   const timed=all.filter(t=>!isRoutine(t)&&isAppt(t)&&!isShelved(t));
   const ts=all.filter(t=>!isRoutine(t)&&!isAppt(t)&&!isShelved(t));   // only live work counts
@@ -2408,7 +2434,7 @@ function newBoard(mcol){
   const name=prompt('Name this board — a domain of your life:');
   if(!name||!name.trim())return;
   S.boards.push({id:uid(),name:name.trim(),accent:ACCENTS[S.boards.length%ACCENTS.length],
-    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'Shelved'},{id:uid(),name:'Done'}]});
+    masterCol:mcol,columns:[{id:uid(),name:'To do'},{id:uid(),name:'Soon'},{id:uid(),name:'Shelved'}]});
   render();
 }
 
@@ -2514,7 +2540,7 @@ function renderBoard(){
 }
 function renderKanban(b){
   const cols=b.columns.map(c=>{
-    const ts=byUrgent(S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id));
+    const ts=byUrgent(S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id&&!t.done));
     return `<div class="col" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropTask(event,'${c.id}')">
       <div class="col-head">
         <span class="col-grip" draggable="true" title="Drag to reorder column"
@@ -2568,7 +2594,7 @@ function renderList(b){
     </select>
   </div>`;
   const groups=b.columns.map(c=>{
-    const all=S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id);
+    const all=S.tasks.filter(t=>t.boardId===b.id&&t.colId===c.id&&!t.done);
     const ts=byUrgent(all.filter(passesFilters));
     const rows=ts.map(t=>{
       const g=t.goalId?goal(t.goalId):null;
@@ -2672,20 +2698,14 @@ function nlComposer(container,before,bid,cid){
 function quickAdd(bid,cid,btn){
   nlComposer(btn.parentElement.querySelector('.col-body'),null,bid,cid);
 }
+/* Finishing something doesn't move it. It stays in the column it belongs to — which is what
+   lets a key result count "3 of 7 in Uni · Nature" instead of watching its own denominator
+   walk away. Done work simply stops being shown, everywhere except the Laurels. */
 function toggleDone(id){
   const t=S.tasks.find(t=>t.id===id);
-  t.done=!t.done;t.completedAt=t.done?Date.now():null;
-  const b=board(t.boardId);
-  if(t.done){
-    let dc=b.columns.find(c=>/^done$/i.test(c.name.trim()));
-    if(!dc){dc={id:uid(),name:'Done'};b.columns.push(dc);}   // every board earns a Done column when first needed
-    if(t.colId!==dc.id){t.prevColId=t.colId;t.colId=dc.id;}
-  }else{
-    const cur=colOf(t);
-    if(t.prevColId&&b.columns.some(c=>c.id===t.prevColId)&&cur&&/^done$/i.test(cur.name.trim()))
-      t.colId=t.prevColId;                                    // untick sends it home
-    t.prevColId=null;
-  }
+  if(!t)return;
+  t.done=!t.done;
+  t.completedAt=t.done?Date.now():null;
   touch(t);
   render();
 }
@@ -2720,7 +2740,13 @@ function openDrawer(tid){
     ${blockOf?`<div class="d-field"><div class="d-label">Time blocked for</div>
       <button class="cl-btn" onclick="openDrawer('${blockOf.id}')">${esc(blockOf.title)} ↗</button></div>`:''}
     <div class="d-field"><div class="d-label">Status</div>
-      <select onchange="t_setCol(this.value)">${colOpts}</select></div>
+      <select onchange="t_setCol(this.value)">${colOpts}</select>
+      <button class="done-toggle ${t.done?'on':''}" onclick="toggleDone('${t.id}');openDrawer('${t.id}')">
+        ${t.done?'✓ Finished'+(t.completedAt?' · '+new Date(t.completedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'')
+                :'Mark finished'}</button>
+      <div class="kind-note">${t.done
+        ?'It keeps its place on the board — it just stops being shown until you look at the Laurels.'
+        :'Finishing it leaves it where it is. Nothing moves.'}</div></div>
     ${appt?'':`<div class="d-field"><div class="d-label">Urgency</div>
       <button class="urgent-toggle ${t.urgent?'on':''}" onclick="t_toggleUrgent()">
         ${t.urgent?'! Urgent — floats to the top everywhere':'Mark as urgent'}</button></div>`}
@@ -3805,7 +3831,7 @@ function krPicker(kr){
   const cOpts=cb?(cb.columns||[]).map(c=>`<option value="${c.id}" ${cur.colId===c.id?'selected':''}>${esc(c.name)}</option>`).join(''):'';
   /* the tasks you could hand-pick — narrowed to a column once one is chosen */
   const pool=cb?S.tasks.filter(t=>t.boardId===cb.id&&!isRoutine(t)&&!isAppt(t)
-      &&(cur.kind==='col'&&cur.colId?t.colId===cur.colId:true)):[];
+      &&(cur.kind==='col'&&cur.colId?t.colId===cur.colId:true)):[];   // finished ones included: they are the numerator
   return `<div class="kr-picker">
     ${sug.length?`<div class="kp-label">Probably this</div>
       <div class="kp-chips">${sug.map(x=>{
