@@ -1080,6 +1080,90 @@ textarea.tr-mission-t{
   .rw-new select{max-width:none; flex:1}
 }
 
+
+/* ---- OKR: key results ---- */
+.kr{display:flex; align-items:flex-start; gap:9px; padding:5px 0; flex-wrap:wrap}
+.kr-tick{background:none; border:none; cursor:pointer; color:var(--ink-faint); font-size:12px;
+  padding:3px 2px 0; flex-shrink:0}
+.kr-tick.on{color:var(--ochre)}
+textarea.kr-t{
+  flex:1 1 200px; min-width:0; background:transparent; border:none; outline:none; resize:none;
+  font-family:var(--sans); font-size:13.5px; line-height:1.45; color:var(--ink);
+  padding:2px 0; overflow:hidden;
+}
+textarea.kr-t:focus{border-bottom:1px solid var(--ink-faint)}
+.kr-nums{display:inline-flex; align-items:center; gap:4px; flex-shrink:0; margin-top:1px}
+.kr-n{
+  width:52px; border:1px solid var(--line); border-radius:7px; padding:4px 6px;
+  font-family:var(--sans); font-size:12px; text-align:right; background:var(--paper); color:var(--ink);
+  font-variant-numeric:tabular-nums; -moz-appearance:textfield;
+}
+.kr-n::-webkit-outer-spin-button,.kr-n::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.kr-n:focus{outline:none; border-color:var(--ink-faint)}
+.kr-slash{color:var(--ink-faint); font-size:12px}
+.kr-u{
+  width:66px; border:none; border-bottom:1px dashed var(--line); background:transparent;
+  font-family:var(--sans); font-size:11.5px; color:var(--ink-soft); padding:4px 2px;
+}
+.kr-u:focus{outline:none; border-bottom-color:var(--ink-faint)}
+.kr-track{position:relative; display:inline-block; width:96px; height:4px; margin-top:9px;
+  background:var(--line-soft); border-radius:3px; overflow:visible; flex-shrink:0}
+.kr-track .fill{display:block; height:100%; background:var(--ink-faint); border-radius:3px; transition:width .3s}
+.kr-track .fill.won{background:var(--sage)}
+.kr-mark{position:absolute; top:-3px; width:1px; height:10px; background:var(--ochre); opacity:.65}
+.kr-pct{font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums;
+  width:34px; text-align:right; margin-top:6px; flex-shrink:0}
+.kr-pct.won{color:var(--sage)}
+.gcard-pct.won{color:var(--sage)}
+.track{position:relative; overflow:visible}
+.gcard .track .fill{background:var(--ink-faint)}
+.gcard .track .fill.won{background:var(--sage)}
+.track-mark{position:absolute; top:-3px; width:1px; height:9px; background:var(--ochre); opacity:.7}
+.tr-node.kr-node{padding:0; min-height:0}
+.tr-node.kr-node .kr{width:100%}
+/* ---- chapters read as time, not as another goal ---- */
+.chap{border-left:none; padding:0 0 16px 0; margin:0 0 6px}
+.chap-head{
+  display:flex; align-items:baseline; gap:12px;
+  border-top:1px solid var(--line); margin-top:20px; padding:14px 0 4px;
+}
+.chapters>.chap:first-child .chap-head{margin-top:4px; border-top:none}
+.chap-mark{display:none}
+.chap-title{
+  background:transparent; border:none; outline:none; padding:0;
+  font-family:var(--serif); font-style:italic; font-weight:600; font-size:24px;
+  letter-spacing:0; text-transform:none; color:var(--ochre);
+  flex:0 1 auto; min-width:60px; width:auto;
+}
+.chap-title:focus{border-bottom:1px solid var(--ochre)}
+.chap-head .col-count{margin-left:auto; font-size:11px}
+.chap-goals{margin-top:4px; padding-left:2px}
+.chap-goals .gcard:first-child{border-top:none}
+.chap.loose{border-left:none}
+.chap.loose .chap-title{color:var(--ink-faint)}
+.chap-note{margin:2px 0 6px}
+.chap-new{padding-left:2px; margin-top:8px}
+/* ---- the Claude switch ---- */
+.counsel.shut{padding:11px 16px}
+.switch{
+  margin-left:auto; width:34px; height:19px; border-radius:999px; background:var(--line);
+  position:relative; flex-shrink:0; transition:background .18s;
+}
+.switch.on{background:var(--ochre)}
+.switch .knob{
+  position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%;
+  background:var(--card); transition:left .18s; box-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+.switch.on .knob{left:17px}
+@media (max-width:700px){
+  .chap-title{font-size:21px}
+  .chap{padding-left:0}
+  .kr{gap:7px}
+  .kr-track{width:100%; flex:1 1 100%; margin-top:6px}
+  .kr-pct{margin-top:2px}
+  textarea.kr-t{flex-basis:100%}
+}
+
 </style>
 </head>
 <body>
@@ -1100,7 +1184,7 @@ textarea.tr-mission-t{
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·4</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·5</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1450,6 +1534,31 @@ function progress(tasks){
   if(!tasks.length)return null;
   return Math.round(100*tasks.filter(t=>t.done).length/tasks.length);
 }
+/* ---- OKR ----
+   A goal is an objective. Its sub-goals are key results: each carries a number
+   it is trying to reach. Progress is the mean of the key results — never the tasks,
+   which are deliberately detached for now. 80% is the mark; 100% means it was too safe. */
+const TARGET_PCT=80;
+function isMetric(kr){return kr&&kr.target!==undefined&&kr.target!==null&&kr.target!=='';}
+function krPct(kr){
+  if(!isMetric(kr))return kr.achieved?100:0;
+  const t=Number(kr.target), b=Number(kr.base||0), c=Number(kr.current||0);
+  if(!isFinite(t)||!isFinite(c)||t===b)return kr.achieved?100:0;
+  return Math.max(0,Math.min(100,Math.round(100*(c-b)/(t-b))));
+}
+function goalKrs(gid){return S.goals.filter(s=>s.parentId===gid);}
+function goalPct(gid){
+  const krs=goalKrs(gid);
+  if(!krs.length)return null;
+  return Math.round(krs.reduce((a,k)=>a+krPct(k),0)/krs.length);
+}
+function kr_set(id,field,v){
+  const k=goal(id); if(!k)return;
+  if(field==='unit')k.unit=v.trim()||null;
+  else{const n=v===''?null:Number(v); k[field]=(n===null||!isFinite(n))?null:n;}
+  k.krTouched=Date.now(); save(); render();
+}
+function kr_toggle(id){const k=goal(id); if(!k)return; k.achieved=k.achieved?null:Date.now(); k.krTouched=Date.now(); save(); render();}
 /* ============ one-press calendar sync ============
    Builds a single .ics of everything dated that Google hasn't seen yet.
    Stable UIDs mean re-syncing an edited item updates it instead of duplicating. */
@@ -2171,12 +2280,14 @@ function renderGoals(){
 }
 function g_add(parentId,host,starId){
   const make=v=>{
-    const g={id:uid(),parentId:parentId||null,title:v,note:'',starId:starId||null};
-    if(parentId){const pg=goal(parentId); if(pg&&pg.era)g.era=null; goalOpen.add(parentId);}
+    const g={id:uid(),parentId:parentId||null,title:v,note:''};
+    if(parentId){g.current=0;g.target=null;g.unit=null;goalOpen.add(parentId);}   // a key result, not a bearing-holder
+    else g.starId=starId||null;                                                   // only objectives anchor to a star
     S.goals.push(g);
   };
-  if(host&&host.nodeType===1)textComposer(host,parentId?'Name this sub-goal…':'Name this goal…',make);
-  else{make(parentId?'New sub-goal':'New goal');save();render();}
+  if(host&&host.nodeType===1)
+    textComposer(host,parentId?'What number proves this happened?…':'Name this goal…',make);
+  else{make(parentId?'New key result':'New goal');save();render();}
 }
 function g_rename(id,v){const g=goal(id);if(g&&v.trim())g.title=v.trim();save();}
 function g_delete(id){
@@ -2909,18 +3020,18 @@ const star=id=>(S.stars||[]).find(s=>s.id===id);
 /* A star is a bearing, not a destination — so it reports heading, never progress. */
 function starStats(sid){
   const gs=S.goals.filter(g=>!g.parentId&&g.starId===sid);
-  const all=gs.flatMap(g=>goalTaskSet(g.id));
-  const live=all.filter(t=>!t.done).length;
+  const krs=gs.flatMap(g=>goalKrs(g.id));
   const items=S.plan.flatMap(e=>e.items.filter(i=>i.starId===sid).map(i=>({...i,era:e.era})));
-  const recent=all.filter(t=>t.done&&(t.completedAt||0)>Date.now()-14*864e5).length;
-  const older=all.filter(t=>t.done&&(t.completedAt||0)>Date.now()-45*864e5).length;
+  const recent=krs.filter(k=>(k.krTouched||0)>Date.now()-14*864e5).length;
+  const older=krs.filter(k=>(k.krTouched||0)>Date.now()-45*864e5).length;
+  const atTarget=gs.filter(g=>(goalPct(g.id)??0)>=TARGET_PCT).length;
   let heading,drift=false;
   if(!gs.length){heading='no route plotted';drift=true;}
-  else if(!all.length){heading='route without steps';drift=true;}
+  else if(!krs.length){heading='goals without measures';drift=true;}
   else if(recent){heading='under way';}
   else if(older){heading='becalmed';drift=true;}
   else{heading='drifting';drift=true;}
-  return {goals:gs,tasks:all,live,items,recent,heading,drift};
+  return {goals:gs,krs,tasks:[],live:krs.length,items,recent,atTarget,heading,drift};
 }
 function starPicker(cur,fn){
   return `<select class="star-pick" onchange="${fn}">
@@ -2973,39 +3084,37 @@ const toolsOpen=new Set();
 function g_tools(id){toolsOpen.has(id)?toolsOpen.delete(id):toolsOpen.add(id);render();}
 
 /* one goal node — the same shape on the Timeline and in the Tree */
+/* one key result — a number it is trying to reach */
+function krRow(kr){
+  const pct=krPct(kr), metric=isMetric(kr);
+  return `<div class="kr">
+    <button class="kr-tick ${krPct(kr)>=100?'on':''}" title="${metric?'':'Mark this key result met'}"
+      onclick="kr_toggle('${kr.id}')">${pct>=100?'◆':'◇'}</button>
+    <textarea class="kr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+      onchange="g_rename('${kr.id}',this.value)" placeholder="what gets measured…">${esc(kr.title)}</textarea>
+    <span class="kr-nums">
+      <input class="kr-n" type="number" inputmode="decimal" value="${kr.current??''}" placeholder="0"
+        title="where you are now" onchange="kr_set('${kr.id}','current',this.value)">
+      <span class="kr-slash">/</span>
+      <input class="kr-n" type="number" inputmode="decimal" value="${kr.target??''}" placeholder="target"
+        title="the number that means done" onchange="kr_set('${kr.id}','target',this.value)">
+      <input class="kr-u" value="${esc(kr.unit||'')}" placeholder="unit"
+        title="pages, kg, calls, quetzales…" onchange="kr_set('${kr.id}','unit',this.value)">
+    </span>
+    <span class="kr-track"><span class="fill ${pct>=TARGET_PCT?'won':''}" style="width:${pct}%"></span>
+      <span class="kr-mark" style="left:${TARGET_PCT}%"></span></span>
+    <span class="kr-pct ${pct>=TARGET_PCT?'won':''}">${pct}%</span>
+    <button class="more" onclick="g_delete('${kr.id}')" title="Delete key result">×</button>
+  </div>`;
+}
 function goalBlock(g,opts){
   opts=opts||{};
-  const subs=S.goals.filter(s=>s.parentId===g.id);
-  const all=goalTaskSet(g.id), p=progress(all);
+  const subs=goalKrs(g.id);
+  const p=goalPct(g.id);
   const open=goalOpen.has(g.id);
-  const own=S.tasks.filter(t=>t.goalId===g.id&&!isRoutine(t)&&!isAppt(t));
   const s=g.starId?star(g.starId):null;
   const era=g.era?S.plan.find(e=>e.id===g.era):null;
-  const taskRow=t=>{
-    const b=board(t.boardId);
-    return `<div class="linked-t ${t.done?'done':''}" onclick="go('board','${t.boardId}');openDrawer('${t.id}')">
-      <span>${t.done?'✓':'○'}</span><span>${esc(t.title)}</span>
-      <span class="b-tag">${esc(b?b.name:'')}</span>
-      ${t.due?`<span class="small muted">${fmtDue(t.due)}</span>`:''}
-      ${t.urgent?'<span class="chip urgent-chip">!</span>':''}
-    </div>`;
-  };
-  const subRows=subs.map(sg=>{
-    const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t)), sp=progress(st);
-    const so=goalOpen.has(sg.id);
-    return `<div class="tr-branch">
-      <div class="tr-node">
-        <button class="caret goal-caret" onclick="g_expand('${sg.id}')">${so?'▾':'▸'}</button>
-        <textarea class="tr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
-          onchange="g_rename('${sg.id}',this.value)">${esc(sg.title)}</textarea>
-        <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
-        <span class="sub-track"><span class="fill" style="width:${sp??0}%"></span></span>
-        <button class="more" onclick="g_delete('${sg.id}')" title="Delete sub-goal">×</button>
-      </div>
-      ${so?`<div class="tr-kids">${st.map(taskRow).join('')
-        ||'<div class="sub-empty">no tasks yet — link some from any task’s drawer</div>'}</div>`:''}
-    </div>`;
-  }).join('');
+  const subRows=subs.map(krRow).join('');
   return `<div class="gcard${g.achieved?' achieved':''}" data-gid="${g.id}"
       ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
     <div class="gcard-head">
@@ -3015,13 +3124,14 @@ function goalBlock(g,opts){
       <button class="caret goal-caret" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
       <textarea class="gcard-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
         onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
-      ${p===null?'':`<span class="gcard-pct">${p}%</span>`}
+      ${p===null?'':`<span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
     </div>
     <div class="gcard-meta">
       ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
       ${opts.showEra&&era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-      <span class="gcard-count">${subs.length?subs.length+' sub-goal'+(subs.length>1?'s':''):'no sub-goals'}${
-        all.length?' · '+all.filter(t=>t.done).length+'/'+all.length+' tasks':''}</span>
+      <span class="gcard-count">${subs.length
+        ?subs.length+' key result'+(subs.length>1?'s':'')+(p>=TARGET_PCT?' · at target':p===null?'':' · '+(TARGET_PCT-p)+' to target')
+        :'no key results yet'}</span>
       <button class="more" title="Anchor, schedule, ask Claude, delete" onclick="g_tools('${g.id}')">⋯</button>
     </div>
     ${toolsOpen.has(g.id)?`<div class="gcard-tools">
@@ -3029,13 +3139,11 @@ function goalBlock(g,opts){
       <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for sub-goals</button>
       <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
     </div>`:''}
-    ${all.length?`<div class="track"><div class="fill" style="width:${p??0}%"></div></div>`:''}
+    ${p===null?'':`<div class="track"><div class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></div>
+      <span class="track-mark" style="left:${TARGET_PCT}%" title="${TARGET_PCT}% is the mark"></span></div>`}
     ${open?`<div class="gcard-body">
-      ${subRows}
-      <div class="gc-add"><button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Sub-goal</button></div>
-      ${own.length?`<div class="linked-tasks">
-        ${subs.length?'<div class="d-label" style="margin:10px 0 2px">Linked straight to the goal</div>':''}
-        ${own.map(taskRow).join('')}</div>`:''}
+      ${subRows||'<div class="sub-empty">no key results yet — name the numbers that would prove this happened</div>'}
+      <div class="gc-add"><button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button></div>
     </div>`:''}
   </div>`;
 }
@@ -3044,15 +3152,16 @@ function goalBlock(g,opts){
 const CQ=[
   {l:'Name goals for a chapter',
    q:'Look at the chapters on my Compass timeline and propose 2–4 real goals for any chapter that is thin. Goals, not tasks — things that are either achieved or not by the end of that season.'},
-  {l:'Break my goals into sub-goals',
-   q:'Go through my top-level goals and propose sub-goals for the ones that have none. Each sub-goal should be small enough that three or four tasks finish it.'},
+  {l:'Write key results for my goals',
+   q:'Go through my objectives and propose 2–4 key results for each — every one a number with a unit, calibrated so that 80% is a genuine win and 100% would mean I set the bar too low. Tell me what to measure and where to put the bar.'},
   {l:'Am I steering by the right stars?',
    q:'Look honestly at my north stars and my goals. Is anything I am spending time on serving no bearing? Is a bearing missing? Say it plainly, even if the answer is that a goal should be dropped.'},
   {l:'Anchor the unanchored',q:''},
   {l:'What should I drop?',
    q:'Read my goals and tell me which one or two I should let go of this season, and why. I would rather do fewer things well.'}
 ];
-let counselOpen=null;
+function counselIsOpen(){return S.meta.counsel!==false;}
+function counselToggle(){S.meta.counsel=!counselIsOpen();save();render();}
 function cpPush(text,goalId){
   S.claude.inbox=S.claude.inbox||[];
   S.claude.inbox.push({id:uid(),createdAt:Date.now(),text,topic:'compass',goalId:goalId||null});
@@ -3069,21 +3178,23 @@ function cpSend(){
 }
 function askSubgoals(gid){
   const g=goal(gid); if(!g)return;
-  counselOpen=true;
-  cpPush('In the Compass: break the goal “'+g.title+'” into 2–4 concrete sub-goals, and suggest the first task under each. If the goal itself is too vague to decompose, say that instead and propose a sharper version.',gid);
+  S.meta.counsel=true;
+  cpPush('In the Compass: give the goal “'+g.title+'” 2–4 key results in OKR form — each one a number with a unit, '
+    +'set so that hitting 80% is a real win and 100% would have meant I aimed too low. Say what to measure and where the bar goes. '
+    +'If the objective itself is too vague to measure, say so and propose a sharper one.',gid);
 }
 function compassCounsel(){
   const notes=((S.claude&&S.claude.notes)||[]).filter(n=>!n.resolved&&n.topic==='compass');
   const sent=((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.topic==='compass');
-  const open=counselOpen===null?(notes.length>0||sent.length>0):counselOpen;
-  return `<div class="counsel">
-    <div class="counsel-head" onclick="counselOpen=${open?'false':'true'};render()">
+  const open=counselIsOpen();
+  return `<div class="counsel${open?'':' shut'}">
+    <div class="counsel-head" onclick="counselToggle()">
       <span class="cl-mark">✦</span>
       <span class="counsel-t">Claude, on the goals themselves</span>
       ${notes.length?`<span class="counsel-n">${notes.length}</span>`:''}
-      <span class="caret" style="margin-left:auto">${open?'▾':'▸'}</span>
+      <span class="switch ${open?'on':''}" title="${open?'Hide Claude here':'Show Claude here'}"><span class="knob"></span></span>
     </div>
-    <div class="counsel-sub">not for doing the work — for deciding what the work should be</div>
+    ${open?'<div class="counsel-sub">not for doing the work — for deciding what the work should be</div>':''}
     ${open?`
       <div class="counsel-chips">${CQ.map((c,i)=>`<button class="ch" onclick="cpAsk(${i})">${esc(c.l)}</button>`).join('')}</div>
       <textarea id="cpMsg" rows="2" oninput="window.cpDraft=this.value"
@@ -3203,8 +3314,8 @@ function compassTree(){
       </div>
       <div class="tr-kids">
         ${gs.map(g=>{
-          const subs=S.goals.filter(s=>s.parentId===g.id);
-          const all=goalTaskSet(g.id), p=progress(all);
+          const subs=goalKrs(g.id);
+          const p=goalPct(g.id);
           const s=g.starId?star(g.starId):null;
           const era=g.era?S.plan.find(e=>e.id===g.era):null;
           return `<div class="tr-branch">
@@ -3213,7 +3324,7 @@ function compassTree(){
               <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
                 onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
               ${era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-              ${p===null?'':`<span class="gcard-pct">${p}%</span>`}
+              ${p===null?'':`<span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
               <button class="more" onclick="g_tools('${g.id}')">⋯</button>
             </div>
             ${toolsOpen.has(g.id)?`<div class="gcard-tools tree-tools">
@@ -3222,21 +3333,12 @@ function compassTree(){
               <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
             </div>`:''}
             <div class="tr-kids">
-              ${subs.map(sg=>{
-                const st=S.tasks.filter(t=>t.goalId===sg.id&&!isRoutine(t)&&!isAppt(t));
-                const sp=progress(st);
-                return `<div class="tr-branch">
-                  <div class="tr-node">
-                    <textarea class="tr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
-                      onchange="g_rename('${sg.id}',this.value)">${esc(sg.title)}</textarea>
-                    <span class="small muted">${st.length?st.filter(t=>t.done).length+'/'+st.length:'no tasks'}</span>
-                    <span class="sub-track"><span class="fill" style="width:${sp??0}%"></span></span>
-                    <button class="more" onclick="g_delete('${sg.id}')" title="Delete sub-goal">×</button>
-                  </div>
-                </div>`;}).join('')}
+              ${subs.map(sg=>`<div class="tr-branch">
+                  <div class="tr-node kr-node">${krRow(sg)}</div>
+                </div>`).join('')}
               <div class="tr-branch">
                 <div class="tr-node thin gc-add">
-                  <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Sub-goal</button>
+                  <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button>
                 </div>
               </div>
               ${s?`<div class="tr-branch">
@@ -3621,6 +3723,8 @@ function updateFileStatus(){
 
 /* ============ dedupe — heal double imports from divergent copies ============ */
 function dedupeState(){
+  /* only an objective steers by a star — a key result belongs to its objective */
+  S.goals.forEach(g=>{if(g.parentId&&g.starId)g.starId=null;});
   const low=s=>(s||'').trim().toLowerCase();
   { /* master columns by name */
     const seen={};
