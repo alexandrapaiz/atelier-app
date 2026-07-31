@@ -1164,6 +1164,97 @@ textarea.kr-t:focus{border-bottom:1px solid var(--ink-faint)}
   textarea.kr-t{flex-basis:100%}
 }
 
+
+/* ============ compass v3: lean timeline rows + the strategy map ============ */
+.gnode>.tr-node.goal{gap:8px}
+.gnode .grip{margin-top:1px}
+.gspacer{flex:0 0 16px}
+.gnode>.tr-node.goal>textarea.tr-t.big{flex:1 1 auto}
+.gkr-n{font-size:11px; color:var(--ink-faint); flex-shrink:0; white-space:nowrap}
+.gmini{position:relative; display:inline-block; width:74px; height:4px; border-radius:3px;
+  background:var(--line-soft); flex-shrink:0; margin-top:2px}
+.gmini .fill{display:block; height:100%; border-radius:3px; background:var(--ink-faint)}
+.gmini .fill.won{background:var(--sage)}
+.gmini-mark{position:absolute; top:-3px; width:1px; height:10px; background:var(--ochre); opacity:.6}
+.star-chip.anchor{flex-shrink:0; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tr-node.goal .gcard-pct{flex-shrink:0; width:auto}
+.tr-node.kr-node{padding:0; min-height:0}
+.gnode .gcard-tools{margin-left:26px}
+/* chapters: unmistakably time */
+.chap-title{
+  background:transparent; border:none; outline:none; resize:none; overflow:hidden; padding:0;
+  font-family:var(--serif); font-style:italic; font-weight:600; font-size:31px; line-height:1.15;
+  letter-spacing:-.2px; text-transform:none; color:var(--ochre);
+  flex:1 1 auto; min-width:60px; width:auto;
+}
+.chap-head{align-items:flex-start; padding-top:16px}
+.chap-head .col-count,.chap-head .more{margin-top:9px}
+.chap-goals{padding-left:6px}
+/* ---- the strategy map ---- */
+.map-wrap{margin:6px 0 0}
+.map-bar{display:flex; align-items:center; gap:8px; padding:0 0 10px}
+.map-hint{font-size:11.5px; color:var(--ink-faint); font-style:italic}
+.map-zoom{font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; width:40px; text-align:center}
+.map-canvas{
+  position:relative; height:min(72vh,720px); overflow:hidden; cursor:grab;
+  border:1px solid var(--line); border-radius:14px; background:var(--card);
+  background-image:radial-gradient(var(--line) 1px, transparent 1px);
+  background-size:22px 22px;
+}
+.map-canvas:active{cursor:grabbing}
+.map-inner{position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform}
+.map-edges{position:absolute; top:0; left:0; overflow:visible; pointer-events:none}
+.map-edges path{stroke:var(--line); stroke-width:1.4}
+.mnode{
+  position:absolute; box-sizing:border-box; background:var(--paper);
+  border:1px solid var(--line); border-radius:12px; padding:11px 13px 12px;
+  box-shadow:var(--shadow);
+}
+.mnode.mission{background:var(--paper-2); border-color:var(--line); text-align:left}
+.mnode.goal{border-left:3px solid var(--ochre)}
+.mnode.kr{border-left:3px solid var(--sage)}
+.mnode.goal.achieved{opacity:.55}
+.mnode.ghost{background:transparent; border-style:dashed; box-shadow:none; padding:14px 13px;
+  display:flex; align-items:center; justify-content:center}
+.mn-head{display:flex; align-items:center; gap:7px; margin-bottom:6px}
+.mn-kind{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint);
+  border:1px solid var(--line); border-radius:5px; padding:1px 6px}
+.mn-kind.kr{color:var(--sage); border-color:var(--sage)}
+.mn-era{font-size:10.5px; color:var(--ink-faint)}
+.mn-head .more{margin-left:auto}
+textarea.mn-t{
+  width:100%; background:transparent; border:none; outline:none; resize:none; overflow:hidden;
+  font-family:var(--serif); font-size:16.5px; font-weight:600; line-height:1.3; color:var(--ink);
+  padding:0; margin-bottom:8px;
+}
+textarea.mn-t:focus{border-bottom:1px solid var(--ink-faint)}
+textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; color:var(--ink-soft)}
+.mn-nums{display:flex; align-items:center; gap:5px; margin-bottom:8px}
+.mn-bar{position:relative; height:4px; border-radius:3px; background:var(--line-soft); overflow:visible}
+.mn-bar .fill{display:block; height:100%; border-radius:3px; background:var(--ink-faint); transition:width .3s}
+.mn-bar .fill.won{background:var(--sage)}
+.mn-mark{position:absolute; top:-3px; width:1px; height:10px; background:var(--ochre); opacity:.7}
+.mn-foot{display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap}
+.mn-pct{font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink-soft)}
+.mn-pct.won{color:var(--sage)}
+.mn-sub{font-size:11px; color:var(--ink-faint)}
+.mn-foot .star-chip{font-size:10px; padding:1px 7px}
+.mn-tools{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px}
+.mn-tools .star-pick{font-size:11px; max-width:110px}
+.map-stars{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 2px 4px;
+  border-bottom:1px solid var(--line-soft)}
+.map-star{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink)}
+.map-star .star-heading{margin-left:6px}
+@media (max-width:700px){
+  .chap-title{font-size:25px}
+  .tr-node.goal{flex-wrap:wrap}
+  .tr-t.big{flex-basis:calc(100% - 70px)}
+  .gspacer{display:none}
+  .star-chip.anchor{max-width:none}
+  .map-canvas{height:64vh}
+  .map-hint{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -1184,7 +1275,7 @@ textarea.kr-t:focus{border-bottom:1px solid var(--ink-faint)}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·5</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·7</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1643,6 +1734,7 @@ function render(){
   else if(route.view==='claude')m.innerHTML=renderClaude();
   else m.innerHTML=renderBoard();
   document.querySelectorAll('textarea.grow').forEach(fitTA);
+  if(typeof drawMapEdges==='function')requestAnimationFrame(drawMapEdges);
   save();
 }
 
@@ -3088,7 +3180,7 @@ function g_tools(id){toolsOpen.has(id)?toolsOpen.delete(id):toolsOpen.add(id);re
 function krRow(kr){
   const pct=krPct(kr), metric=isMetric(kr);
   return `<div class="kr">
-    <button class="kr-tick ${krPct(kr)>=100?'on':''}" title="${metric?'':'Mark this key result met'}"
+    <button class="kr-tick ${pct>=100?'on':''}" title="${metric?'':'Mark this key result met'}"
       onclick="kr_toggle('${kr.id}')">${pct>=100?'◆':'◇'}</button>
     <textarea class="kr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
       onchange="g_rename('${kr.id}',this.value)" placeholder="what gets measured…">${esc(kr.title)}</textarea>
@@ -3107,43 +3199,43 @@ function krRow(kr){
     <button class="more" onclick="g_delete('${kr.id}')" title="Delete key result">×</button>
   </div>`;
 }
+/* one objective — a lean single line, its bearing off to the right */
 function goalBlock(g,opts){
   opts=opts||{};
-  const subs=goalKrs(g.id);
+  const krs=goalKrs(g.id);
   const p=goalPct(g.id);
   const open=goalOpen.has(g.id);
   const s=g.starId?star(g.starId):null;
   const era=g.era?S.plan.find(e=>e.id===g.era):null;
-  const subRows=subs.map(krRow).join('');
-  return `<div class="gcard${g.achieved?' achieved':''}" data-gid="${g.id}"
+  return `<div class="tr-branch gnode" data-gid="${g.id}"
       ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
-    <div class="gcard-head">
+    <div class="tr-node goal${g.achieved?' achieved':''}">
       ${opts.nodrag?'':`<span class="grip" title="drag into another chapter"
         onmousedown="gripDown(event)" ontouchstart="gripDown(event)">⠿</span>`}
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
-      <button class="caret goal-caret" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
-      <textarea class="gcard-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+      <button class="caret goal-caret" title="${open?'Collapse':'Expand'}" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
+      <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
         onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
-      ${p===null?'':`<span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
-    </div>
-    <div class="gcard-meta">
-      ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
+      <span class="gspacer"></span>
+      ${krs.length?`<span class="gkr-n">${krs.length} KR${krs.length>1?'s':''}</span>`:''}
+      ${p===null?'':`<span class="gmini"><span class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></span>
+        <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>
+        <span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
       ${opts.showEra&&era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-      <span class="gcard-count">${subs.length
-        ?subs.length+' key result'+(subs.length>1?'s':'')+(p>=TARGET_PCT?' · at target':p===null?'':' · '+(TARGET_PCT-p)+' to target')
-        :'no key results yet'}</span>
-      <button class="more" title="Anchor, schedule, ask Claude, delete" onclick="g_tools('${g.id}')">⋯</button>
+      ${s?`<span class="star-chip anchor">✶ ${esc(s.title)}</span>`
+         :'<span class="star-chip drift anchor">unanchored</span>'}
+      <button class="more" onclick="g_tools('${g.id}')" title="Anchor, schedule, ask Claude, delete">⋯</button>
     </div>
     ${toolsOpen.has(g.id)?`<div class="gcard-tools">
       ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
-      <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for sub-goals</button>
+      <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for key results</button>
       <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
     </div>`:''}
-    ${p===null?'':`<div class="track"><div class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></div>
-      <span class="track-mark" style="left:${TARGET_PCT}%" title="${TARGET_PCT}% is the mark"></span></div>`}
-    ${open?`<div class="gcard-body">
-      ${subRows||'<div class="sub-empty">no key results yet — name the numbers that would prove this happened</div>'}
-      <div class="gc-add"><button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button></div>
+    ${open?`<div class="tr-kids">
+      ${krs.map(k=>`<div class="tr-branch"><div class="tr-node kr-node">${krRow(k)}</div></div>`).join('')}
+      <div class="tr-branch"><div class="tr-node thin gc-add">
+        <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button>
+      </div></div>
     </div>`:''}
   </div>`;
 }
@@ -3151,14 +3243,14 @@ function goalBlock(g,opts){
 /* ---- Claude, in the Compass: help deciding what the goals should be ---- */
 const CQ=[
   {l:'Name goals for a chapter',
-   q:'Look at the chapters on my Compass timeline and propose 2–4 real goals for any chapter that is thin. Goals, not tasks — things that are either achieved or not by the end of that season.'},
+   q:'Look at the chapters on my Compass timeline and propose 2–4 real objectives for any chapter that is thin. Objectives, not tasks — things that are either achieved or not by the end of that season.'},
   {l:'Write key results for my goals',
    q:'Go through my objectives and propose 2–4 key results for each — every one a number with a unit, calibrated so that 80% is a genuine win and 100% would mean I set the bar too low. Tell me what to measure and where to put the bar.'},
   {l:'Am I steering by the right stars?',
-   q:'Look honestly at my north stars and my goals. Is anything I am spending time on serving no bearing? Is a bearing missing? Say it plainly, even if the answer is that a goal should be dropped.'},
+   q:'Look honestly at my north stars and my objectives. Is anything I am spending time on serving no bearing? Is a bearing missing? Say it plainly, even if the answer is that a goal should be dropped.'},
   {l:'Anchor the unanchored',q:''},
   {l:'What should I drop?',
-   q:'Read my goals and tell me which one or two I should let go of this season, and why. I would rather do fewer things well.'}
+   q:'Read my objectives and tell me which one or two I should let go of this season, and why. I would rather do fewer things well.'}
 ];
 function counselIsOpen(){return S.meta.counsel!==false;}
 function counselToggle(){S.meta.counsel=!counselIsOpen();save();render();}
@@ -3179,7 +3271,7 @@ function cpSend(){
 function askSubgoals(gid){
   const g=goal(gid); if(!g)return;
   S.meta.counsel=true;
-  cpPush('In the Compass: give the goal “'+g.title+'” 2–4 key results in OKR form — each one a number with a unit, '
+  cpPush('In the Compass: give the objective “'+g.title+'” 2–4 key results in OKR form — each one a number with a unit, '
     +'set so that hitting 80% is a real win and 100% would have meant I aimed too low. Say what to measure and where the bar goes. '
     +'If the objective itself is too vague to measure, say so and propose a sharper one.',gid);
 }
@@ -3216,11 +3308,11 @@ function renderCompass(){
   if(compassMode==='stars')compassMode='time';
   const head=`<div class="view-head">
       <div class="view-title">Compass</div>
-      <div class="view-sub">goals across time, the tree they form, and the bearings they all serve</div>
+      <div class="view-sub">goals across time, the map they form, and the bearings they all serve</div>
       <div class="spacer"></div>
       <div class="seg">
         <button class="${compassMode==='time'?'on':''}" onclick="compassMode='time';render()">Timeline</button>
-        <button class="${compassMode==='tree'?'on':''}" onclick="compassMode='tree';render()">Tree</button>
+        <button class="${compassMode==='tree'?'on':''}" onclick="compassMode='tree';render()">Strategy map</button>
       </div>
     </div>
     ${compassMode==='tree'?'':`<div class="mission-wrap">
@@ -3228,7 +3320,8 @@ function renderCompass(){
       <textarea class="mission-input" rows="2" onchange="S.meta.mission=this.value;save()">${esc(S.meta.mission)}</textarea>
     </div>`}
     ${compassCounsel()}`;
-  return head+(compassMode==='tree'?compassTree():compassTime())+starsFooter();
+  return head+(compassMode==='tree'?compassMap():compassTime())
+    +(compassMode==='tree'?'':starsFooter());
 }
 /* which domain a goal really lives in — inferred from where its tasks are */
 function goalDept(g){
@@ -3249,7 +3342,7 @@ function starsFooter(){
         <span class="star-mark">✶</span>
         <input class="star-title" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
         <span class="star-heading ${st.drift?'drift':''}">${st.heading}</span>
-        <div class="goal-tools"><button class="btn-ghost" onclick="star_del('${s.id}')">delete</button></div>
+        <button class="more" onclick="star_del('${s.id}')" title="Delete north star">×</button>
       </div>
       <div class="star-serving">${gs.length
         ?gs.map(g=>`<span class="star-chip" onclick="compassMode='tree';render()">${esc(g.title)}</span>`).join('')
@@ -3273,9 +3366,8 @@ function compassTime(){
     const got=gs.filter(g=>g.achieved).length;
     return `<div class="chap" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropGoal(event,'${e.id}')">
       <div class="chap-head">
-        <span class="chap-mark">◈</span>
-        <input class="chap-title" value="${esc(e.era)}" onchange="era_rename('${e.id}',this.value)"
-          onkeydown="if(event.key==='Enter')this.blur()">
+        <textarea class="chap-title grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+          onchange="era_rename('${e.id}',this.value)">${esc(e.era)}</textarea>
         <span class="col-count">${got}/${gs.length}</span>
         <button class="more" onclick="era_del('${e.id}')" title="Delete chapter">×</button>
       </div>
@@ -3288,8 +3380,7 @@ function compassTime(){
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
   return `<div class="chapters">${eras}
     ${loose.length?`<div class="chap loose">
-      <div class="chap-head"><span class="chap-mark" style="color:var(--ink-faint)">◇</span>
-        <span class="chap-title" style="color:var(--ink-faint)">Unscheduled</span>
+      <div class="chap-head"><span class="chap-title">Unscheduled</span>
         <span class="col-count">${loose.length}</span></div>
       <div class="chap-note">goals with no season — give each one a chapter, or let it go</div>
       <div class="chap-goals">${loose.map(g=>goalBlock(g,{showEra:true})).join('')}</div>
@@ -3297,109 +3388,208 @@ function compassTime(){
     <div class="gc-add chap-new"><button class="add-inline" onclick="era_add(this.parentElement)">+ Chapter</button></div>
   </div>`;
 }
-/* the tree proper — mission at the root, bearings at the tip of every branch */
-function compassTree(){
-  const tops=S.goals.filter(g=>!g.parentId);
-  const groups={};
-  tops.forEach(g=>{const d=goalDept(g)||'none';(groups[d]=groups[d]||[]).push(g);});
-  const order=[...S.boards.map(b=>b.id).filter(id=>groups[id]),...(groups.none?['none']:[])];
-  const branches=order.map(did=>{
-    const b=did==='none'?null:board(did);
-    const gs=groups[did];
-    return `<div class="tr-branch">
-      <div class="tr-node dept">
-        <span class="dot" style="background:${b?b.accent:'#b9b0a0'}"></span>
-        <span class="tr-dept-t">${esc(b?b.name:'No domain yet')}</span>
-        <span class="col-count">${gs.length}</span>
+
+/* ================= the strategy map =================
+   Mission at the root, objectives beneath it, key results beneath those —
+   laid out on a canvas you can pan and zoom, edges drawn after paint. */
+let mapZoom=.72, mapPan=null, mapDrag=null;
+const MAP_W=248, MAP_HGAP=26, MAP_VGAP=78, MAP_MISS_Y=0, MAP_GOAL_Y=210, MAP_KR_Y=430;
+function mapZoomBy(d){mapZoom=Math.max(.45,Math.min(1.6,+(mapZoom+d).toFixed(2)));applyMap();}
+function mapFit(){mapZoom=.72;mapPan=null;render();}
+function applyMap(){
+  const inner=document.querySelector('.map-inner');
+  if(!inner)return;
+  inner.style.transform=`translate(${mapPan.x}px,${mapPan.y}px) scale(${mapZoom})`;
+  const z=document.querySelector('.map-zoom'); if(z)z.textContent=Math.round(mapZoom*100)+'%';
+}
+function mapDown(ev){
+  if(ev.target.closest('input,textarea,button,select,a'))return;
+  const pt=ev.touches?ev.touches[0]:ev;
+  mapDrag={x:pt.clientX,y:pt.clientY,ox:mapPan.x,oy:mapPan.y};
+  document.addEventListener('mousemove',mapMove);
+  document.addEventListener('mouseup',mapUp);
+  document.addEventListener('touchmove',mapMove,{passive:false});
+  document.addEventListener('touchend',mapUp);
+  ev.preventDefault();
+}
+function mapMove(ev){
+  if(!mapDrag)return;
+  const pt=ev.touches?ev.touches[0]:ev;
+  mapPan.x=mapDrag.ox+(pt.clientX-mapDrag.x);
+  mapPan.y=mapDrag.oy+(pt.clientY-mapDrag.y);
+  applyMap();
+  if(ev.cancelable)ev.preventDefault();
+}
+function mapUp(){
+  mapDrag=null;
+  document.removeEventListener('mousemove',mapMove);
+  document.removeEventListener('mouseup',mapUp);
+  document.removeEventListener('touchmove',mapMove);
+  document.removeEventListener('touchend',mapUp);
+}
+function mapCard(kind,id,inner,extra){
+  return `<div class="mnode ${kind}" data-mid="${id}" style="${extra}">${inner}</div>`;
+}
+function compassMap(){
+  const objs=S.goals.filter(g=>!g.parentId);
+  /* lay the objectives out left to right, each wide enough for its key results */
+  const cols=[]; let cursor=0;
+  objs.forEach(o=>{
+    const krs=goalKrs(o.id);
+    const kids=krs.length+1;                                   // +1 for the "add" card
+    const childW=kids*MAP_W+(kids-1)*MAP_HGAP;
+    const w=Math.max(MAP_W,childW);
+    cols.push({o,krs,x:cursor,w});
+    cursor+=w+MAP_HGAP*2;
+  });
+  const addX=cursor;
+  const totalW=Math.max(cursor+MAP_W,MAP_W*3);
+  const missionX=Math.max(0,(totalW-MAP_W*1.4)/2);
+  const nodes=[], edges=[];
+
+  nodes.push(`<div class="mnode mission" data-mid="mission"
+    style="left:${missionX}px;top:${MAP_MISS_Y}px;width:${MAP_W*1.4}px">
+    <div class="mn-kind">Mission</div>
+    <textarea class="mn-t mission-t grow" rows="2" oninput="fitTA(this)"
+      onchange="S.meta.mission=this.value;save()"
+      placeholder="the one sentence everything below is in service of…">${esc(S.meta.mission||'')}</textarea>
+  </div>`);
+
+  cols.forEach(c=>{
+    const g=c.o, p=goalPct(g.id), s=g.starId?star(g.starId):null;
+    const era=g.era?S.plan.find(e=>e.id===g.era):null;
+    const gx=c.x+(c.w-MAP_W)/2;
+    nodes.push(`<div class="mnode goal${g.achieved?' achieved':''}" data-mid="${g.id}"
+      style="left:${gx}px;top:${MAP_GOAL_Y}px;width:${MAP_W}px">
+      <div class="mn-head"><span class="mn-kind">Objective</span>
+        ${era?`<span class="mn-era">${esc(era.era)}</span>`:''}
+        <button class="more" onclick="g_tools('${g.id}')">⋯</button></div>
+      <textarea class="mn-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+        onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
+      ${toolsOpen.has(g.id)?`<div class="mn-tools">
+        ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
+        <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ key results</button>
+        <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button></div>`:''}
+      <div class="mn-bar"><span class="fill ${(p??0)>=TARGET_PCT?'won':''}" style="width:${p??0}%"></span>
+        <span class="mn-mark" style="left:${TARGET_PCT}%"></span></div>
+      <div class="mn-foot">
+        <span class="mn-pct ${(p??0)>=TARGET_PCT?'won':''}">${p===null?'—':p+'%'}</span>
+        <span class="mn-sub">${c.krs.length?c.krs.length+' key result'+(c.krs.length>1?'s':''):'no key results'}</span>
+        ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
       </div>
-      <div class="tr-kids">
-        ${gs.map(g=>{
-          const subs=goalKrs(g.id);
-          const p=goalPct(g.id);
-          const s=g.starId?star(g.starId):null;
-          const era=g.era?S.plan.find(e=>e.id===g.era):null;
-          return `<div class="tr-branch">
-            <div class="tr-node goal${g.achieved?' achieved':''}">
-              <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
-              <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
-                onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
-              ${era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-              ${p===null?'':`<span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
-              <button class="more" onclick="g_tools('${g.id}')">⋯</button>
-            </div>
-            ${toolsOpen.has(g.id)?`<div class="gcard-tools tree-tools">
-              ${starPicker(g.starId,`g_setStar('${g.id}',this.value)`)}${eraPicker(g)}
-              <button class="btn-ghost ask" onclick="askSubgoals('${g.id}')">✦ ask Claude for sub-goals</button>
-              <button class="btn-ghost" onclick="g_delete('${g.id}')">delete</button>
-            </div>`:''}
-            <div class="tr-kids">
-              ${subs.map(sg=>`<div class="tr-branch">
-                  <div class="tr-node kr-node">${krRow(sg)}</div>
-                </div>`).join('')}
-              <div class="tr-branch">
-                <div class="tr-node thin gc-add">
-                  <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button>
-                </div>
-              </div>
-              ${s?`<div class="tr-branch">
-                <div class="tr-node thin star-term">
-                  <span class="star-mark">✶</span><span class="star-term-t">${esc(s.title)}</span>
-                </div>
-              </div>`:''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
+    </div>`);
+    edges.push(['mission',g.id]);
+
+    const kids=c.krs.length+1;
+    const rowW=kids*MAP_W+(kids-1)*MAP_HGAP;
+    let kx=c.x+(c.w-rowW)/2;
+    c.krs.forEach(k=>{
+      const kp=krPct(k);
+      nodes.push(`<div class="mnode kr" data-mid="${k.id}"
+        style="left:${kx}px;top:${MAP_KR_Y}px;width:${MAP_W}px">
+        <div class="mn-head"><span class="mn-kind kr">Key result</span>
+          <button class="more" onclick="g_delete('${k.id}')" title="Delete">×</button></div>
+        <textarea class="mn-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+          onchange="g_rename('${k.id}',this.value)" placeholder="what gets measured…">${esc(k.title)}</textarea>
+        <div class="mn-nums">
+          <input class="kr-n" type="number" inputmode="decimal" value="${k.current??''}" placeholder="0"
+            onchange="kr_set('${k.id}','current',this.value)">
+          <span class="kr-slash">/</span>
+          <input class="kr-n" type="number" inputmode="decimal" value="${k.target??''}" placeholder="target"
+            onchange="kr_set('${k.id}','target',this.value)">
+          <input class="kr-u" value="${esc(k.unit||'')}" placeholder="unit"
+            onchange="kr_set('${k.id}','unit',this.value)">
+        </div>
+        <div class="mn-bar"><span class="fill ${kp>=TARGET_PCT?'won':''}" style="width:${kp}%"></span>
+          <span class="mn-mark" style="left:${TARGET_PCT}%"></span></div>
+        <div class="mn-foot"><span class="mn-pct ${kp>=TARGET_PCT?'won':''}">${kp}%</span></div>
+      </div>`);
+      edges.push([g.id,k.id]);
+      kx+=MAP_W+MAP_HGAP;
+    });
+    nodes.push(`<div class="mnode ghost" data-mid="add-${g.id}"
+      style="left:${kx}px;top:${MAP_KR_Y}px;width:${MAP_W}px">
+      <button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button>
+    </div>`);
+    edges.push([g.id,'add-'+g.id]);
+  });
+
+  nodes.push(`<div class="mnode ghost" data-mid="add-goal"
+    style="left:${addX}px;top:${MAP_GOAL_Y}px;width:${MAP_W}px">
+    <button class="add-inline" onclick="g_add(null,this.parentElement)">+ Objective</button>
+  </div>`);
+  edges.push(['mission','add-goal']);
+
+  if(!mapPan)mapPan={x:20,y:16,set:false};
+  const stars=(S.stars||[]).map(s=>{
+    const st=starStats(s.id);
+    return `<span class="map-star"><span class="star-mark">✶</span> ${esc(s.title)}
+      <span class="star-heading ${st.drift?'drift':''}">${st.heading}</span></span>`;
   }).join('');
-  return `<div class="tree">
-    <div class="tr-branch root">
-      <div class="tr-node mission-node">
-        <span class="tr-mission-l">Mission</span>
-        <textarea class="tr-mission-t grow" rows="1" oninput="fitTA(this)" onchange="S.meta.mission=this.value;save()"
-          placeholder="the one sentence everything below is in service of…">${esc(S.meta.mission||'')}</textarea>
+  return `<div class="map-wrap">
+    <div class="map-bar">
+      <span class="map-hint">drag to pan · the bearings sit below</span>
+      <span class="spacer"></span>
+      <button class="cal-nb" onclick="mapZoomBy(-.15)">−</button>
+      <span class="map-zoom">${Math.round(mapZoom*100)}%</span>
+      <button class="cal-nb" onclick="mapZoomBy(.15)">+</button>
+      <button class="cal-nb" onclick="mapFit()" title="Reset">⤢</button>
+    </div>
+    <div class="map-canvas" onmousedown="mapDown(event)" ontouchstart="mapDown(event)">
+      <div class="map-inner" data-edges="${esc(JSON.stringify(edges))}"
+        style="transform:translate(${mapPan.x}px,${mapPan.y}px) scale(${mapZoom})">
+        <svg class="map-edges" width="${totalW+40}" height="${MAP_KR_Y+240}"></svg>
+        ${nodes.join('')}
       </div>
-      <div class="tr-kids">${branches}
-        <div class="tr-branch"><div class="tr-node thin gc-add">
-          <button class="add-inline" onclick="g_add(null,this.parentElement)">+ New goal</button></div></div>
-      </div>
+    </div>
+    <div class="map-stars">
+      <span class="stars-label" style="margin:0 10px 0 0">✶ North Stars</span>${stars||'<span class="small muted">none set</span>'}
+      <span class="spacer"></span>
+      <button class="cl-btn" onclick="compassMode='time';render()">Anchor them on the timeline</button>
     </div>
   </div>`;
 }
-function compassStarsOld(){
-  const stars=(S.stars||[]).map(s=>{
-    const st=starStats(s.id);
-    return `<div class="star-block">
-      <div class="star-head">
-        <span class="star-mark">✶</span>
-        <input class="star-title" value="${esc(s.title)}" onchange="star_rename('${s.id}',this.value)">
-        <span class="star-heading ${st.drift?'drift':''}">${st.heading}</span>
-        <div class="goal-tools"><button class="btn-ghost" onclick="star_del('${s.id}')">delete</button></div>
-      </div>
-      <div class="star-meta">${st.goals.length?st.goals.length+' route'+(st.goals.length>1?'s':''):'no route'}
-        · ${st.live} step${st.live===1?'':'s'} live
-        · ${st.recent?st.recent+' finished these two weeks':'nothing finished in two weeks'}</div>
-      <div class="star-goals">
-        ${st.goals.map(g=>goalBlock(g,true)).join('')||'<div class="empty-note">No route plotted toward this bearing yet — a star you never steer by is only scenery.</div>'}
-        <button class="add-inline" onclick="g_add(null,this.parentElement,'${s.id}')">+ Plot a route toward this star</button>
-      </div>
-      ${st.items.length?`<div class="star-items"><div class="d-label">Intentions pointing here</div>
-        ${st.items.map(i=>`<div class="linked-t ${i.done?'done':''}"><span>${i.done?'◆':'◇'}</span>
-          <span>${esc(i.text)}</span><span class="b-tag">${esc(i.era)}</span></div>`).join('')}</div>`:''}
-    </div>`;
+/* edges are measured from the painted cards, so a long title never breaks the drawing */
+function drawMapEdges(){
+  const svg=document.querySelector('.map-edges');
+  const inner=document.querySelector('.map-inner');
+  if(!svg||!inner)return;
+  let edges=[]; try{edges=JSON.parse(inner.getAttribute('data-edges')||'[]');}catch(e){return;}
+  const box=inner.getBoundingClientRect();
+  const z=mapZoom||1;
+  const rect=id=>{
+    const el=inner.querySelector(`[data-mid="${CSS.escape(id)}"]`);
+    if(!el)return null;
+    const r=el.getBoundingClientRect();
+    return {x:(r.left-box.left)/z, y:(r.top-box.top)/z, w:r.width/z, h:r.height/z};
+  };
+  const paths=edges.map(([a,b])=>{
+    const ra=rect(a), rb=rect(b);
+    if(!ra||!rb)return '';
+    const x1=ra.x+ra.w/2, y1=ra.y+ra.h, x2=rb.x+rb.w/2, y2=rb.y;
+    const d=Math.max(28,(y2-y1)/2);
+    return `<path d="M${x1},${y1} C${x1},${y1+d} ${x2},${y2-d} ${x2},${y2}" fill="none"/>`;
   }).join('');
-  const orphan=S.goals.filter(g=>!g.parentId&&!g.starId);
-  return `<div class="goals-list">
-    ${stars||'<div class="empty-note">No north stars yet — name the two or three things that would make a decade worth it.</div>'}
-    <div class="star-block star-new"><button class="add-inline" onclick="star_add(this.parentElement)" style="font-size:13.5px">+ New north star</button></div>
-    ${orphan.length?`<div class="star-block orphan">
-      <div class="star-head"><span class="star-mark" style="color:var(--ink-faint)">◦</span>
-        <span class="star-title" style="color:var(--ink-soft)">Unanchored goals</span></div>
-      <div class="star-meta">worth asking: which star does each of these serve — or should it go?</div>
-      <div class="star-goals">${orphan.map(g=>goalBlock(g)).join('')}</div>
-    </div>`:''}
-    <div class="star-block star-new"><button class="add-inline" onclick="g_add(null,this.parentElement)" style="font-size:13.5px">+ New goal</button></div>
-  </div>`;
+  svg.innerHTML=paths;
+  let maxB=0,maxR=0;
+  inner.querySelectorAll('.mnode').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    maxB=Math.max(maxB,(r.bottom-box.top)/z);
+    maxR=Math.max(maxR,(r.right-box.left)/z);
+  });
+  svg.setAttribute('height',Math.ceil(maxB+40));
+  svg.setAttribute('width',Math.ceil(maxR+40));
+  /* first paint: put the mission in the middle of the frame */
+  if(mapPan&&!mapPan.set){
+    const canvas=document.querySelector('.map-canvas');
+    const m=inner.querySelector('[data-mid="mission"]');
+    if(canvas&&m){
+      const mr=m.getBoundingClientRect();
+      const mx=(mr.left-box.left)/z+(mr.width/z)/2;
+      mapPan.x=canvas.clientWidth/2-mx*z;
+      mapPan.y=18; mapPan.set=true; applyMap();
+    }
+  }
 }
 async function askAnchor(){
   const loose=S.goals.filter(g=>!g.parentId&&!g.starId).map(g=>g.title);
