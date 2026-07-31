@@ -1603,7 +1603,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·26</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·27</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3917,7 +3917,7 @@ function goalBlock(g,opts){
   opts=opts||{};
   const krs=goalKrs(g.id);
   const p=goalPct(g.id);
-  const open=timeOpen(g.id);          // open until you fold it
+  const open=timeOpen(g.id);          // its key results wait for a click of their own
   return `<div class="tr-branch gnode" data-gid="${g.id}"
       ondragstart="dragGoal(event,'${g.id}')" ondragend="gripOff()">
     <div class="tr-node goal${g.achieved?' achieved':''}${open?' open':''}" onclick="rowToggle(event,'${g.id}')">
@@ -4009,18 +4009,18 @@ function resetCompass(){
   applyReset(); save(); render();
   try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
 }
-const timeShut=new Set();
+const timeShown=new Set();          // one tier per click: nothing opens two levels at once
 const chapShown=new Set();                 // chapters start closed; this remembers the ones you opened
 function chapToggle(ev,id){
   if(ev&&ev.target.closest('input,textarea,select,a'))return;
   chapShown.has(id)?chapShown.delete(id):chapShown.add(id);
   render();
 }
-const timeOpen=id=>!timeShut.has(id);
+const timeOpen=id=>timeShown.has(id);
 /* click the row itself — no caret, no chrome. Controls and text fields are left alone. */
 function rowToggle(ev,id){
   if(ev.target.closest('input,textarea,button,select,a,.anchor-pick'))return;
-  timeShut.has(id)?timeShut.delete(id):timeShut.add(id);
+  timeShown.has(id)?timeShown.delete(id):timeShown.add(id);
   render();
 }
 function krToggle(ev,id){
@@ -4132,10 +4132,6 @@ function mapGoalCard(g){
 const chapOpen=new Set();
 function chap_expand(id){chapOpen.has(id)?chapOpen.delete(id):chapOpen.add(id);render();}
 function compassMap(){
-  if(!window.mapInit){
-    window.mapInit=true;
-    S.goals.forEach(g=>{if(!g.parentId)goalOpen.add(g.id);});   // key results open once a chapter is
-  }
   const chapters=S.plan.map(e=>({id:e.id,label:e.era,goals:S.goals.filter(g=>!g.parentId&&g.era===e.id)}));
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
   if(loose.length)chapters.push({id:null,label:'Unscheduled',goals:loose});
