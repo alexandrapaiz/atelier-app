@@ -1642,6 +1642,60 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
   .cl-you{padding-right:34px}
 }
 
+
+/* the map is for reading — click a card, don't type in it */
+.mnode.chapter,.mnode.goal{cursor:pointer}
+.mnode.chapter:hover,.mnode.goal:hover{border-color:var(--ink-faint)}
+.mnode.goal.open{box-shadow:var(--shadow-lift)}
+.mnode .mn-t{
+  font-family:var(--serif); font-size:16.5px; font-weight:600; line-height:1.3;
+  color:var(--ink); margin-bottom:8px; word-break:break-word;
+}
+.mnode .mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; color:var(--ink-soft); margin-bottom:0}
+.mnode.chapter .chap-t{
+  flex:1; min-width:0; font-family:var(--serif); font-size:16px; font-weight:600; color:var(--ink);
+}
+.mnode.chapter .chap-t.none{color:var(--ink-faint)}
+.mnode .steer{color:var(--ink-faint); font-size:11px}
+.mnode.goal.achieved .steer{color:var(--ochre)}
+.mn-sub{font-size:11px; color:var(--ink-faint)}
+.anchor-flat{
+  display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); font-style:italic;
+  font-size:12.5px; color:var(--ink); max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.anchor-flat.none{font-size:11.5px; color:var(--ink-faint)}
+.anchor-flat .star-mark{font-size:11px; color:var(--ochre)}
+.mnode.ghost.quiet{
+  border-style:dashed; color:var(--ink-faint); font-family:var(--serif); font-style:italic;
+  font-size:12.5px; cursor:default; justify-content:flex-start;
+}
+/* key results, as the map states them */
+.mn-krs{margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;
+  display:flex; flex-direction:column; gap:7px}
+.mkr{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.mkr-tick{color:var(--ink-faint); font-size:10px; flex-shrink:0}
+.mkr-tick.on{color:var(--ochre)}
+.mkr-t{flex:1 1 100%; font-size:12.5px; color:var(--ink); line-height:1.35}
+.mkr-l{font-size:10.5px; color:var(--ink-faint); flex-shrink:0}
+.mkr-l.none{font-style:italic}
+.mkr-bar{position:relative; flex:1 1 auto; min-width:40px; height:3px; border-radius:3px;
+  background:var(--line-soft); overflow:visible}
+.mkr-bar .fill{display:block; height:100%; border-radius:3px; background:var(--ink-faint)}
+.mkr-bar .fill.won{background:var(--sage)}
+.mkr-pct{font-size:10.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; flex-shrink:0}
+.mkr-pct.won{color:var(--sage)}
+/* the range picker */
+.map-range{display:inline-flex; align-items:center; gap:7px; flex-wrap:wrap}
+.mr-l{font-size:11px; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase}
+.map-range select{
+  border:1px solid var(--line); border-radius:8px; padding:5px 8px; font-size:12px;
+  background:var(--paper); color:var(--ink); max-width:160px;
+}
+@media (max-width:700px){
+  .map-range{width:100%; margin-bottom:8px}
+  .map-range select{flex:1 1 auto; max-width:none}
+}
+
 </style>
 </head>
 <body>
@@ -1662,7 +1716,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·30</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·32</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1768,10 +1822,11 @@ const store={
   set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 };
 const HOSTED=true;
+var HOSTED_EMPTY=false;   // true while a hosted device is waiting for its first sync
 let S=null,FRESH=false;
 try{S=JSON.parse(store.get(KEY));}catch(e){}
 if(!S){S=seed();FRESH=true;}   // FRESH: embedded data (if present) replaces the sample seed outright
-if(FRESH&&HOSTED){S={meta:{mission:'A calm, intentional season — health, faith, and work that matters.'},masterColumns:[{id:uid(),name:'Now'},{id:uid(),name:'This season'},{id:uid(),name:'Work'},{id:uid(),name:'Someday'}],boards:[],goals:[],tasks:[],plan:[],priCols:null};}
+if(FRESH&&HOSTED){S={meta:{mission:''},masterColumns:[],boards:[],goals:[],tasks:[],plan:[],priCols:null,stars:[],rewards:[]};HOSTED_EMPTY=true;}
 function addHorizonCol(b){
   if(b.columns.some(c=>/on the horizon|^shelved$/i.test(c.name)))return;
   const col={id:uid(),name:'Shelved'};
@@ -1812,6 +1867,13 @@ function ensureDefaults(){
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
   purgeBuried();
+  /* never leave the app without somewhere to put a board, but never invent groups either */
+  if(!S.masterColumns.length&&(S.boards.length||!HOSTED_EMPTY))
+    S.masterColumns=[{id:uid(),name:'Boards'}];
+  if(S.masterColumns.length){
+    const first=S.masterColumns[0].id, have=new Set(S.masterColumns.map(c=>c.id));
+    S.boards.forEach(b=>{if(!have.has(b.masterCol))b.masterCol=first;});
+  }
   if(!S.meta.doneIsStatus){
     S.boards.forEach(b=>{
       const done=(b.columns||[]).filter(c=>/^done$/i.test(String(c.name).trim()));
@@ -2393,9 +2455,9 @@ function renderSidebar(){
     <button class="snav ${route.view==='compass'?'on':''}" onclick="go('compass')">Compass</button>
     <button class="snav ${route.view==='ach'?'on':''}" onclick="go('ach')">The Laurels</button>
     <button class="snav ${route.view==='claude'?'on':''}" onclick="go('claude')"><span style="color:var(--ochre)">✦</span> Claude</button>
-    <div class="side-label">Boards</div>
+    <div class="side-label">Domains</div>
     ${groups}${orphans}
-    <button class="snav side-new" onclick="newBoard(S.masterColumns[0].id)">+ New board</button>`;
+    <button class="snav side-new" onclick="newBoard((S.masterColumns[0]||{}).id)">+ New domain</button>`;
 }
 function mcolFold(id){
   const c=S.masterColumns.find(c=>c.id===id);
@@ -2520,12 +2582,20 @@ function practicesStrip(){
 function newMCol(){S.masterColumns.push({id:uid(),name:'Untitled'});render();}
 function renameMCol(id,v){const c=S.masterColumns.find(c=>c.id===id);if(c&&v.trim())c.name=v.trim();save();}
 function delMCol(id){
-  if(S.boards.some(b=>b.masterCol===id)){alert('Move its boards elsewhere first.');return;}
   if(S.masterColumns.length<=1)return;
+  const inside=S.boards.filter(b=>b.masterCol===id);
+  const home=S.masterColumns.find(c=>c.id!==id);
+  if(inside.length&&!confirm('Delete this column? Its '+inside.length+' board'
+      +(inside.length>1?'s move':' moves')+' to “'+home.name+'”.'))return;
+  inside.forEach(b=>{b.masterCol=home.id;});
   tombstone(id);
   S.masterColumns=S.masterColumns.filter(c=>c.id!==id);render();
 }
 function newBoard(mcol){
+  if(!mcol){
+    if(!S.masterColumns.length)S.masterColumns=[{id:uid(),name:'Boards'}];
+    mcol=S.masterColumns[0].id;
+  }
   const name=prompt('Name this board — a domain of your life:');
   if(!name||!name.trim())return;
   S.boards.push({id:uid(),name:name.trim(),accent:ACCENTS[S.boards.length%ACCENTS.length],
@@ -4161,39 +4231,58 @@ function mapUp(){
   document.removeEventListener('touchmove',mapMove);
   document.removeEventListener('touchend',mapUp);
 }
+/* a key result as the map shows it: what it measures and how far along, nothing to type into */
+function krRowStatic(kr){
+  const pct=krPct(kr), l=kr.link?krLinkLabel(kr):(isMetric(kr)?(kr.current??0)+' / '+kr.target+(kr.unit?' '+kr.unit:''):'');
+  return `<div class="mkr">
+    <span class="mkr-tick ${pct>=100?'on':''}">${pct>=100?'◆':'◇'}</span>
+    <span class="mkr-t">${esc(kr.title)}</span>
+    ${l?`<span class="mkr-l">${esc(l)}</span>`:'<span class="mkr-l none">not measured</span>'}
+    <span class="mkr-bar"><span class="fill ${pct>=TARGET_PCT?'won':''}" style="width:${pct}%"></span>
+      <span class="mn-mark" style="left:${TARGET_PCT}%"></span></span>
+    <span class="mkr-pct ${pct>=TARGET_PCT?'won':''}">${pct}%</span>
+  </div>`;
+}
 function mapGoalCard(g){
   const krs=goalKrs(g.id), p=goalPct(g.id);
   const open=goalOpen.has(g.id);
-  return `<div class="mnode goal${g.achieved?' achieved':''}" data-mid="${g.id}">
+  const s=g.starId?star(g.starId):null;
+  return `<div class="mnode goal${g.achieved?' achieved':''}${open?' open':''}" data-mid="${g.id}"
+      onclick="g_expand('${g.id}')" title="${open?'Fold':'Unfold'} its key results">
     <div class="mn-head">
-      <button class="mn-fold-btn" title="${open?'Fold its key results':'Unfold its key results'}"
-        onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
-      <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
+      <span class="steer">${g.achieved?'◆':'◇'}</span>
       <span class="mn-kind">Objective</span>
-      <button class="more" onclick="g_delete('${g.id}')" title="Delete this goal">×</button>
     </div>
-    <textarea class="mn-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
-      onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
+    <div class="mn-t">${esc(g.title)}</div>
     <div class="mn-bar"><span class="fill ${(p??0)>=TARGET_PCT?'won':''}" style="width:${p??0}%"></span>
       <span class="mn-mark" style="left:${TARGET_PCT}%"></span></div>
     <div class="mn-foot">
       <span class="mn-pct ${(p??0)>=TARGET_PCT?'won':''}">${p===null?'—':p+'%'}</span>
-      <button class="mn-sub" onclick="g_expand('${g.id}')">
-        <span class="mn-fold">${open?'▾':'▸'}</span> ${krs.length?krs.length+' key result'+(krs.length>1?'s':''):'no key results'}</button>
-      ${anchorChip(g)}
+      <span class="mn-sub">${krs.length?krs.length+' key result'+(krs.length>1?'s':''):'no key results'}</span>
+      ${s?`<span class="anchor-flat"><span class="star-mark">✶</span>${esc(s.title)}</span>`
+         :'<span class="anchor-flat none">unanchored</span>'}
     </div>
-    ${open?`<div class="mn-krs">
-      ${krs.map(krRow).join('')}
-      <div class="gc-add"><button class="add-inline" onclick="g_add('${g.id}',this.parentElement)">+ Key result</button></div>
-    </div>`:''}
+    ${open?`<div class="mn-krs">${krs.map(krRowStatic).join('')
+      ||'<div class="ap-empty">nothing measuring this yet</div>'}</div>`:''}
   </div>`;
 }
 const chapOpen=new Set();
 function chap_expand(id){chapOpen.has(id)?chapOpen.delete(id):chapOpen.add(id);render();}
+let mapFrom=null, mapTo=null;                 // indices into S.plan; null on both ends means all of it
+function mapRange(which,v){
+  const i=v===''?null:+v;
+  if(which==='from'){mapFrom=i; if(mapTo!==null&&i!==null&&i>mapTo)mapTo=i;}
+  else{mapTo=i; if(mapFrom!==null&&i!==null&&i<mapFrom)mapFrom=i;}
+  mapZoom=null;mapPan=null;mapNat=null;render();
+}
+function mapRangeAll(){mapFrom=null;mapTo=null;mapZoom=null;mapPan=null;mapNat=null;render();}
 function compassMap(){
-  const chapters=S.plan.map(e=>({id:e.id,label:e.era,goals:S.goals.filter(g=>!g.parentId&&g.era===e.id)}));
+  const a=mapFrom===null?0:mapFrom, b=mapTo===null?S.plan.length-1:mapTo;
+  const ranged=mapFrom!==null||mapTo!==null;
+  const chapters=S.plan.filter((e,i)=>i>=a&&i<=b)
+    .map(e=>({id:e.id,label:e.era,goals:S.goals.filter(g=>!g.parentId&&g.era===e.id)}));
   const loose=S.goals.filter(g=>!g.parentId&&!g.era);
-  if(loose.length)chapters.push({id:null,label:'Unscheduled',goals:loose});
+  if(loose.length&&!ranged)chapters.push({id:null,label:'Unscheduled',goals:loose});
   const totalW=Math.max(chapters.length,1)*(MAP_W+MAP_COLGAP)-MAP_COLGAP;
   const missionW=Math.min(420,Math.max(MAP_W,totalW*0.4));
   const missionX=Math.max(0,(totalW-missionW)/2);
@@ -4204,20 +4293,14 @@ function compassMap(){
     edges.push(['mission','era-'+key]);
     if(open)c.goals.forEach(g=>edges.push(['era-'+key,g.id]));
     return `<div class="map-col" style="left:${i*(MAP_W+MAP_COLGAP)}px;top:${MAP_CHAP_Y}px;width:${MAP_W}px">
-      <div class="mnode chapter" data-mid="era-${key}">
-        <button class="mn-fold-btn" title="${open?'Fold this chapter':'Unfold this chapter'}"
-          onclick="chap_expand('${key}')">${open?'▾':'▸'}</button>
+      <div class="mnode chapter${open?' open':''}" data-mid="era-${key}"
+        onclick="chap_expand('${key}')" title="${open?'Fold':'Unfold'} this chapter">
         <span class="chap-mark">✦</span>
-        ${c.id?`<textarea class="chap-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
-          onchange="era_rename('${c.id}',this.value)">${esc(c.label)}</textarea>`
-          :`<span class="chap-t none">${esc(c.label)}</span>`}
+        <span class="chap-t${c.id?'':' none'}">${esc(c.label)}</span>
         <span class="col-count">${c.goals.length}</span>
       </div>
-      ${open?`<div class="map-objs">
-        ${c.goals.map(mapGoalCard).join('')}
-        ${c.id?`<div class="mnode ghost"><button class="add-inline"
-          onclick="g_addIn('${c.id}',this.parentElement)">+ Objective</button></div>`:''}
-      </div>`:''}
+      ${open?`<div class="map-objs">${c.goals.map(mapGoalCard).join('')
+        ||'<div class="mnode ghost quiet">nothing in this chapter</div>'}</div>`:''}
     </div>`;
   }).join('');
 
@@ -4233,7 +4316,17 @@ function compassMap(){
   }).join('');
   return `<div class="map-wrap">
     <div class="map-bar">
-      <span class="map-hint">drag to pan</span>
+      <span class="map-range">
+        <span class="mr-l">From</span>
+        <select onchange="mapRange('from',this.value)">
+          ${S.plan.map((e,i)=>`<option value="${i}" ${(mapFrom===null?0:mapFrom)===i?'selected':''}>${esc(e.era)}</option>`).join('')}
+        </select>
+        <span class="mr-l">to</span>
+        <select onchange="mapRange('to',this.value)">
+          ${S.plan.map((e,i)=>`<option value="${i}" ${(mapTo===null?S.plan.length-1:mapTo)===i?'selected':''}>${esc(e.era)}</option>`).join('')}
+        </select>
+        ${ranged?`<button class="cal-nb" onclick="mapRangeAll()">All</button>`:''}
+      </span>
       <span class="spacer"></span>
       <button class="cal-nb" onclick="mapFoldAll(${anyOpen?'true':'false'})">${anyOpen?'Collapse all':'Expand all'}</button>
       <button class="cal-nb" onclick="mapZoomBy(-.12)">−</button>
@@ -4248,9 +4341,7 @@ function compassMap(){
         <div class="mnode mission" data-mid="mission"
           style="left:${missionX}px;top:0;width:${missionW}px">
           <div class="mn-kind">Mission</div>
-          <textarea class="mn-t mission-t grow" rows="2" oninput="fitTA(this)"
-            onchange="S.meta.mission=this.value;save()"
-            placeholder="the one sentence everything below is in service of…">${esc(S.meta.mission||'')}</textarea>
+          <div class="mn-t mission-t">${esc(S.meta.mission||'—')}</div>
         </div>
         ${cols}
       </div>
