@@ -106,7 +106,16 @@ aside.side .wordmark{margin:0 0 24px 10px}
 .side-group:hover{color:var(--ink); background:var(--paper-2)}
 .side-group.has-on{color:var(--ink)}
 .side-group .caret{width:11px; font-size:10px}
-.snav-sub{padding-left:26px}
+.snav-sub{padding-left:26px; cursor:pointer; user-select:none}
+.snav-menu{
+  opacity:0; color:var(--ink-faint); font-size:15px; line-height:1; padding:0 2px;
+  flex-shrink:0; transition:opacity .15s;
+}
+.snav-sub:hover .snav-menu{opacity:1}
+.snav-menu:hover{color:var(--ink)}
+.snav.on .snav-menu{color:var(--paper)}
+.side-group{cursor:pointer}
+.side-group.drag-over-col{background:var(--paper-2); color:var(--ink)}
 .side-new{color:var(--ink-faint); font-size:12.5px; margin-top:2px}
 .m-only{display:none}
 .side-close{display:none}
@@ -1081,6 +1090,8 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
 /* appointments: commitments AT a time, not work you can knock out early.
    Anything with a start time is one, unless explicitly kept a task. */
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
+/* a column named "on the horizon" is a shelf — it asks nothing of you today */
+const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon/i.test(c.name));};
 const plusHour=hm=>{           // an appointment with no stated end runs an hour
   let [h,m]=hm.split(':').map(Number);
   h=(h+1)%24;
@@ -1350,23 +1361,28 @@ function render(){
 /* ============ sidebar ============ */
 function renderSidebar(){
   const bItem=b=>{
-    const open=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)).length;
+    const open=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t)).length;
     const on=route.view==='board'&&route.boardId===b.id;
-    return `<button class="snav snav-sub ${on?'on':''}" onclick="go('board','${b.id}')">
+    return `<div class="snav snav-sub ${on?'on':''}" draggable="true"
+        ondragstart="dragBoard(event,'${b.id}')" ondragend="dragEnd(event)"
+        ondragover="event.preventDefault()" ondrop="dropSideBoard(event,'${b.id}')"
+        onclick="go('board','${b.id}')">
       <span class="dot" style="background:${b.accent}"></span>
       <span class="snav-name">${esc(b.name)}</span>
       <span class="snav-count">${open||''}</span>
-    </button>`;
+      <span class="snav-menu" onclick="event.stopPropagation();sideMenu('${b.id}',event)">⋯</span>
+    </div>`;
   };
   const groups=S.masterColumns.map(mc=>{
     const bs=S.boards.filter(b=>b.masterCol===mc.id);
     const openN=bs.reduce((n,b)=>n+boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)).length,0);
     const hasCurrent=route.view==='board'&&bs.some(b=>b.id===route.boardId);
-    return `<button class="side-group ${hasCurrent?'has-on':''}" onclick="mcolFold('${mc.id}')">
+    return `<div class="side-group ${hasCurrent?'has-on':''}" onclick="mcolFold('${mc.id}')"
+        ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropSideGroup(event,'${mc.id}')">
       <span class="caret">${mc.folded?'▸':'▾'}</span>
       <span class="snav-name">${esc(mc.name)}</span>
       <span class="snav-count">${mc.folded?(openN||''):''}</span>
-    </button>
+    </div>
     ${mc.folded?'':bs.map(bItem).join('')}`;
   }).join('');
   const grouped=S.masterColumns.flatMap(mc=>S.boards.filter(b=>b.masterCol===mc.id));
@@ -1388,11 +1404,53 @@ function mcolFold(id){
   const c=S.masterColumns.find(c=>c.id===id);
   c.folded=!c.folded;render();
 }
+/* board management straight from the sidebar */
+function sideMenu(bid,ev){
+  const b=board(bid); if(!b)return;
+  const cols=S.masterColumns.map((c,i)=>(i+1)+') '+c.name).join('   ');
+  const pick=prompt(
+    'Board: '+b.name+
+    '\n\nType a new name to rename it,'+
+    '\nor a number to move it:   '+cols+
+    '\nor "color" to change its accent,'+
+    '\nor "delete" to remove it.',b.name);
+  if(pick===null)return;
+  const v=pick.trim();
+  if(!v)return;
+  if(/^delete$/i.test(v)){b_delete(bid);return;}
+  if(/^colou?r$/i.test(v)){
+    const i=ACCENTS.indexOf(b.accent);
+    b.accent=ACCENTS[(i+1)%ACCENTS.length];save();render();return;
+  }
+  if(/^\d+$/.test(v)){
+    const c=S.masterColumns[+v-1];
+    if(c){b.masterCol=c.id;save();render();}
+    return;
+  }
+  b.name=v;save();render();
+}
+function dropSideBoard(ev,targetId){
+  ev.preventDefault();ev.stopPropagation();
+  if(!drag||drag.type!=='board')return;
+  const b=board(drag.id), t=board(targetId);
+  if(!b||!t||b.id===t.id)return;
+  b.masterCol=t.masterCol;                       // adopt the group you were dropped into
+  S.boards=S.boards.filter(x=>x.id!==b.id);
+  S.boards.splice(S.boards.findIndex(x=>x.id===t.id),0,b);
+  drag=null;save();render();
+}
+function dropSideGroup(ev,mcolId){
+  ev.preventDefault();ev.currentTarget.classList.remove('drag-over-col');
+  if(!drag||drag.type!=='board')return;
+  const b=board(drag.id);
+  if(b){b.masterCol=mcolId;save();}
+  drag=null;render();
+}
 
 /* ============ master (studio) ============ */
 /* how much a board still asks of you: 0 = live work, 1 = only scheduled, 2 = at rest */
 function boardTier(b){
-  const all=boardTasks(b.id).filter(t=>!isRoutine(t));
+  const all=boardTasks(b.id).filter(t=>!isRoutine(t)&&!isShelved(t));
   const open=all.filter(t=>!isAppt(t)&&!t.done).length;
   if(open)return 0;
   const appt=all.filter(t=>isAppt(t)&&!t.done&&(!t.due||t.due>=todayStr())).length;
@@ -1400,8 +1458,9 @@ function boardTier(b){
 }
 function boardCard(b){
   const all=boardTasks(b.id), rn=all.filter(isRoutine).length;
-  const timed=all.filter(t=>!isRoutine(t)&&isAppt(t));
-  const ts=all.filter(t=>!isRoutine(t)&&!isAppt(t));   // only real work counts toward progress
+  const shelved=all.filter(t=>!isRoutine(t)&&isShelved(t)&&!t.done).length;
+  const timed=all.filter(t=>!isRoutine(t)&&isAppt(t)&&!isShelved(t));
+  const ts=all.filter(t=>!isRoutine(t)&&!isAppt(t)&&!isShelved(t));   // only live work counts
   const open=ts.filter(t=>!t.done).length, done=ts.length-open;
   const p=progress(ts);
   const apptOpen=timed.filter(t=>!t.done&&(!t.due||t.due>=todayStr())).length;
@@ -1419,7 +1478,7 @@ function boardCard(b){
       onclick="go('board','${b.id}')">
     <div class="bcard-top"><span class="dot" style="background:${b.accent}"></span>
       <span class="bcard-name">${esc(b.name)}</span></div>
-    <div class="bcard-meta"><span>${open} open</span><span>${done} done</span>${apptOpen?`<span>◷ ${apptOpen}</span>`:''}${rn?`<span>${rn} routine${rn>1?'s':''}</span>`:''}</div>
+    <div class="bcard-meta"><span>${open} open</span><span>${done} done</span>${apptOpen?`<span>◷ ${apptOpen}</span>`:''}${shelved?`<span>${shelved} shelved</span>`:''}${rn?`<span>${rn} routine${rn>1?'s':''}</span>`:''}</div>
     <div class="mini-track"><div class="mini-fill" style="width:${p??0}%;background:${b.accent}"></div></div>
     ${call}
   </div>`;
@@ -2174,7 +2233,8 @@ function apptStrip(days,title){
   </div>`;
 }
 function renderPriorities(){
-  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t));  // appointments aren't triage — they're commitments
+  /* triage is for live work only: no appointments, no shelved horizons */
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
   const valid=id=>S.priCols.some(c=>c.id===id);
   const horizon=S.priCols.find(c=>/horizon/i.test(c.name));
   const wk=new Date();wk.setDate(wk.getDate()+7);
@@ -2344,7 +2404,7 @@ function renderAch(){
 /* ============ claude — the resident reviewer ============ */
 function renderClaude(){
   const now=Date.now(), today=todayStr();
-  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t));
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
   const taskOf=id=>S.tasks.find(t=>t.id===id);
   const bAcc=t=>{const b=board(t.boardId);return b?b.accent:'#999';};
   const bName=t=>{const b=board(t.boardId);return b?b.name:'';};
