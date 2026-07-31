@@ -397,6 +397,13 @@ main{padding:26px 40px 60px}
 .era-goals .goal-block:first-child{border-top:none; padding-top:4px}
 .era-goals .goal-title-in{font-size:20px}
 .goal-row .steer{flex-shrink:0; color:var(--ink-faint); font-size:12px}
+.goal-caret{flex-shrink:0; color:var(--ink-faint); font-size:11px; width:14px; padding:0}
+.goal-caret:hover{color:var(--ink)}
+.goal-summary{
+  font-size:11.5px; color:var(--ink-faint); padding:5px 0 2px 30px; text-align:left;
+  letter-spacing:.3px; font-style:italic; font-family:var(--serif); font-size:13px;
+}
+.goal-summary:hover{color:var(--ink)}
 .goal-achieved{opacity:.5}
 .goal-achieved .goal-title-in{text-decoration:line-through; text-decoration-thickness:1px}
 .goal-achieved .steer{color:var(--ochre)}
@@ -2458,11 +2465,11 @@ function renderClaude(){
           </div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
-      ${northHtml}
       ${comingHtml}
       ${overdueHtml}
       ${winsHtml}
       ${staleHtml}
+      ${northHtml}
       <div class="cl-foot">Want a deeper review — priorities challenged, boards reorganized, honest opinions? Just tell me in our conversation; I read everything here and write back.</div>
     </div>`;
 }
@@ -2536,9 +2543,12 @@ function starPicker(cur,fn){
     ${(S.stars||[]).map(s=>`<option value="${s.id}" ${cur===s.id?'selected':''}>✶ ${esc(s.title)}</option>`).join('')}
   </select>`;
 }
+const goalOpen=new Set();
+function g_expand(id){goalOpen.has(id)?goalOpen.delete(id):goalOpen.add(id);render();}
 function goalBlock(g,compact){
   const subs=S.goals.filter(s=>s.parentId===g.id);
   const all=goalTaskSet(g.id), p=progress(all);
+  const open=goalOpen.has(g.id);
   const own=S.tasks.filter(t=>t.goalId===g.id&&!isRoutine(t)&&!isAppt(t));
   const taskRow=t=>{
     const b=board(t.boardId);
@@ -2566,6 +2576,7 @@ function goalBlock(g,compact){
       ondragstart="dragGoal(event,'${g.id}')" ondragend="dragEnd(event)">
     <div class="goal-row">
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
+      <button class="caret goal-caret" title="${open?'Collapse':'Expand'}" onclick="g_expand('${g.id}')">${open?'▾':'▸'}</button>
       <input class="goal-title-in" value="${esc(g.title)}" onchange="g_rename('${g.id}',this.value)">
       ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
       <span class="goal-pct">${p===null?'no tasks yet':p+'% · '+all.filter(t=>t.done).length+' of '+all.length}</span>
@@ -2581,11 +2592,14 @@ function goalBlock(g,compact){
         :`<span class="reward-state">waiting${p!=null?' on '+(100-p)+'% more':''}</span>`}
       <button class="btn-ghost" onclick="g_reward('${g.id}')">edit</button>
     </div>`:`<button class="add-inline reward-add" onclick="g_reward('${g.id}')">+ Promise yourself a reward</button>`}
-    <div class="subgoals">${subRows}
+    ${open?`<div class="subgoals">${subRows}
       <button class="add-inline" onclick="g_add('${g.id}')">+ Sub-goal</button></div>
     ${own.length?`<div class="linked-tasks">
       ${subs.length?'<div class="d-label" style="margin:12px 0 2px">Linked directly to the goal</div>':''}
-      ${own.map(taskRow).join('')}</div>`:''}
+      ${own.map(taskRow).join('')}</div>`:''}`
+    :`<button class="goal-summary" onclick="g_expand('${g.id}')">${
+        subs.length?subs.length+' sub-goal'+(subs.length>1?'s':''):'no sub-goals'}
+        ${all.length?' · '+all.length+' task'+(all.length>1?'s':''):''}</button>`}
   </div>`;
 }
 function renderCompass(){
