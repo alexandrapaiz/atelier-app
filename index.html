@@ -1489,6 +1489,37 @@ button.anchor.none{font-family:var(--serif); font-style:italic; font-size:12.5px
 .kr .more,.kr .kr-tick,.kr .kr-link{cursor:pointer}
 @media (max-width:700px){ .anchor-pick{left:auto; right:0} }
 
+
+.kp-picked{font-size:10px; color:var(--ochre); letter-spacing:0; text-transform:none; margin-left:8px}
+.kp-tasks{display:flex; flex-direction:column; gap:1px; max-height:230px; overflow-y:auto;
+  border:1px solid var(--line); border-radius:9px; background:var(--paper); padding:4px}
+.kp-task{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  background:none; border:none; cursor:pointer; padding:6px 8px; border-radius:7px;
+  font-family:var(--sans); font-size:12.5px; color:var(--ink);
+}
+.kp-task:hover{background:var(--paper-2)}
+.kp-task.on{background:var(--paper-2)}
+.kp-task.done .kp-t{color:var(--ink-faint); text-decoration:line-through}
+.kp-box{
+  width:15px; height:15px; border:1px solid var(--line); border-radius:4px; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center; font-size:10px; color:var(--ochre);
+  background:var(--card);
+}
+.kp-task.on .kp-box{border-color:var(--ochre)}
+.kp-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.kp-col{font-size:10.5px; color:var(--ink-faint); flex-shrink:0}
+
+
+/* the click target: whatever space the title doesn't need */
+.gnode>.tr-node.goal>textarea.tr-t.big.fitw{flex:0 0 auto; max-width:100%}
+.gspacer{flex:1 1 40px; min-width:24px; align-self:stretch; cursor:pointer}
+textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
+.krspacer{flex:1 1 30px; min-width:20px; align-self:stretch; cursor:pointer}
+@media (max-width:700px){
+  .gspacer,.krspacer{flex-basis:100%; min-height:12px}
+}
+
 </style>
 </head>
 <body>
@@ -1509,7 +1540,7 @@ button.anchor.none{font-family:var(--serif); font-style:italic; font-size:12.5px
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·18</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·20</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -1936,7 +1967,10 @@ function krTasks(kr){
 function krLinkLabel(kr){
   const l=kr&&kr.link; if(!l)return '';
   const b=board(l.boardId);
-  if(l.kind==='tasks')return (l.taskIds||[]).length+' chosen task'+((l.taskIds||[]).length===1?'':'s');
+  if(l.kind==='tasks'){
+    const n=(l.taskIds||[]).length;
+    return (b?b.name+' · ':'')+n+' task'+(n===1?'':'s');
+  }
   if(!b)return 'missing board';
   if(l.kind==='board')return b.name;
   const c=(b.columns||[]).find(c=>c.id===l.colId);
@@ -1981,12 +2015,30 @@ function krSuggest(kr){
   });
   return out.sort((a,b)=>b.score-a.score).slice(0,4);
 }
-const krOpen=new Set();
+const krOpen=new Set(), krBrowse=new Map();
 function kr_picker(id){krOpen.has(id)?krOpen.delete(id):krOpen.add(id);render();}
+function kr_browse(id,bid){
+  const k=goal(id); if(!k)return;
+  if(!bid){krBrowse.delete(id);k.link=null;}
+  else{krBrowse.set(id,bid);k.link={kind:'board',boardId:bid,colId:null};}
+  k.mode=null;k.krTouched=Date.now();save();render();
+}
+/* a key result can also be a handful of named tasks, not a whole column */
+function kr_toggleTask(id,tid){
+  const k=goal(id); if(!k)return;
+  const bid=(k.link&&k.link.boardId)||krBrowse.get(id)||null;
+  let ids=(k.link&&k.link.kind==='tasks')?(k.link.taskIds||[]).slice():[];
+  const i=ids.indexOf(tid);
+  if(i>=0)ids.splice(i,1); else ids.push(tid);
+  k.link=ids.length?{kind:'tasks',taskIds:ids,boardId:bid,colId:null}
+                   :(bid?{kind:'board',boardId:bid,colId:null}:null);
+  k.mode=null;k.krTouched=Date.now();save();render();
+}
 function kr_link(id,kind,boardId,colId){
   const k=goal(id); if(!k)return;
   k.link={kind,boardId,colId:colId||null};
   k.mode=null; k.krTouched=Date.now();
+  krBrowse.set(id,boardId);
   krOpen.delete(id); save(); render();
 }
 function kr_pickBoard(id,bid){
@@ -2007,7 +2059,7 @@ function kr_manual(id){
 }
 function kr_clear(id){
   const k=goal(id); if(!k)return;
-  k.link=null; k.mode=null; k.krTouched=Date.now();
+  k.link=null; k.mode=null; k.krTouched=Date.now(); krBrowse.delete(id);
   krOpen.delete(id); save(); render();
 }
 function goalKrs(gid){return S.goals.filter(s=>s.parentId===gid);}
@@ -3597,7 +3649,21 @@ document.addEventListener('click',e=>{
 },true);
 document.addEventListener('touchend',gripOff);
 
-function fitTA(el){el.style.height='auto';el.style.height=(el.scrollHeight+1)+'px';}
+function fitTA(el){
+  if(el.classList.contains('fitw')){
+    let m=document.getElementById('__meas');
+    if(!m){m=document.createElement('span');m.id='__meas';
+      m.style.cssText='position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:0';
+      document.body.appendChild(m);}
+    const cs=getComputedStyle(el);
+    m.style.fontFamily=cs.fontFamily;m.style.fontSize=cs.fontSize;
+    m.style.fontWeight=cs.fontWeight;m.style.fontStyle=cs.fontStyle;m.style.letterSpacing=cs.letterSpacing;
+    m.textContent=el.value||el.placeholder||'';
+    const room=el.parentElement?el.parentElement.clientWidth-150:520;
+    el.style.width=Math.min(Math.max(70,m.offsetWidth+12),Math.max(140,room))+'px';
+  }
+  el.style.height='auto';el.style.height=(el.scrollHeight+1)+'px';
+}
 const TA_KEYS="if(event.key==='Enter'){event.preventDefault();this.blur();}";
 const goalOpen=new Set();
 function g_expand(id){goalOpen.has(id)?goalOpen.delete(id):goalOpen.add(id);render();}
@@ -3634,8 +3700,9 @@ function krRow(kr){
   return `<div class="kr" onclick="krToggle(event,'${kr.id}')">
     <button class="kr-tick ${pct>=100?'on':''}" title="${kr.link||metric?'':'Mark this key result met'}"
       onclick="kr_toggle('${kr.id}')">${pct>=100?'◆':'◇'}</button>
-    <textarea class="kr-t grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+    <textarea class="kr-t grow fitw" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
       onchange="g_rename('${kr.id}',this.value)" placeholder="what gets measured…">${esc(kr.title)}</textarea>
+    <span class="krspacer" title="Click to open or close"></span>
     ${metric?`<span class="kr-nums">
       <input class="kr-n" type="number" inputmode="decimal" value="${kr.current??''}" placeholder="0"
         title="where you are now" onchange="kr_set('${kr.id}','current',this.value)">
@@ -3660,22 +3727,40 @@ function krRow(kr){
 function krPicker(kr){
   const sug=krSuggest(kr);
   const cur=kr.link||{};
-  const bOpts=S.boards.map(b=>`<option value="${b.id}" ${cur.boardId===b.id?'selected':''}>${esc(b.name)}</option>`).join('');
-  const cb=cur.boardId?board(cur.boardId):null;
+  const bid=cur.boardId||krBrowse.get(kr.id)||null;
+  const cb=bid?board(bid):null;
+  const bOpts=S.boards.map(b=>`<option value="${b.id}" ${bid===b.id?'selected':''}>${esc(b.name)}</option>`).join('');
   const cOpts=cb?(cb.columns||[]).map(c=>`<option value="${c.id}" ${cur.colId===c.id?'selected':''}>${esc(c.name)}</option>`).join(''):'';
+  const picked=(cur.kind==='tasks'&&cur.taskIds)||[];
+  /* the tasks you could hand-pick — narrowed to a column once one is chosen */
+  const pool=cb?S.tasks.filter(t=>t.boardId===cb.id&&!isRoutine(t)&&!isAppt(t)
+      &&(cur.kind==='col'&&cur.colId?t.colId===cur.colId:true)):[];
   return `<div class="kr-picker">
     ${sug.length?`<div class="kp-label">Probably this</div>
       <div class="kp-chips">${sug.map(x=>`<button class="ch" onclick="kr_link('${kr.id}','${x.kind}','${x.boardId}','${x.colId||''}')">
         ${esc(x.label)}<span class="kp-n">${x.n} task${x.n===1?'':'s'}</span></button>`).join('')}</div>`:''}
     <div class="kp-label">Or choose</div>
     <div class="kp-row">
-      <select onchange="kr_pickBoard('${kr.id}',this.value)">
+      <select onchange="kr_browse('${kr.id}',this.value)">
         <option value="">— a board —</option>${bOpts}
       </select>
       ${cb?`<select onchange="kr_pickCol('${kr.id}',this.value)">
         <option value="">the whole board</option>${cOpts}
       </select>`:''}
     </div>
+    ${cb?`<div class="kp-label">Or just these tasks
+        ${picked.length?`<span class="kp-picked">${picked.length} chosen</span>`:''}</div>
+      <div class="kp-tasks">
+        ${pool.length?pool.map(t=>{
+          const on=picked.indexOf(t.id)>=0;
+          const c=(cb.columns||[]).find(c=>c.id===t.colId);
+          return `<button class="kp-task ${on?'on':''} ${t.done?'done':''}" onclick="kr_toggleTask('${kr.id}','${t.id}')">
+            <span class="kp-box">${on?'✓':''}</span>
+            <span class="kp-t">${esc(t.title)}</span>
+            <span class="kp-col">${esc(c?c.name:'')}</span>
+          </button>`;}).join('')
+        :'<div class="ap-empty">no tasks on this board yet</div>'}
+      </div>`:''}
     <div class="kp-row foot">
       <button class="btn-ghost" onclick="kr_manual('${kr.id}')">count it by hand instead</button>
       ${kr.link||isMetric(kr)?`<button class="btn-ghost" onclick="kr_clear('${kr.id}')">unlink</button>`:''}
@@ -3695,9 +3780,9 @@ function goalBlock(g,opts){
       ${opts.nodrag?'':`<span class="grip" title="drag into another chapter"
         onmousedown="gripDown(event)" ontouchstart="gripDown(event)">⠿</span>`}
       <button class="steer" title="${g.achieved?'Achieved':'Mark achieved'}" onclick="g_toggle('${g.id}')">${g.achieved?'◆':'◇'}</button>
-      <textarea class="tr-t big grow" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+      <textarea class="tr-t big grow fitw" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
         onchange="g_rename('${g.id}',this.value)">${esc(g.title)}</textarea>
-      <span class="gspacer"></span>
+      <span class="gspacer" title="Click to fold or unfold"></span>
       <span class="gcol bar">${p===null?'':`<span class="gmini"><span class="fill ${p>=TARGET_PCT?'won':''}" style="width:${p}%"></span>
         <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>`}</span>
       <span class="gcol pct ${p!==null&&p>=TARGET_PCT?'won':''}">${p===null?'':p+'%'}</span>
