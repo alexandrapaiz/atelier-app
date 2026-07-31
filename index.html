@@ -1255,6 +1255,23 @@ textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; colo
   .map-hint{display:none}
 }
 
+
+/* the bearing, read as a name — black, with the star in gold beside it */
+.anchor{display:inline-flex; align-items:baseline; gap:5px; flex-shrink:0; max-width:210px}
+.anchor .star-mark{color:var(--ochre); font-size:12px; line-height:1}
+.anchor-t{
+  font-family:var(--serif); font-style:italic; font-size:14px; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.anchor.none{
+  font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--ink-faint);
+}
+.mn-foot .anchor{max-width:150px}
+.mn-foot .anchor-t{font-size:12.5px}
+.counsel-caret{margin-left:auto; color:var(--ink-faint); font-size:11px}
+.counsel-head:hover .counsel-caret{color:var(--ink)}
+@media (max-width:700px){ .anchor{max-width:none} }
+
 </style>
 </head>
 <body>
@@ -1275,7 +1292,7 @@ textarea.mn-t.mission-t{font-style:italic; font-weight:500; font-size:16px; colo
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·7</span>
+  <span class="f-verbose" title="Which build you are running">build 07-31·8</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -3222,8 +3239,8 @@ function goalBlock(g,opts){
         <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>
         <span class="gcard-pct ${p>=TARGET_PCT?'won':''}">${p}%</span>`}
       ${opts.showEra&&era?`<span class="b-tag">${esc(era.era)}</span>`:''}
-      ${s?`<span class="star-chip anchor">✶ ${esc(s.title)}</span>`
-         :'<span class="star-chip drift anchor">unanchored</span>'}
+      ${s?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
+         :'<span class="anchor none">unanchored</span>'}
       <button class="more" onclick="g_tools('${g.id}')" title="Anchor, schedule, ask Claude, delete">⋯</button>
     </div>
     ${toolsOpen.has(g.id)?`<div class="gcard-tools">
@@ -3284,7 +3301,7 @@ function compassCounsel(){
       <span class="cl-mark">✦</span>
       <span class="counsel-t">Claude, on the goals themselves</span>
       ${notes.length?`<span class="counsel-n">${notes.length}</span>`:''}
-      <span class="switch ${open?'on':''}" title="${open?'Hide Claude here':'Show Claude here'}"><span class="knob"></span></span>
+      <span class="caret counsel-caret" title="${open?'Hide':'Show'}">${open?'▾':'▸'}</span>
     </div>
     ${open?'<div class="counsel-sub">not for doing the work — for deciding what the work should be</div>':''}
     ${open?`
@@ -3475,7 +3492,8 @@ function compassMap(){
       <div class="mn-foot">
         <span class="mn-pct ${(p??0)>=TARGET_PCT?'won':''}">${p===null?'—':p+'%'}</span>
         <span class="mn-sub">${c.krs.length?c.krs.length+' key result'+(c.krs.length>1?'s':''):'no key results'}</span>
-        ${s?`<span class="star-chip">✶ ${esc(s.title)}</span>`:'<span class="star-chip drift">unanchored</span>'}
+        ${s?`<span class="anchor"><span class="star-mark">✶</span><span class="anchor-t">${esc(s.title)}</span></span>`
+          :'<span class="anchor none">unanchored</span>'}
       </div>
     </div>`);
     edges.push(['mission',g.id]);
