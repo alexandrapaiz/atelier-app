@@ -1764,6 +1764,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
   <div class="wordmark m-only" onclick="go('master')">A<em>telier</em></div>
   <div class="top-date" id="topDate"></div>
   <button class="btn-ghost refresh-btn" style="margin-left:auto" onclick="hardRefresh()" title="Sync and reload the freshest version">↻</button>
+  <button class="btn-ghost" onclick="openInts()" title="Integrations & account">⚙</button>
   <button class="btn-ghost" onclick="themeToggle()" id="themeBtn" title="Day / night">☾</button>
   <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
@@ -1915,6 +1916,7 @@ function ensureDefaults(){
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
   if(!S.rewards)S.rewards=[];
+  if(!S.meta.ints)S.meta.ints={gcal:{}};
   purgeBuried();
   /* never leave the app without somewhere to put a board, but never invent groups either */
   if(!S.masterColumns.length&&(S.boards.length||!HOSTED_EMPTY))
@@ -3333,8 +3335,9 @@ function renderCal(){
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
       ${(()=>{const n=syncQueue().length;
-        return n?`<button class="cl-btn" onclick="calAsk()" title="Claude writes these straight onto your Google Calendar">
-            ✦ ${n} waiting for Claude</button>`
+        if(GC.busy)return `<span class="small muted" style="margin-right:4px">syncing…</span>`;
+        return n?`<button class="cl-btn" onclick="atelierCalSync()" title="Write these straight onto your Google Calendar">
+            ◷ Sync ${n} to Google</button>`
         :`<span class="small muted" style="margin-right:4px">on your Google Calendar ✓</span>`;})()}
       <div class="cal-nav">
         <div class="seg">
@@ -3349,10 +3352,9 @@ function renderCal(){
         </span>
       </div>
     </div>
-    ${window.calAsked?`<div class="sync-banner" style="margin:12px 0 0">
-      <span><b>${window.calAsked} saved for Claude.</b> Mention the calendar next time you two talk and he
-      writes them straight onto Google — nothing downloads, and an edit updates its event rather than duplicating it.</span>
-      <button class="btn-ink" onclick="window.calAsked=0;render()">Got it</button></div>`:''}
+    ${window.calSynced?`<div class="sync-banner" style="margin:12px 0 0">
+      <span><b>${window.calSynced} on your Google Calendar ✓</b> An edit here updates its event rather than duplicating it.</span>
+      <button class="btn-ink" onclick="window.calSynced=0;render()">Got it</button></div>`:''}
     <div class="cal-month h-serif">${label}</div>
     ${body}`;
 }
@@ -5110,6 +5112,125 @@ function sbSignOut(){
   SB.chan=null;clearInterval(SB.poll);clearTimeout(SB.timer);
   try{if(SB.client)SB.client.auth.signOut();}catch(e){}
   SB.user=null;sbStatus('');
+}
+
+/* ============ google calendar — direct, no intermediary ============
+   The app itself holds a Google sign-in (OAuth token client) and writes
+   dated tasks straight onto the calendar. The one-time setup is a Google
+   OAuth Client ID, kept in the document so it travels to every device. */
+const GC={token:null,exp:0,busy:false,note:''};
+function gcalCfg(){if(!S.meta.ints)S.meta.ints={gcal:{}};if(!S.meta.ints.gcal)S.meta.ints.gcal={};return S.meta.ints.gcal;}
+function gcalLib(){return new Promise((res,rej)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';
+  s.onload=()=>res();s.onerror=()=>rej(new Error('could not load Google sign-in'));
+  document.head.appendChild(s);});}
+async function gcalToken(){
+  const cfg=gcalCfg();
+  if(!cfg.clientId)throw new Error('add your Google Client ID first');
+  if(GC.token&&Date.now()<GC.exp-60000)return GC.token;
+  await gcalLib();
+  return new Promise((res,rej)=>{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:cfg.clientId,
+      scope:'https://www.googleapis.com/auth/calendar.events',
+      callback:t=>{
+        if(t&&t.access_token){GC.token=t.access_token;GC.exp=Date.now()+(+t.expires_in||3600)*1000;res(GC.token);}
+        else rej(new Error((t&&t.error)||'Google did not hand back access'));
+      },
+      error_callback:e=>rej(new Error((e&&e.type)||'sign-in window closed'))
+    });
+    tc.requestAccessToken({prompt:''});   // silent when already granted; Google shows its window only when needed
+  });
+}
+function gcalEvent(t){
+  const b=board(t.boardId);
+  const ev={summary:t.title,
+    description:(t.note?t.note+'\n\n':'')+'From Atelier · '+(b?b.name:'')};
+  if(t.start){
+    ev.start={dateTime:t.due+'T'+t.start+':00',timeZone:'America/Guatemala'};
+    ev.end={dateTime:t.due+'T'+endOf(t)+':00',timeZone:'America/Guatemala'};
+  }else{
+    const p=n=>String(n).padStart(2,'0');
+    const x=new Date(t.due+'T12:00:00');x.setDate(x.getDate()+1);
+    ev.start={date:t.due};
+    ev.end={date:x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate())};
+  }
+  return ev;
+}
+function gcalNote(msg){GC.note=msg;const el=$('intsGcalNote');if(el)el.textContent=msg;}
+async function gcalSyncNow(){
+  if(GC.busy)return;GC.busy=true;gcalNote('Syncing…');render();
+  try{
+    const tok=await gcalToken();
+    const base='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+    const hdrs={'Authorization':'Bearer '+tok,'Content-Type':'application/json'};
+    const list=syncQueue();let n=0;
+    for(const t of list){
+      const real=t.gcalId&&!/^ics-/.test(t.gcalId);
+      let r=await fetch(real?base+'/'+encodeURIComponent(t.gcalId):base,
+        {method:real?'PATCH':'POST',headers:hdrs,body:JSON.stringify(gcalEvent(t))});
+      if(real&&(r.status===404||r.status===410))   // its event was deleted over there — make a fresh one
+        r=await fetch(base,{method:'POST',headers:hdrs,body:JSON.stringify(gcalEvent(t))});
+      if(!r.ok)throw new Error('Google said '+r.status);
+      const j=await r.json();
+      t.gcalId=j.id;t.gcalSyncAt=Date.now();n++;
+    }
+    save();
+    window.calSynced=n;
+    gcalNote(n?('Synced '+n+' ✓'):'Everything already on your calendar ✓');
+  }catch(e){gcalNote('Could not sync — '+((e&&e.message)||'try again'));}
+  GC.busy=false;render();
+}
+function atelierCalSync(){
+  if(!gcalCfg().clientId){openInts();return;}
+  gcalSyncNow();
+}
+
+/* ============ integrations & account ============ */
+function ints_setClient(v){
+  gcalCfg().clientId=v.trim();
+  GC.token=null;GC.exp=0;
+  save();openInts();
+}
+function openInts(){
+  drawerTask=null;
+  const cfg=gcalCfg();
+  const acct=(typeof SB!=='undefined'&&SB.user)
+    ?`<div class="kind-note">Signed in as <b>${esc(SB.user.email||'')}</b> — everything autosaves to your account.</div>
+       <button class="cl-btn" onclick="sbSignOut();openInts()">Sign out on this device</button>`
+    :`<div class="kind-note">Not signed in — edits stay on this device only.</div>
+       <button class="cl-btn" onclick="closeDrawer();sbSignIn()">Sign in to sync</button>`;
+  const gcal=cfg.clientId
+    ?`<div class="kind-note">Ready — dated tasks sync straight onto your Google Calendar. The first sync asks
+        Google's permission once per browser.</div>
+      <button class="cl-btn" onclick="gcalSyncNow()">◷ Sync now${syncQueue().length?' · '+syncQueue().length+' waiting':''}</button>
+      <div class="kind-note" id="intsGcalNote">${esc(GC.note)}</div>
+      <details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Client ID</summary>
+        <input style="width:100%;margin-top:6px" value="${esc(cfg.clientId)}" onchange="ints_setClient(this.value)">
+      </details>`
+    :`<div class="kind-note">Connect your own Google Calendar — no intermediary. One-time setup:
+        create a (free) OAuth Client ID and paste it here; it saves to your account and works on every device.</div>
+      <details style="margin:6px 0"><summary class="small muted" style="cursor:pointer">How to get the Client ID (5 min)</summary>
+        <div class="kind-note" style="margin-top:6px">
+        1. console.cloud.google.com → new project (any name)<br>
+        2. APIs &amp; Services → Library → enable <b>Google Calendar API</b><br>
+        3. OAuth consent screen → External → add yourself as test user<br>
+        4. Credentials → Create credentials → <b>OAuth client ID</b> → Web application<br>
+        5. Authorized JavaScript origins: <b>https://alexandrapaiz.github.io</b><br>
+        6. Copy the Client ID (ends in .apps.googleusercontent.com) and paste it below.</div>
+      </details>
+      <input style="width:100%" placeholder="paste your Google OAuth Client ID" onchange="ints_setClient(this.value)">
+      <div class="kind-note" id="intsGcalNote"></div>`;
+  $('drawer').innerHTML=`
+    <button class="d-close" onclick="closeDrawer()">×</button>
+    <div class="d-title" style="border:none;padding:0">Integrations</div>
+    <div class="d-field"><div class="d-label">Your account</div>${acct}</div>
+    <div class="d-field"><div class="d-label">Google Calendar</div>${gcal}</div>
+    <div class="d-field"><div class="d-label">Claude</div>
+      <div class="kind-note">Claude works with your data through the database directly — ask him anything about
+        your boards from Claude Code and he reads and writes your account's copy, no file handoffs.</div></div>`;
+  $('drawer').classList.add('open');$('scrim').classList.add('open');
 }
 
 /* ============ init ============ */
