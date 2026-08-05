@@ -1774,7 +1774,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 08-04·36</span>
+  <span class="f-verbose" title="Which build you are running">build 08-05·37</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
@@ -5028,7 +5028,9 @@ function updateGhLink(){
    tombstone machinery the file and GitHub channels use, so nothing resurrects and
    nothing is lost. Realtime pushes edits to other open devices within seconds. */
 const SB={cfg:null,client:null,user:null,timer:null,poll:null,busy:false,chan:null};
-const SB_DEFAULT_URL='https://amxakgexxuaztaiddbfz.supabase.co';
+/* the app's home database (project "alexandra-projects") — the publishable key is
+   built to live in a public page; row-level security is what guards the data */
+const SB_FIXED={url:'https://zzavasgpgprtkepiekda.supabase.co',key:'sb_publishable_RVGU2biRWi6ioLoRtoN7Xg_Qjb5IOGl'};
 try{SB.cfg=JSON.parse(store.get('atelier.db'));}catch(e){}
 function sbStatus(html){
   const el=$('sbLink');
@@ -5054,11 +5056,7 @@ async function sbInit(){
   }catch(e){sbStatus('offline');}
 }
 function sbConnect(){
-  const url=prompt('Supabase project URL:',(SB.cfg&&SB.cfg.url)||SB_DEFAULT_URL);
-  if(!url||!url.trim())return;
-  const key=prompt('Supabase anon (public) key — Project Settings → API keys:',(SB.cfg&&SB.cfg.key)||'');
-  if(!key||!key.trim())return;
-  SB.cfg={url:url.trim().replace(/\/+$/,''),key:key.trim(),email:(SB.cfg&&SB.cfg.email)||''};
+  SB.cfg={url:SB_FIXED.url,key:SB_FIXED.key,email:(SB.cfg&&SB.cfg.email)||''};
   store.set('atelier.db',JSON.stringify(SB.cfg));
   sbInit().then(()=>{if(SB.client&&!SB.user)sbSignIn();});
 }
