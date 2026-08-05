@@ -5081,20 +5081,36 @@ async function sbPull(quiet){
   if(!SB.client||!SB.user)return;
   try{
     const {data,error}=await SB.client.from('atelier_state')
-      .select('doc').eq('user_id',SB.user.id).maybeSingle();
+      .select('doc,updated_at').eq('user_id',SB.user.id).maybeSingle();
     if(error)throw error;
     if(!data){await sbPush();return;}   // first device seeds the database with what it has
+    SB.srv=data.updated_at;
     sbAbsorb(data.doc);
     sbStatus('✓');
   }catch(e){if(!quiet)sbStatus('offline');}
 }
 function sbSchedulePush(){if(!SB.client||!SB.user)return;clearTimeout(SB.timer);SB.timer=setTimeout(sbPush,1200);}
+/* Optimistic concurrency: a push only lands if nobody (another device, Claude
+   through the MCP server) wrote since we last read. If someone did, take their
+   copy in through the merge, then push the combined whole. Nothing gets clobbered. */
 async function sbPush(){
   if(!SB.client||!SB.user||SB.busy)return;SB.busy=true;
   try{
-    const {error}=await SB.client.from('atelier_state')
-      .upsert({user_id:SB.user.id,doc:S,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    if(error)throw error;
+    const stamp=new Date().toISOString();
+    if(SB.srv){
+      const {data,error}=await SB.client.from('atelier_state')
+        .update({doc:S,updated_at:stamp})
+        .eq('user_id',SB.user.id).eq('updated_at',SB.srv).select('updated_at');
+      if(error)throw error;
+      if(!data.length){SB.busy=false;await sbPull(true);sbSchedulePush();return;}
+      SB.srv=data[0].updated_at;
+    }else{
+      const {data,error}=await SB.client.from('atelier_state')
+        .upsert({user_id:SB.user.id,doc:S,updated_at:stamp},{onConflict:'user_id'})
+        .select('updated_at').single();
+      if(error)throw error;
+      SB.srv=data.updated_at;
+    }
     sbStatus('✓');
   }catch(e){sbStatus('offline');}
   SB.busy=false;
@@ -5104,7 +5120,7 @@ function sbRealtime(){
   SB.chan=SB.client.channel('atelier-state')
     .on('postgres_changes',
       {event:'*',schema:'public',table:'atelier_state',filter:'user_id=eq.'+SB.user.id},
-      p=>{if(p.new&&p.new.doc)sbAbsorb(p.new.doc);})
+      p=>{if(p.new&&p.new.doc){SB.srv=p.new.updated_at||SB.srv;sbAbsorb(p.new.doc);}})
     .subscribe();
 }
 function sbSignOut(){
@@ -5228,8 +5244,10 @@ function openInts(){
     <div class="d-field"><div class="d-label">Your account</div>${acct}</div>
     <div class="d-field"><div class="d-label">Google Calendar</div>${gcal}</div>
     <div class="d-field"><div class="d-label">Claude</div>
-      <div class="kind-note">Claude works with your data through the database directly — ask him anything about
-        your boards from Claude Code and he reads and writes your account's copy, no file handoffs.</div></div>`;
+      <div class="kind-note">Connect your Claude to your Atelier: in claude.ai go to
+        <b>Settings → Connectors → Add custom connector</b> and paste
+        <b>https://atelier-mcp.vercel.app/mcp</b> — then sign in with this same account.
+        Claude can then read your boards, add tasks, and check your agenda, and only ever sees your own data.</div></div>`;
   $('drawer').classList.add('open');$('scrim').classList.add('open');
 }
 
