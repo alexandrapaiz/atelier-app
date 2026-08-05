@@ -560,10 +560,10 @@ main{padding:26px 40px 60px}
   display:flex; align-items:center; gap:11px; padding:10px 4px;
   border-bottom:1px solid var(--line-soft);
 }
-.reward-row.earned{background:#f7f0dd; border-radius:10px; padding:12px 12px; border-bottom:none; margin-bottom:6px}
+.reward-row.earned{background:color-mix(in srgb, var(--sage) 14%, var(--paper)); border-radius:10px; padding:12px 12px; border-bottom:none; margin-bottom:6px}
 .reward-row.claimed{opacity:.45}
 .reward-row.claimed .ach-t{text-decoration:line-through}
-[data-theme=dark] .reward-row.earned{background:#332c1c}
+[data-theme=dark] .reward-row.earned{background:color-mix(in srgb, var(--sage) 18%, var(--paper))}
 
 /* ---------- the laurels ---------- */
 .ach-hero{
@@ -3335,7 +3335,7 @@ function renderWeekAgenda(start,byDate,gByDate,today,nDays){
   const days=[...Array(nDays||7)].map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d;});
   return '<div class="agenda">'+days.map(d=>{
     const k=dstr(d);
-    const ts=byDate[k]||[], gs=gByDate[k]||[];
+    const ts=(byDate[k]||[]).filter(t=>!t.done), gs=gByDate[k]||[];
     const timed=[...ts.filter(t=>t.start).map(t=>({t})),...gs.filter(e=>e.start).map(e=>({e}))]
       .sort((a,b)=>hmToMin((a.t||a.e).start)-hmToMin((b.t||b.e).start));
     const allday=[...ts.filter(t=>!t.start).map(t=>({t})),...gs.filter(e=>!e.start).map(e=>({e}))];
@@ -3362,11 +3362,20 @@ function renderWeekAgenda(start,byDate,gByDate,today,nDays){
 }
 /* week with hours — timed tasks and calendar events as duration blocks */
 function renderWeekGrid(start,byDate,gByDate,today){
-  const S_MIN=0, E_MIN=24*60, PPH=48;   // full day, midnight to midnight
   const days=[...Array(7)].map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d;});
+  /* the day runs 7am–9pm unless something real happens outside it — no acres of empty night */
+  let S_MIN=7*60, E_MIN=21*60; const PPH=48;
+  days.forEach(d=>{
+    const k=dstr(d);
+    [...(byDate[k]||[]).filter(t=>t.start&&!t.done),...(gByDate[k]||[]).filter(e=>e.start)].forEach(it=>{
+      const s=hmToMin(it.start), en=hmToMin(endOf(it)||it.start)||s+60;
+      S_MIN=Math.min(S_MIN,Math.floor(s/60)*60);
+      E_MIN=Math.max(E_MIN,Math.ceil(en/60)*60);
+    });
+  });
   const heads=days.map(d=>{
     const k=dstr(d);
-    const ts=(byDate[k]||[]).filter(t=>!t.start), gs=(gByDate[k]||[]).filter(e=>!e.start);
+    const ts=(byDate[k]||[]).filter(t=>!t.start&&!t.done), gs=(gByDate[k]||[]).filter(e=>!e.start);
     return `<div class="wk-day-head ${k===today?'wk-today':''}">
       <div class="wk-dn">${d.toLocaleDateString('en-US',{weekday:'short'})} <b>${d.getDate()}</b>
         <button class="cal-addbtn" onclick="calAddPop(event,'${k}')" title="Add a task on this day">+</button></div>
@@ -3385,7 +3394,7 @@ function renderWeekGrid(start,byDate,gByDate,today){
   const cols=days.map(d=>{
     const k=dstr(d);
     const items=[
-      ...(byDate[k]||[]).filter(t=>t.start).map(t=>({t})),
+      ...(byDate[k]||[]).filter(t=>t.start&&!t.done).map(t=>({t})),
       ...(gByDate[k]||[]).filter(e=>e.start).map(e=>({e}))
     ];
     const blocks=items.map(x=>{
@@ -5448,7 +5457,10 @@ function openInts(){
       <div class="i-note" id="intsGcalNote">${esc(GC.note)}</div>
       <details style="margin-top:8px"><summary>Client ID</summary>
         <input class="i-input" value="${esc(cfg.clientId)}" onchange="ints_setClient(this.value)"></details>`
-    :step(false,`<b>Create a Google project</b> — at
+    :`<div class="i-note" style="margin-top:0">Your calendar, no intermediary: one free Google key, pasted once,
+        and dated tasks sync themselves from then on.</div>
+      <details class="i-walk"><summary>Walk me through it — 5 minutes, once</summary>`
+     +step(false,`<b>Create a Google project</b> — at
         <a href="https://console.cloud.google.com" target="_blank" style="color:inherit">console.cloud.google.com</a>:
         top bar → project picker → <b>New project</b>, any name. Then APIs &amp; Services → Library →
         search &ldquo;Google Calendar API&rdquo; → <b>Enable</b>.`)
@@ -5464,20 +5476,23 @@ function openInts(){
         OAuth client ID) → type <b>Web application</b> → under Authorized JavaScript origins add
         <code>https://alexandrapaiz.github.io</code> → Create, then copy the ID ending in
         <code>.apps.googleusercontent.com</code>.`)
-     +step(false,`<b>Paste it here</b> — it saves to your account, so every device is set at once.
-        <input class="i-input" placeholder="…apps.googleusercontent.com" onchange="ints_setClient(this.value)">
-        <div class="i-note" id="intsGcalNote"></div>`)
-     +step(false,`<b>Grant it once</b> — click Sync on the Calendar page. Google shows a warning that
-        the app is unverified: click <b>Continue</b> — the &ldquo;app&rdquo; is your own, talking only to
-        your own calendar. From then on syncing is automatic whenever Atelier is open.`);
+     +step(false,`<b>Grant it once</b> — after pasting the key below, click Sync on the Calendar page.
+        Google warns the app is unverified: click <b>Continue</b> — the &ldquo;app&rdquo; is your own,
+        talking only to your own calendar. Automatic ever after.`)
+     +`</details>
+      <input class="i-input" placeholder="paste your Client ID — …apps.googleusercontent.com" onchange="ints_setClient(this.value)">
+      <div class="i-note" id="intsGcalNote"></div>`;
 
   const mcpUrl='https://atelier-mcp.vercel.app/mcp';
   const claude=
-     step(false,`<b>Copy the connector address</b>
-        <div class="i-copy"><code>${mcpUrl}</code><button onclick="intsCopy(this,'${mcpUrl}')">Copy</button></div>`)
+    `<div class="i-note" style="margin-top:0">Let your Claude work your boards — read them, add tasks, check your
+        agenda — from the web or your phone. It only ever sees <i>your</i> data.</div>
+     <div class="i-copy"><code>${mcpUrl}</code><button onclick="intsCopy(this,'${mcpUrl}')">Copy</button></div>
+     <details class="i-walk"><summary>Walk me through it — 2 minutes</summary>`
+    +step(false,`Copy the address above.`)
     +step(false,`In <b>claude.ai</b> → Settings → <b>Connectors</b> → <b>Add custom connector</b> → paste it.`)
-    +step(signedIn,`<b>Sign in with this account</b> when Claude opens the Atelier page${signedIn?' — you already have one ✓':' (create it above first)'}.
-        <div class="i-note">From then on Claude can read your boards, add tasks, and check your agenda — on the web, on your phone, anywhere. It only ever sees <i>your</i> data.</div>`);
+    +step(signedIn,`<b>Sign in with this account</b> when Claude opens the Atelier page${signedIn?' — you already have one ✓':' (create it above first)'}.`)
+    +`</details>`;
 
   $('drawer').innerHTML=`
     <button class="d-close" onclick="closeDrawer()">×</button>
