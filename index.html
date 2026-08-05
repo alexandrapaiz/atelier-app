@@ -14,11 +14,13 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-rounded.png">
 <meta name="theme-color" content="#faf8f3" id="themeColor">
-<script>/* apply saved theme before first paint */
+<script>/* apply saved theme & palette before first paint */
 try{
   var _t=localStorage.getItem('atelier.theme');
   if(!_t)_t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
   if(_t==='dark')document.documentElement.setAttribute('data-theme','dark');
+  var _p=localStorage.getItem('atelier.pal');
+  if(_p&&_p!=='atelier')document.documentElement.setAttribute('data-pal',_p);
 }catch(e){}
 </script>
 <style>
@@ -38,6 +40,31 @@ try{
   --shadow:0 1px 2px rgba(50,42,28,.05), 0 6px 24px -12px rgba(50,42,28,.12);
   --shadow-lift:0 2px 6px rgba(50,42,28,.08), 0 18px 40px -18px rgba(50,42,28,.25);
 }
+/* ---------- palettes — the same room, painted differently ---------- */
+[data-pal=graphite]{
+  --paper:#f5f5f6; --paper-2:#ebeced; --card:#fdfdfe;
+  --ink:#1b1d20; --ink-soft:#4e5359; --ink-faint:#8b9096;
+  --line:#dfe1e4; --line-soft:#e9eaec;
+  --ochre:#6e7f8d; --sage:#7c8b7a; --clay:#8d8378;
+  --shadow:0 1px 2px rgba(20,24,30,.05), 0 6px 24px -12px rgba(20,24,30,.12);
+  --shadow-lift:0 2px 6px rgba(20,24,30,.08), 0 18px 40px -18px rgba(20,24,30,.25);
+}
+[data-pal=forest]{
+  --paper:#f3f5f0; --paper-2:#e9ece4; --card:#fcfdfa;
+  --ink:#1d211c; --ink-soft:#4f584c; --ink-faint:#8b9385;
+  --line:#dde2d6; --line-soft:#e7ebe1;
+  --ochre:#5f7355; --clay:#7c7a58;
+  --shadow:0 1px 2px rgba(24,32,22,.05), 0 6px 24px -12px rgba(24,32,22,.12);
+  --shadow-lift:0 2px 6px rgba(24,32,22,.08), 0 18px 40px -18px rgba(24,32,22,.25);
+}
+[data-pal=harbor]{
+  --paper:#f2f4f6; --paper-2:#e7eaee; --card:#fbfcfd;
+  --ink:#16202b; --ink-soft:#45525f; --ink-faint:#84909c;
+  --line:#dbe0e6; --line-soft:#e6eaee;
+  --ochre:#4f6b85; --sage:#6f8578; --clay:#7d7468;
+  --shadow:0 1px 2px rgba(14,26,38,.05), 0 6px 24px -12px rgba(14,26,38,.12);
+  --shadow-lift:0 2px 6px rgba(14,26,38,.08), 0 18px 40px -18px rgba(14,26,38,.25);
+}
 [data-theme=dark]{
   --paper:#181613;
   --paper-2:#221f1a;
@@ -50,6 +77,21 @@ try{
   --danger:#e08a74;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 24px -12px rgba(0,0,0,.5);
   --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 18px 40px -18px rgba(0,0,0,.7);
+}
+[data-theme=dark][data-pal=graphite]{
+  --paper:#141619; --paper-2:#1d2024; --card:#1a1d21;
+  --ink:#e6e8ea; --ink-soft:#a9adb3; --ink-faint:#767c84;
+  --line:#31353b; --line-soft:#272a2f; --ochre:#8fa0ae;
+}
+[data-theme=dark][data-pal=forest]{
+  --paper:#141712; --paper-2:#1c201a; --card:#191d17;
+  --ink:#e5e9e1; --ink-soft:#aab2a3; --ink-faint:#77816f;
+  --line:#2f362c; --line-soft:#262b23; --ochre:#8ba17c;
+}
+[data-theme=dark][data-pal=harbor]{
+  --paper:#121820; --paper-2:#1a212a; --card:#171e26;
+  --ink:#e3e8ed; --ink-soft:#a5aeb8; --ink-faint:#71808f;
+  --line:#2b3540; --line-soft:#222b34; --ochre:#7f9ab4;
 }
 [data-theme=dark] .chip.due-over,[data-theme=dark] .chip.urgent-chip{background:#46281f; color:#eda28d}
 [data-theme=dark] .chip.due-today{background:#3b3220; color:#dcbe7c}
@@ -885,6 +927,20 @@ main{padding:26px 40px 60px}
 .i-sub{margin:4px 0 0 30px; font-size:12px; color:var(--ink-faint); line-height:1.65}
 .i-body details summary{cursor:pointer; font-size:12px; color:var(--ink-faint)}
 .i-body details summary:hover{color:var(--ink)}
+.pal-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:4px}
+.pal-opt{
+  flex:1 1 calc(50% - 5px); min-width:120px; display:flex; align-items:center; gap:10px;
+  border:1px solid var(--line); border-radius:11px; padding:9px 12px; text-align:left;
+}
+.pal-opt:hover{background:var(--paper-2)}
+.pal-opt.on{border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink)}
+.pal-chip{
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  border:1px solid rgba(0,0,0,.12);
+  background:linear-gradient(135deg, var(--pc-paper) 50%, var(--pc-ink) 50%);
+}
+.pal-name{font-size:12.5px; font-weight:600; line-height:1.2}
+.pal-hint{font-size:11px; color:var(--ink-faint); line-height:1.3}
 
 /* ---------- footer ---------- */
 footer{
@@ -4673,6 +4729,22 @@ function themeToggle(){
   store.set('atelier.theme',next);
   themeApply(next);
 }
+/* palettes — same room, different paint */
+const PALETTES=[
+  {id:'atelier', name:'Atelier',  hint:'warm cream & ink'},
+  {id:'graphite',name:'Graphite', hint:'cool gray, quiet steel'},
+  {id:'forest',  name:'Forest',   hint:'moss & deep green'},
+  {id:'harbor',  name:'Harbor',   hint:'slate blue, north light'},
+];
+function palApply(p){
+  if(p==='atelier')document.documentElement.removeAttribute('data-pal');
+  else document.documentElement.setAttribute('data-pal',p);
+  store.set('atelier.pal',p);
+  const mc=document.getElementById('themeColor');
+  if(mc)mc.setAttribute('content',getComputedStyle(document.body).backgroundColor);
+  if(document.querySelector('.i-card'))openInts();   // repaint the settings drawer if it's showing
+}
+function palCurrent(){return document.documentElement.getAttribute('data-pal')||'atelier';}
 async function hardRefresh(){
   const a=document.activeElement; if(a&&a.blur)a.blur();
   const btn=document.querySelector('.refresh-btn'); if(btn)btn.textContent='…';
@@ -5263,6 +5335,16 @@ function openInts(){
     </div>`;
   const step=(done,html)=>`<div class="i-step"><span class="i-num ${done?'done':''}">${done?'✓':''}</span><div>${html}</div></div>`;
 
+  const PAL_INK={atelier:'#211e19',graphite:'#1b1d20',forest:'#1d211c',harbor:'#16202b'};
+  const PAL_PAPER={atelier:'#faf8f3',graphite:'#f5f5f6',forest:'#f3f5f0',harbor:'#f2f4f6'};
+  const look=`<div class="i-note" style="margin-top:0">Same room, different paint — pick the one that feels like yours.
+      Day and night (the ☾ in the header) both follow it.</div>
+    <div class="pal-row">${PALETTES.map(p=>`
+      <button class="pal-opt ${palCurrent()===p.id?'on':''}" onclick="palApply('${p.id}')">
+        <span class="pal-chip" style="--pc-paper:${PAL_PAPER[p.id]};--pc-ink:${PAL_INK[p.id]}"></span>
+        <span><span class="pal-name">${p.name}</span><br><span class="pal-hint">${p.hint}</span></span>
+      </button>`).join('')}</div>`;
+
   const acct=signedIn
     ?`<div class="i-note" style="margin-top:0">Signed in as <b>${esc(SB.user.email||'')}</b>. Everything autosaves to
         your account and follows you to any device — this same sign-in also unlocks the connections below.</div>
@@ -5277,18 +5359,28 @@ function openInts(){
       <div class="i-note" id="intsGcalNote">${esc(GC.note)}</div>
       <details style="margin-top:8px"><summary>Client ID</summary>
         <input class="i-input" value="${esc(cfg.clientId)}" onchange="ints_setClient(this.value)"></details>`
-    :step(false,`<b>Create your free Google Client ID</b> — a one-time key that lets this app talk to
-        <i>your</i> calendar with no intermediary.
-        <div class="i-sub">a&nbsp;&nbsp;<a href="https://console.cloud.google.com" target="_blank" style="color:inherit">console.cloud.google.com</a> → New project (any name)<br>
-        b&nbsp;&nbsp;APIs &amp; Services → Library → enable <b>Google Calendar API</b><br>
-        c&nbsp;&nbsp;OAuth consent screen → External → add your own gmail as a test user<br>
-        d&nbsp;&nbsp;Credentials → Create credentials → <b>OAuth client ID</b> → Web application<br>
-        e&nbsp;&nbsp;Authorized JavaScript origins → <code>https://alexandrapaiz.github.io</code><br>
-        f&nbsp;&nbsp;Copy the ID ending in <code>.apps.googleusercontent.com</code></div>`)
+    :step(false,`<b>Create a Google project</b> — at
+        <a href="https://console.cloud.google.com" target="_blank" style="color:inherit">console.cloud.google.com</a>:
+        top bar → project picker → <b>New project</b>, any name. Then APIs &amp; Services → Library →
+        search &ldquo;Google Calendar API&rdquo; → <b>Enable</b>.`)
+     +step(false,`<b>Set up the consent screen</b> — APIs &amp; Services → <b>OAuth consent screen</b>
+        (Google may call it &ldquo;Google Auth Platform&rdquo;) → choose <b>External</b>, fill in just an
+        app name and your email.`)
+     +step(false,`<b>Approve yourself as a tester</b> — the step everyone misses, and it hides under
+        <b>Audience</b> in the left menu: Audience → <b>Test users</b> → <b>+ Add users</b> → your own
+        gmail → Save.
+        <div class="i-note">Skip this and Google blocks sign-in with &ldquo;Error 403: access_denied —
+        has not completed the verification process.&rdquo; That error means exactly this step.</div>`)
+     +step(false,`<b>Create the Client ID</b> — <b>Clients</b> (or Credentials → Create credentials →
+        OAuth client ID) → type <b>Web application</b> → under Authorized JavaScript origins add
+        <code>https://alexandrapaiz.github.io</code> → Create, then copy the ID ending in
+        <code>.apps.googleusercontent.com</code>.`)
      +step(false,`<b>Paste it here</b> — it saves to your account, so every device is set at once.
         <input class="i-input" placeholder="…apps.googleusercontent.com" onchange="ints_setClient(this.value)">
         <div class="i-note" id="intsGcalNote"></div>`)
-     +step(false,`<b>Sync</b> — the Calendar page grows a "Sync to Google" button; Google asks your permission once.`);
+     +step(false,`<b>Sync</b> — the Calendar page grows a &ldquo;Sync to Google&rdquo; button. The first
+        time, Google shows a warning that the app is unverified: click <b>Continue</b> — the
+        &ldquo;app&rdquo; is your own, talking only to your own calendar.`);
 
   const mcpUrl='https://atelier-mcp.vercel.app/mcp';
   const claude=
@@ -5303,6 +5395,7 @@ function openInts(){
     <div class="d-title" style="border:none;padding:0">Settings</div>
     <div class="i-note" style="margin-top:2px">Connections live here — each one is yours alone, keyed to your account.</div>
     ${card(signedIn,'Your account',signedIn?'Connected':'Signed out',acct)}
+    ${card(true,'Appearance',PALETTES.find(p=>p.id===palCurrent()).name,look)}
     ${card(!!cfg.clientId,'Google Calendar',cfg.clientId?'Ready':'Set up once',gcal)}
     ${card(false,'Claude','Walkthrough',claude)}`;
   $('drawer').classList.add('open');$('scrim').classList.add('open');
