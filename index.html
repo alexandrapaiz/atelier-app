@@ -839,6 +839,27 @@ main{padding:26px 40px 60px}
 }
 .sync-banner .btn-ink{flex-shrink:0}
 
+/* ---------- database sign-in ---------- */
+.sb-scrim{position:fixed; inset:0; background:rgba(33,30,25,.35); z-index:80}
+.sb-card{
+  position:fixed; z-index:81; left:50%; top:38%; transform:translate(-50%,-50%);
+  width:min(340px,calc(100vw - 48px)); background:var(--card); border:1px solid var(--line);
+  border-radius:14px; box-shadow:var(--shadow-lift); padding:22px 24px 20px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.sb-card h3{font-family:var(--serif); font-size:20px; font-weight:600}
+.sb-card input{
+  border:1px solid var(--line); border-radius:9px; padding:9px 12px; background:var(--paper);
+  font-size:13.5px; width:100%;
+}
+.sb-card input:focus{outline:none; border-color:var(--ink-faint)}
+.sb-hint{font-size:12px; color:var(--ink-faint); line-height:1.45}
+.sb-row{display:flex; gap:8px; justify-content:flex-end; margin-top:4px}
+.sb-row .go{background:var(--ink); color:var(--paper); border-radius:999px; padding:7px 16px; font-size:13px}
+.sb-row .no{color:var(--ink-soft); padding:7px 10px; font-size:13px}
+#sbMsg{font-size:12px; color:var(--danger); min-height:0}
+[data-theme=dark] .sb-scrim{background:rgba(0,0,0,.5)}
+
 /* ---------- footer ---------- */
 footer{
   padding:10px 40px 26px; display:flex; gap:14px; align-items:center;
@@ -1753,13 +1774,14 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <footer>
   <span id="saveStamp">Autosaved</span>
   <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 07-31·35</span>
+  <span class="f-verbose" title="Which build you are running">build 08-04·36</span>
   <span class="f-sep">·</span>
   <span class="f-verbose">Data lives in this browser.</span>
   <button onclick="exportData()">Export backup</button>
   <label>Import<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
   <span id="fileLink"></span>
   <span id="ghLink"></span>
+  <span id="sbLink"></span>
 </footer>
 </div>
 </div>
@@ -2015,6 +2037,7 @@ function save(){
     :'Preview mode — edits are temporary here; tell Claude to make them permanent';
   scheduleWrite();
   if(typeof ghSchedulePush==='function')ghSchedulePush();
+  if(typeof sbSchedulePush==='function')sbSchedulePush();
 }
 
 /* ============ helpers ============ */
@@ -4999,12 +5022,142 @@ function updateGhLink(){
   else el.innerHTML='· <button onclick="ghConnect()" title="Sync across your devices via your private GitHub repo">Connect GitHub sync</button>';
 }
 
+/* ============ supabase sync — one row in your own database, every device ============ */
+/* The whole state stays one document; Supabase holds it as a single jsonb row per user,
+   guarded by row-level security. Every device merges through the same mergeStates /
+   tombstone machinery the file and GitHub channels use, so nothing resurrects and
+   nothing is lost. Realtime pushes edits to other open devices within seconds. */
+const SB={cfg:null,client:null,user:null,timer:null,poll:null,busy:false,chan:null};
+const SB_DEFAULT_URL='https://amxakgexxuaztaiddbfz.supabase.co';
+try{SB.cfg=JSON.parse(store.get('atelier.db'));}catch(e){}
+function sbStatus(html){
+  const el=$('sbLink');
+  if(el&&SB.cfg)el.innerHTML='· database '+html+
+    ' <button class="btn-ghost" style="padding:2px 6px" onclick="sbDisconnect()" title="Disconnect this device">×</button>';
+}
+function sbLib(){
+  if(!SB.lib)SB.lib=import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+  return SB.lib;
+}
+async function sbInit(){
+  updateSbLink();
+  if(!SB.cfg)return;
+  try{
+    const {createClient}=await sbLib();
+    SB.client=createClient(SB.cfg.url,SB.cfg.key,{auth:{storageKey:'atelier.auth'}});
+    SB.client.auth.onAuthStateChange((ev)=>{
+      if(ev==='SIGNED_OUT'){SB.user=null;clearInterval(SB.poll);sbStatus('<button onclick="sbSignIn()">Sign in</button>');}
+    });
+    const {data:{session}}=await SB.client.auth.getSession();
+    if(session){SB.user=session.user;sbStart();}
+    else sbStatus('<button onclick="sbSignIn()">Sign in</button>');
+  }catch(e){sbStatus('offline');}
+}
+function sbConnect(){
+  const url=prompt('Supabase project URL:',(SB.cfg&&SB.cfg.url)||SB_DEFAULT_URL);
+  if(!url||!url.trim())return;
+  const key=prompt('Supabase anon (public) key — Project Settings → API keys:',(SB.cfg&&SB.cfg.key)||'');
+  if(!key||!key.trim())return;
+  SB.cfg={url:url.trim().replace(/\/+$/,''),key:key.trim(),email:(SB.cfg&&SB.cfg.email)||''};
+  store.set('atelier.db',JSON.stringify(SB.cfg));
+  sbInit().then(()=>{if(SB.client&&!SB.user)sbSignIn();});
+}
+function sbSignIn(){
+  if(!SB.client||document.getElementById('sbModal'))return;
+  const d=document.createElement('div');d.id='sbModal';
+  d.innerHTML='<div class="sb-scrim" onclick="sbModalClose()"></div><div class="sb-card">'+
+    '<h3>Sign in to your database</h3>'+
+    '<input id="sbEmail" type="email" autocomplete="email" placeholder="email" value="'+esc((SB.cfg&&SB.cfg.email)||'')+'">'+
+    '<input id="sbPass" type="password" autocomplete="current-password" placeholder="password">'+
+    '<p class="sb-hint">First time here? The same form creates your account.</p>'+
+    '<p id="sbMsg"></p>'+
+    '<div class="sb-row"><button class="no" onclick="sbModalClose()">Cancel</button>'+
+    '<button class="go" onclick="sbModalGo()">Sign in</button></div></div>';
+  document.body.appendChild(d);
+  d.querySelector('#sbPass').addEventListener('keydown',e=>{if(e.key==='Enter')sbModalGo();});
+  d.querySelector(SB.cfg&&SB.cfg.email?'#sbPass':'#sbEmail').focus();
+}
+function sbModalClose(){const d=document.getElementById('sbModal');if(d)d.remove();}
+async function sbModalGo(){
+  const email=(document.getElementById('sbEmail').value||'').trim();
+  const pass=document.getElementById('sbPass').value||'';
+  const msg=document.getElementById('sbMsg');
+  if(!email||!pass){msg.textContent='Email and password, both.';return;}
+  msg.style.color='';msg.textContent='Signing in…';
+  let r=await SB.client.auth.signInWithPassword({email,password:pass});
+  if(r.error&&/invalid login credentials/i.test(r.error.message)){
+    /* no such account yet — the same form doubles as sign-up, once */
+    const s=await SB.client.auth.signUp({email,password:pass});
+    if(s.error){msg.textContent=s.error.message;return;}
+    if(!s.data.session){msg.textContent='Account created — confirm it from your email, then sign in again. (Or that password was wrong.)';return;}
+    r=s;
+  }else if(r.error){msg.textContent=r.error.message;return;}
+  SB.cfg.email=email;store.set('atelier.db',JSON.stringify(SB.cfg));
+  SB.user=r.data.user;
+  sbModalClose();sbStart();
+}
+function sbStart(){
+  sbStatus('✓'+(SB.cfg.email?' · '+esc(SB.cfg.email):''));
+  sbPull();
+  clearInterval(SB.poll);SB.poll=setInterval(()=>sbPull(true),25000);   // realtime does the work; this is the safety net
+  sbRealtime();
+}
+function sbAbsorb(doc){
+  if(!(doc&&doc.meta))return;
+  const before=JSON.stringify(S);
+  S=mergeStates(S,doc);ensureDefaults();dedupeState();
+  if(JSON.stringify(S)!==before){store.set(KEY,JSON.stringify(S));render();}
+}
+async function sbPull(quiet){
+  if(!SB.client||!SB.user)return;
+  try{
+    const {data,error}=await SB.client.from('atelier_state')
+      .select('doc').eq('user_id',SB.user.id).maybeSingle();
+    if(error)throw error;
+    if(!data){await sbPush();return;}   // first device seeds the database with what it has
+    sbAbsorb(data.doc);
+    sbStatus('✓');
+  }catch(e){if(!quiet)sbStatus('offline');}
+}
+function sbSchedulePush(){if(!SB.client||!SB.user)return;clearTimeout(SB.timer);SB.timer=setTimeout(sbPush,1200);}
+async function sbPush(){
+  if(!SB.client||!SB.user||SB.busy)return;SB.busy=true;
+  try{
+    const {error}=await SB.client.from('atelier_state')
+      .upsert({user_id:SB.user.id,doc:S,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error)throw error;
+    sbStatus('✓');
+  }catch(e){sbStatus('offline');}
+  SB.busy=false;
+}
+function sbRealtime(){
+  if(SB.chan)try{SB.client.removeChannel(SB.chan);}catch(e){}
+  SB.chan=SB.client.channel('atelier-state')
+    .on('postgres_changes',
+      {event:'*',schema:'public',table:'atelier_state',filter:'user_id=eq.'+SB.user.id},
+      p=>{if(p.new&&p.new.doc)sbAbsorb(p.new.doc);})
+    .subscribe();
+}
+function sbDisconnect(){
+  try{if(SB.client)SB.client.auth.signOut();}catch(e){}
+  if(SB.chan&&SB.client)try{SB.client.removeChannel(SB.chan);}catch(e){}
+  SB.cfg=null;SB.user=null;SB.client=null;SB.chan=null;
+  clearInterval(SB.poll);clearTimeout(SB.timer);
+  store.set('atelier.db','null');updateSbLink();
+}
+function updateSbLink(){
+  const el=$('sbLink');if(!el)return;
+  if(SB.cfg)sbStatus('…');
+  else el.innerHTML='· <button onclick="sbConnect()" title="Sync across your devices via your Supabase database">Connect database</button>';
+}
+
 /* ============ init ============ */
 absorbEmbedded();
 dedupeState();
 restoreRoute();
 render();
 updateGhLink();
+sbInit();
 if(GH.cfg){ghPull();ghStartPolling();}
 if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());
 themeApply(document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light');
