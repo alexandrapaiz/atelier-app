@@ -1,1 +1,1 @@
-{"name": "Atelier", "short_name": "Atelier", "start_url": ".", "display": "standalone", "background_color": "#faf8f3", "theme_color": "#faf8f3", "icons": [{"src": "icon-rounded.png", "sizes": "180x180", "type": "image/png", "purpose": "any"}]}
+{"name": "Atelier", "short_name": "Atelier", "start_url": ".", "display": "standalone", "background_color": "#faf8f3", "theme_color": "#faf8f3", "icons": [{"src": "icon-rounded.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}]}
