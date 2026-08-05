@@ -163,9 +163,9 @@ main{padding:26px 40px 60px}
 .seamless{background:transparent; border:none; outline:none}
 
 /* ---------- master board ---------- */
-.view-head{display:flex; align-items:baseline; gap:16px; margin-bottom:6px}
-.view-title{font-family:var(--serif); font-size:34px; font-weight:600}
-.view-sub{color:var(--ink-faint); font-size:13px}
+.view-head{display:flex; align-items:baseline; gap:16px; margin-bottom:6px; flex-wrap:wrap}
+.view-title{font-family:var(--serif); font-size:34px; font-weight:600; white-space:nowrap}
+.view-sub{color:var(--ink-faint); font-size:13px; flex:0 1 auto; min-width:170px; max-width:430px; line-height:1.5}
 .view-head .spacer{flex:1}
 
 .cols{
@@ -1611,6 +1611,17 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .chap-head{cursor:pointer; border-radius:9px}
 .chap-head:hover{background:var(--paper-2)}
 .chap-head:hover .chap-caret{color:var(--ink)}
+.chap-head .more{opacity:0; transition:opacity .15s}
+.chap-head:hover .more,.chap-head:focus-within .more{opacity:1}
+/* a folded chapter still whispers what it holds */
+.chap-peek{
+  margin:-6px 0 6px 47px; cursor:pointer;
+  font-family:var(--serif); font-style:italic; font-size:15.5px; color:var(--ink-faint);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.chap-peek:hover{color:var(--ink-soft)}
+.chap-peek .pk-sep{color:var(--line); font-style:normal}
+.chap-peek .pk-won{color:var(--sage); font-style:normal}
 .chap-head textarea,.chap-head .more{cursor:auto}
 .chap:not(.open) .chap-head{padding-bottom:14px}
 /* the bearings, given their proper weight */
@@ -3218,8 +3229,8 @@ function calCellHTML(d,inMonth,extra,byDate,gByDate,today){
   return `<div class="cal-cell ${extra} ${inMonth?'':'cal-out'} ${ds===today?'cal-today':''}${heat}" onclick="calOpenDay('${ds}')" title="Open ${ds}">
     <div class="cal-dnum"><span>${d.getDate()}</span></div>
     <span class="cal-heatn">${n||''}</span>
-    ${ts.map(t=>{const b=board(t.boardId);
-      return `<div class="cal-ev ${t.done?'done':''}" onclick="event.stopPropagation();openDrawer('${t.id}')" title="${esc(b?b.name:'')} — ${esc(t.title)}">
+    ${ts.filter(t=>!t.done).map(t=>{const b=board(t.boardId);
+      return `<div class="cal-ev" onclick="event.stopPropagation();openDrawer('${t.id}')" title="${esc(b?b.name:'')} — ${esc(t.title)}">
         <span class="dot" style="background:${b?b.accent:'#999'}"></span>
         ${t.urgent?'<span class="cal-urg">!</span>':''}
         ${t.start?`<span class="cal-time">${fmtSlot(t)}</span>`:''}
@@ -3606,8 +3617,6 @@ function renderAch(){
       </div>
       <div class="mini-stats">
         <div class="ms"><span class="ms-n">${streak}</span><span class="ms-l">day streak</span></div>
-        <div class="ms"><span class="ms-n">${done.filter(x=>x.at>=wk).length}</span><span class="ms-l">this week</span></div>
-        <div class="ms"><span class="ms-n">${done.filter(x=>x.at>=mo).length}</span><span class="ms-l">this month</span></div>
         <div class="ms"><span class="ms-n">${kept.length}</span><span class="ms-l">appointments kept</span></div>
         <div class="ms"><span class="ms-n">${S.goals.filter(g=>g.achieved).length}</span><span class="ms-l">goals achieved</span></div>
         <div class="ms"><span class="ms-n">${S.goals.filter(g=>g.rewardClaimed).length+(S.rewards||[]).filter(r=>r.claimed).length}</span><span class="ms-l">rewards claimed</span></div>
@@ -4292,6 +4301,9 @@ function compassTime(){
         <span class="col-count">${got}/${gs.length}</span>
         <button class="more" onclick="event.stopPropagation();era_del('${e.id}')" title="Delete chapter">×</button>
       </div>
+      ${open?'':(gs.length?`<div class="chap-peek" onclick="chapToggle(event,'${e.id}')">${
+        gs.slice(0,3).map(g=>(g.achieved?'<span class="pk-won">✓ </span>':'')+esc(g.title)).join('<span class="pk-sep"> · </span>')
+      }${gs.length>3?'<span class="pk-sep"> · +'+(gs.length-3)+' more</span>':''}</div>`:'')}
       ${open?`<div class="chap-goals">
         ${gs.map(g=>goalBlock(g)).join('')||'<div class="sub-empty">no goals in this chapter yet</div>'}
         <div class="gc-add"><button class="add-inline" onclick="g_addIn('${e.id}',this.parentElement)">+ Goal for this chapter</button></div>
