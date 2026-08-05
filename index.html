@@ -861,6 +861,31 @@ main{padding:26px 40px 60px}
 #sbMsg{font-size:12px; color:var(--danger); min-height:0}
 [data-theme=dark] .sb-scrim{background:rgba(0,0,0,.5)}
 
+/* ---------- settings drawer ---------- */
+.i-card{border:1px solid var(--line); border-radius:13px; padding:15px 17px 14px; margin-top:14px; background:var(--card)}
+.i-head{display:flex; align-items:center; gap:9px}
+.i-dot{width:8px; height:8px; border-radius:50%; background:var(--line); flex-shrink:0}
+.i-dot.on{background:var(--sage)}
+.i-name{font-weight:600; font-size:13.5px; letter-spacing:.2px}
+.i-state{margin-left:auto; font-size:11px; color:var(--ink-faint); letter-spacing:.6px; text-transform:uppercase}
+.i-body{margin-top:10px}
+.i-step{display:flex; gap:10px; margin:9px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.5}
+.i-num{width:20px; height:20px; border-radius:50%; border:1px solid var(--line); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink-faint); margin-top:1px}
+.i-num.done{background:var(--sage); border-color:var(--sage); color:#fff}
+.i-step b{color:var(--ink)}
+.i-copy{display:flex; gap:6px; align-items:center; margin:6px 0 2px}
+.i-copy code{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:11.5px; background:var(--paper-2); border:1px solid var(--line-soft); border-radius:7px; padding:6px 9px}
+.i-copy button{font-size:11.5px; border:1px solid var(--line); border-radius:7px; padding:5px 10px; color:var(--ink-soft)}
+.i-copy button:hover{background:var(--paper-2); color:var(--ink)}
+.i-input{width:100%; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--paper); font-size:12.5px; margin-top:4px}
+.i-input:focus{outline:none; border-color:var(--ink-faint)}
+.i-note{font-size:11.5px; color:var(--ink-faint); margin-top:7px; line-height:1.5}
+.i-sub{margin:4px 0 0 30px; font-size:12px; color:var(--ink-faint); line-height:1.65}
+.i-body details summary{cursor:pointer; font-size:12px; color:var(--ink-faint)}
+.i-body details summary:hover{color:var(--ink)}
+
 /* ---------- footer ---------- */
 footer{
   padding:10px 40px 26px; display:flex; gap:14px; align-items:center;
@@ -5210,45 +5235,64 @@ function ints_setClient(v){
   GC.token=null;GC.exp=0;
   save();openInts();
 }
+function intsCopy(btn,txt){
+  try{navigator.clipboard.writeText(txt);btn.textContent='Copied ✓';
+    setTimeout(()=>{btn.textContent='Copy';},1800);}catch(e){}
+}
 function openInts(){
   drawerTask=null;
   const cfg=gcalCfg();
-  const acct=(typeof SB!=='undefined'&&SB.user)
-    ?`<div class="kind-note">Signed in as <b>${esc(SB.user.email||'')}</b> — everything autosaves to your account.</div>
-       <button class="cl-btn" onclick="sbSignOut();openInts()">Sign out on this device</button>`
-    :`<div class="kind-note">Not signed in — edits stay on this device only.</div>
-       <button class="cl-btn" onclick="closeDrawer();sbSignIn()">Sign in to sync</button>`;
+  const signedIn=(typeof SB!=='undefined'&&SB.user);
+  const card=(dot,name,state,body)=>`
+    <div class="i-card">
+      <div class="i-head"><span class="i-dot ${dot?'on':''}"></span>
+        <div class="i-name">${name}</div><span class="i-state">${state}</span></div>
+      <div class="i-body">${body}</div>
+    </div>`;
+  const step=(done,html)=>`<div class="i-step"><span class="i-num ${done?'done':''}">${done?'✓':''}</span><div>${html}</div></div>`;
+
+  const acct=signedIn
+    ?`<div class="i-note" style="margin-top:0">Signed in as <b>${esc(SB.user.email||'')}</b>. Everything autosaves to
+        your account and follows you to any device — this same sign-in also unlocks the connections below.</div>
+      <button class="cl-btn" style="margin-top:9px" onclick="sbSignOut();openInts()">Sign out on this device</button>`
+    :step(false,`<b>Sign in</b> — your account is the backbone: it holds your data and powers every connection below.
+      <div style="margin-top:7px"><button class="cl-btn" onclick="closeDrawer();sbSignIn()">Sign in / create account</button></div>`);
+
   const gcal=cfg.clientId
-    ?`<div class="kind-note">Ready — dated tasks sync straight onto your Google Calendar. The first sync asks
-        Google's permission once per browser.</div>
-      <button class="cl-btn" onclick="gcalSyncNow()">◷ Sync now${syncQueue().length?' · '+syncQueue().length+' waiting':''}</button>
-      <div class="kind-note" id="intsGcalNote">${esc(GC.note)}</div>
-      <details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Client ID</summary>
-        <input style="width:100%;margin-top:6px" value="${esc(cfg.clientId)}" onchange="ints_setClient(this.value)">
-      </details>`
-    :`<div class="kind-note">Connect your own Google Calendar — no intermediary. One-time setup:
-        create a (free) OAuth Client ID and paste it here; it saves to your account and works on every device.</div>
-      <details style="margin:6px 0"><summary class="small muted" style="cursor:pointer">How to get the Client ID (5 min)</summary>
-        <div class="kind-note" style="margin-top:6px">
-        1. console.cloud.google.com → new project (any name)<br>
-        2. APIs &amp; Services → Library → enable <b>Google Calendar API</b><br>
-        3. OAuth consent screen → External → add yourself as test user<br>
-        4. Credentials → Create credentials → <b>OAuth client ID</b> → Web application<br>
-        5. Authorized JavaScript origins: <b>https://alexandrapaiz.github.io</b><br>
-        6. Copy the Client ID (ends in .apps.googleusercontent.com) and paste it below.</div>
-      </details>
-      <input style="width:100%" placeholder="paste your Google OAuth Client ID" onchange="ints_setClient(this.value)">
-      <div class="kind-note" id="intsGcalNote"></div>`;
+    ?`<div class="i-note" style="margin-top:0">Dated tasks write straight onto your Google Calendar — an edit updates
+        its event instead of duplicating. Google asks permission once per browser, on the first sync.</div>
+      <button class="cl-btn" style="margin-top:9px" onclick="gcalSyncNow()">◷ Sync now${syncQueue().length?' · '+syncQueue().length+' waiting':''}</button>
+      <div class="i-note" id="intsGcalNote">${esc(GC.note)}</div>
+      <details style="margin-top:8px"><summary>Client ID</summary>
+        <input class="i-input" value="${esc(cfg.clientId)}" onchange="ints_setClient(this.value)"></details>`
+    :step(false,`<b>Create your free Google Client ID</b> — a one-time key that lets this app talk to
+        <i>your</i> calendar with no intermediary.
+        <div class="i-sub">a&nbsp;&nbsp;<a href="https://console.cloud.google.com" target="_blank" style="color:inherit">console.cloud.google.com</a> → New project (any name)<br>
+        b&nbsp;&nbsp;APIs &amp; Services → Library → enable <b>Google Calendar API</b><br>
+        c&nbsp;&nbsp;OAuth consent screen → External → add your own gmail as a test user<br>
+        d&nbsp;&nbsp;Credentials → Create credentials → <b>OAuth client ID</b> → Web application<br>
+        e&nbsp;&nbsp;Authorized JavaScript origins → <code>https://alexandrapaiz.github.io</code><br>
+        f&nbsp;&nbsp;Copy the ID ending in <code>.apps.googleusercontent.com</code></div>`)
+     +step(false,`<b>Paste it here</b> — it saves to your account, so every device is set at once.
+        <input class="i-input" placeholder="…apps.googleusercontent.com" onchange="ints_setClient(this.value)">
+        <div class="i-note" id="intsGcalNote"></div>`)
+     +step(false,`<b>Sync</b> — the Calendar page grows a "Sync to Google" button; Google asks your permission once.`);
+
+  const mcpUrl='https://atelier-mcp.vercel.app/mcp';
+  const claude=
+     step(false,`<b>Copy the connector address</b>
+        <div class="i-copy"><code>${mcpUrl}</code><button onclick="intsCopy(this,'${mcpUrl}')">Copy</button></div>`)
+    +step(false,`In <b>claude.ai</b> → Settings → <b>Connectors</b> → <b>Add custom connector</b> → paste it.`)
+    +step(signedIn,`<b>Sign in with this account</b> when Claude opens the Atelier page${signedIn?' — you already have one ✓':' (create it above first)'}.
+        <div class="i-note">From then on Claude can read your boards, add tasks, and check your agenda — on the web, on your phone, anywhere. It only ever sees <i>your</i> data.</div>`);
+
   $('drawer').innerHTML=`
     <button class="d-close" onclick="closeDrawer()">×</button>
-    <div class="d-title" style="border:none;padding:0">Integrations</div>
-    <div class="d-field"><div class="d-label">Your account</div>${acct}</div>
-    <div class="d-field"><div class="d-label">Google Calendar</div>${gcal}</div>
-    <div class="d-field"><div class="d-label">Claude</div>
-      <div class="kind-note">Connect your Claude to your Atelier: in claude.ai go to
-        <b>Settings → Connectors → Add custom connector</b> and paste
-        <b>https://atelier-mcp.vercel.app/mcp</b> — then sign in with this same account.
-        Claude can then read your boards, add tasks, and check your agenda, and only ever sees your own data.</div></div>`;
+    <div class="d-title" style="border:none;padding:0">Settings</div>
+    <div class="i-note" style="margin-top:2px">Connections live here — each one is yours alone, keyed to your account.</div>
+    ${card(signedIn,'Your account',signedIn?'Connected':'Signed out',acct)}
+    ${card(!!cfg.clientId,'Google Calendar',cfg.clientId?'Ready':'Set up once',gcal)}
+    ${card(false,'Claude','Walkthrough',claude)}`;
   $('drawer').classList.add('open');$('scrim').classList.add('open');
 }
 
