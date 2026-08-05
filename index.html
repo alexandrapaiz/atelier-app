@@ -1760,12 +1760,10 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <div class="shell">
 <aside class="side" id="sidebar"></aside>
 <div class="content">
-<div id="syncBanner"></div>
 <header class="top">
   <div class="wordmark m-only" onclick="go('master')">A<em>telier</em></div>
   <div class="top-date" id="topDate"></div>
-  <button class="btn-ghost" id="saveBtn" style="margin-left:auto" onclick="manualSave()">Save</button>
-  <button class="btn-ghost refresh-btn" onclick="hardRefresh()" title="Save, sync, and reload the freshest version">↻</button>
+  <button class="btn-ghost refresh-btn" style="margin-left:auto" onclick="hardRefresh()" title="Sync and reload the freshest version">↻</button>
   <button class="btn-ghost" onclick="themeToggle()" id="themeBtn" title="Day / night">☾</button>
   <button class="m-menu-btn m-only" onclick="toggleMenu()" title="Menu">☰</button>
 </header>
@@ -1773,14 +1771,6 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <main id="main"></main>
 <footer>
   <span id="saveStamp">Autosaved</span>
-  <span class="f-sep">·</span>
-  <span class="f-verbose" title="Which build you are running">build 08-05·37</span>
-  <span class="f-sep">·</span>
-  <span class="f-verbose">Data lives in this browser.</span>
-  <button onclick="exportData()">Export backup</button>
-  <label>Import<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
-  <span id="fileLink"></span>
-  <span id="ghLink"></span>
   <span id="sbLink"></span>
 </footer>
 </div>
@@ -2032,11 +2022,12 @@ function save(){
   S.meta.updatedAt=Date.now();
   store.set(KEY,JSON.stringify(S));
   const el=document.getElementById('saveStamp');
-  if(el)el.textContent=CAN_STORE
-    ?'Autosaved · '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
-    :'Preview mode — edits are temporary here; tell Claude to make them permanent';
-  scheduleWrite();
-  if(typeof ghSchedulePush==='function')ghSchedulePush();
+  if(el){
+    const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    el.textContent=(typeof SB!=='undefined'&&SB.user)
+      ?'Saved to your account · '+t
+      :'Saved on this device · '+t;
+  }
   if(typeof sbSchedulePush==='function')sbSchedulePush();
 }
 
@@ -4652,21 +4643,12 @@ async function hardRefresh(){
   const jump=()=>{try{location.replace(target);}catch(e){}
     setTimeout(()=>{try{location.href=target;}catch(e){} setTimeout(()=>location.reload(),700);},900);};
   try{
-    if(typeof GH!=='undefined'&&GH.cfg){
-      clearTimeout(GH.timer);
-      await Promise.race([ghPush(),new Promise(r=>setTimeout(r,2000))]);   // 2s, then go anyway
+    if(typeof SB!=='undefined'&&SB.user){
+      clearTimeout(SB.timer);
+      await Promise.race([sbPush(),new Promise(r=>setTimeout(r,2000))]);   // 2s, then go anyway
     }
   }catch(e){}
   jump();
-}
-async function manualSave(){
-  const a=document.activeElement; if(a&&a.blur)a.blur();  // commit any field mid-edit
-  save();
-  clearTimeout(wTimer); await writeToFile();              // push to the shared file right now
-  const n=syncQueue().length;                             // queued, never downloaded unbidden
-  const btn=$('saveBtn');
-  if(btn){btn.textContent=n?`Saved ✓ · ${n} for calendar`:'Saved ✓';
-    setTimeout(()=>{if($('saveBtn'))$('saveBtn').textContent='Save';},2400);}
 }
 function flushEdits(){
   const a=document.activeElement;
@@ -4823,7 +4805,6 @@ async function pollFile(){
     }
   }catch(e){}
 }
-setInterval(pollFile,4000);
 function scheduleWrite(){if(!fileHandle)return;clearTimeout(wTimer);wTimer=setTimeout(writeToFile,400);}
 function updateFileStatus(){
   const el=$('fileLink'), bn=$('syncBanner'); if(!el||!FS_OK)return;
@@ -4840,18 +4821,8 @@ function updateFileStatus(){
     if(bn)bn.innerHTML='';
   }
 }
-(async()=>{
-  if(!FS_OK)return;
-  try{
-    const h=await idbGet('handle');
-    if(h){
-      const q=await h.queryPermission({mode:'readwrite'});
-      if(q==='granted'){fileHandle=h;await adoptNewer();}
-      else pendingHandle=h;
-    }
-  }catch(e){}
-  updateFileStatus();
-})();
+/* retired: the shared-file mirror no longer auto-connects — the database is the
+   source of truth. The machinery stays for manual/legacy use but never runs. */
 
 /* ============ dedupe — heal double imports from divergent copies ============ */
 function dedupeState(){
@@ -5032,33 +5003,31 @@ const SB={cfg:null,client:null,user:null,timer:null,poll:null,busy:false,chan:nu
    built to live in a public page; row-level security is what guards the data */
 const SB_FIXED={url:'https://zzavasgpgprtkepiekda.supabase.co',key:'sb_publishable_RVGU2biRWi6ioLoRtoN7Xg_Qjb5IOGl'};
 try{SB.cfg=JSON.parse(store.get('atelier.db'));}catch(e){}
-function sbStatus(html){
-  const el=$('sbLink');
-  if(el&&SB.cfg)el.innerHTML='· database '+html+
-    ' <button class="btn-ghost" style="padding:2px 6px" onclick="sbDisconnect()" title="Disconnect this device">×</button>';
+function sbStatus(s){
+  const el=$('sbLink');if(!el)return;
+  if(SB.user)el.innerHTML='· '+esc(SB.user.email||'')+(s?' '+s:'')+
+    ' · <button onclick="sbSignOut()" title="Sign out of your account on this device">Sign out</button>';
+  else el.innerHTML='· <button onclick="sbSignIn()" title="Your data lives in your account — sign in to sync it here">Sign in to sync</button>'+(s&&s!=='✓'?' '+s:'');
 }
 function sbLib(){
   if(!SB.lib)SB.lib=import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
   return SB.lib;
 }
 async function sbInit(){
-  updateSbLink();
-  if(!SB.cfg)return;
+  /* auto-connect: the database is part of the app, not an option */
+  if(!SB.cfg)SB.cfg={url:SB_FIXED.url,key:SB_FIXED.key,email:''};
+  SB.cfg.url=SB_FIXED.url;SB.cfg.key=SB_FIXED.key;   // config travels with the build, only the email is remembered
+  sbStatus('');
   try{
     const {createClient}=await sbLib();
     SB.client=createClient(SB.cfg.url,SB.cfg.key,{auth:{storageKey:'atelier.auth'}});
     SB.client.auth.onAuthStateChange((ev)=>{
-      if(ev==='SIGNED_OUT'){SB.user=null;clearInterval(SB.poll);sbStatus('<button onclick="sbSignIn()">Sign in</button>');}
+      if(ev==='SIGNED_OUT'){SB.user=null;clearInterval(SB.poll);sbStatus('');}
     });
     const {data:{session}}=await SB.client.auth.getSession();
     if(session){SB.user=session.user;sbStart();}
-    else sbStatus('<button onclick="sbSignIn()">Sign in</button>');
+    else sbStatus('');
   }catch(e){sbStatus('offline');}
-}
-function sbConnect(){
-  SB.cfg={url:SB_FIXED.url,key:SB_FIXED.key,email:(SB.cfg&&SB.cfg.email)||''};
-  store.set('atelier.db',JSON.stringify(SB.cfg));
-  sbInit().then(()=>{if(SB.client&&!SB.user)sbSignIn();});
 }
 function sbSignIn(){
   if(!SB.client||document.getElementById('sbModal'))return;
@@ -5095,7 +5064,7 @@ async function sbModalGo(){
   sbModalClose();sbStart();
 }
 function sbStart(){
-  sbStatus('✓'+(SB.cfg.email?' · '+esc(SB.cfg.email):''));
+  sbStatus('✓');
   sbPull();
   clearInterval(SB.poll);SB.poll=setInterval(()=>sbPull(true),25000);   // realtime does the work; this is the safety net
   sbRealtime();
@@ -5136,17 +5105,11 @@ function sbRealtime(){
       p=>{if(p.new&&p.new.doc)sbAbsorb(p.new.doc);})
     .subscribe();
 }
-function sbDisconnect(){
-  try{if(SB.client)SB.client.auth.signOut();}catch(e){}
+function sbSignOut(){
   if(SB.chan&&SB.client)try{SB.client.removeChannel(SB.chan);}catch(e){}
-  SB.cfg=null;SB.user=null;SB.client=null;SB.chan=null;
-  clearInterval(SB.poll);clearTimeout(SB.timer);
-  store.set('atelier.db','null');updateSbLink();
-}
-function updateSbLink(){
-  const el=$('sbLink');if(!el)return;
-  if(SB.cfg)sbStatus('…');
-  else el.innerHTML='· <button onclick="sbConnect()" title="Sync across your devices via your Supabase database">Connect database</button>';
+  SB.chan=null;clearInterval(SB.poll);clearTimeout(SB.timer);
+  try{if(SB.client)SB.client.auth.signOut();}catch(e){}
+  SB.user=null;sbStatus('');
 }
 
 /* ============ init ============ */
@@ -5154,9 +5117,7 @@ absorbEmbedded();
 dedupeState();
 restoreRoute();
 render();
-updateGhLink();
 sbInit();
-if(GH.cfg){ghPull();ghStartPolling();}
 if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());
 themeApply(document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light');
 </script>
