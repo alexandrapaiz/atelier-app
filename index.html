@@ -1758,6 +1758,19 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-live.on{color:var(--ink-soft)}
 .cl-live-link{font-size:12px; color:var(--ink-faint); text-decoration:underline; text-underline-offset:2px; padding:0}
 .cl-live-link:hover{color:var(--ink)}
+/* the desk — three doors into a live conversation */
+.cl-desk{display:flex; gap:10px; margin:0 0 8px; flex-wrap:wrap}
+.rit{
+  flex:1 1 0; min-width:150px; display:flex; flex-direction:column; gap:3px; align-items:flex-start;
+  border:1px solid var(--line); border-radius:13px; padding:14px 16px; background:var(--card);
+  text-align:left; box-shadow:var(--shadow); transition:border-color .15s, transform .15s;
+}
+.rit:hover{border-color:var(--ink-faint); transform:translateY(-1px)}
+.rit-n{font-family:var(--serif); font-size:18px; font-weight:600}
+.rit-sub{font-size:11.5px; color:var(--ink-faint)}
+.cl-review-h{display:flex; align-items:baseline; gap:14px; margin:36px 0 0; flex-wrap:wrap}
+.cl-review-t{font-family:var(--serif); font-size:21px; font-weight:600}
+.cl-review-pulse{font-size:12px; color:var(--ink-faint)}
 .cl-wrap .list-group-name{
   font-family:var(--sans) !important; font-size:10.5px !important; font-weight:500 !important;
   letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
@@ -3907,6 +3920,23 @@ function rw_del(id){tombstone(id);S.rewards=(S.rewards||[]).filter(r=>r.id!==id)
 function rw_clearGoal(gid){const g=goal(gid);if(g){g.reward=null;g.rewardClaimed=null;}save();render();}
 
 /* ============ claude — the resident reviewer ============ */
+/* the rituals — crafted prompts for your Claude, armed with the connector */
+const RITUALS={
+  morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped that I should rescue or let go. Be honest and brief — not a list of everything, just what matters.`,
+  evening:`Using my Atelier connector, look at what I finished today (the laurels tool) and what was due but didn't happen. Give me my evening close: celebrate what got done in a sentence or two, tell me plainly what rolls to tomorrow, and one honest observation about how the day went. If something due today should move, propose the change and make it if I agree.`,
+  weekly:`Using my Atelier connector, read my compass — mission, north stars, chapters, goals — and my boards. Give me my weekly review: which goals actually moved this week and which are drifting, whether my open tasks serve my stated priorities or something else entirely, and one hard question I should sit with. Challenge me where the boards and the compass disagree.`,
+};
+function clRitual(key,btn){
+  const p=RITUALS[key];
+  const done=()=>{
+    if(btn){const s=btn.querySelector('.rit-sub');if(s)s.textContent='copied — paste it to Claude';}
+    window.open('https://claude.ai/new','_blank');
+    setTimeout(()=>render(),3200);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(p).then(done,()=>{prompt('Copy this, then paste it to Claude:',p);});
+  else prompt('Copy this, then paste it to Claude:',p);
+}
 function renderClaude(){
   const now=Date.now(), today=todayStr();
   const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
@@ -4032,6 +4062,15 @@ function renderClaude(){
           :`Not signed in — sign in so Claude and your other devices can see this.
             <button class="cl-live-link" onclick="sbSignIn()">Sign in</button>`}
       </div>
+      <div class="cl-desk">
+        <button class="rit" onclick="clRitual('morning',this)">
+          <span class="rit-n">Morning brief</span><span class="rit-sub">what today is about</span></button>
+        <button class="rit" onclick="clRitual('evening',this)">
+          <span class="rit-n">Evening close</span><span class="rit-sub">count it, roll it, rest</span></button>
+        <button class="rit" onclick="clRitual('weekly',this)">
+          <span class="rit-n">Weekly compass</span><span class="rit-sub">the hard questions</span></button>
+      </div>
+      <div class="i-note" style="margin:-2px 0 20px">Each copies its prompt and opens claude.ai — paste it there, and Claude answers from your live boards.</div>
       <div class="cl-compose">
         <textarea id="clMsg" rows="2" oninput="window.clDraft=this.value"
           placeholder="Write to Claude — instruct, ask, push back. ‘Split the Nature paper into smaller tasks’, ‘date all the gift-buying for Friday’, ‘why the CV nagging?’…">${esc(window.clDraft||'')}</textarea>
@@ -4052,6 +4091,17 @@ function renderClaude(){
           <div class="cl-you-s">sent — it's in your account, and I see it the moment we next talk</div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
+      <div class="cl-review-h">
+        <span class="cl-review-t">The Standing Review</span>
+        <span class="cl-review-pulse">${(()=>{
+          const bits=[];
+          if(overdue.length)bits.push(overdue.length+' slipped');
+          if(wins.length)bits.push(wins.length+' quick win'+(wins.length>1?'s':'')+' on the table');
+          if(stale.length)bits.push(stale.length+' gathering dust');
+          if(unmeasured.length)bits.push(unmeasured.length+' goal'+(unmeasured.length>1?'s':'')+' unmeasured');
+          return bits.length?bits.join(' · '):'all quiet — the boards are in order';
+        })()}</span>
+      </div>
       ${comingHtml}
       ${overdueHtml}
       ${winsHtml}
