@@ -2057,6 +2057,15 @@ function ensureDefaults(){
   if(!S.rewards)S.rewards=[];
   if(!S.meta.ints)S.meta.ints={gcal:{}};
   purgeBuried();
+  /* seed ghosts: an empty "Now" or "Boards" group is sample scaffolding leaked in from
+     an old build's merge — bury it on sight so it dies on every device, forever */
+  if(S.masterColumns.length>1)
+    S.masterColumns=S.masterColumns.filter(c=>{
+      if(/^(now|boards)$/i.test((c.name||'').trim())&&!S.boards.some(b=>b.masterCol===c.id)){
+        tombstone(c.id);return false;
+      }
+      return true;
+    });
   /* never leave the app without somewhere to put a board, but never invent groups either */
   if(!S.masterColumns.length&&(S.boards.length||!HOSTED_EMPTY))
     S.masterColumns=[{id:uid(),name:'Boards'}];
@@ -3187,8 +3196,18 @@ function openDrawer(tid){
   $('drawer').classList.add('open');$('scrim').classList.add('open');
 }
 function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');render();}
+/* typing "urgent" (or urgente / asap / !!) anywhere in a title IS the urgent tag */
+function urgentStrip(v){
+  const has=/(^|\s)(urgent|urgente|asap|!!)\b/i.test(v);
+  return {has, title:String(v).replace(/(^|\s)(urgent|urgente|asap|!!)\b[:,;\-\s]*/gi,' ').replace(/\s+/g,' ').trim()};
+}
 function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  if(k==='title'){
+    const u=urgentStrip(v);
+    if(u.has&&u.title){t.urgent=true;v=u.title;
+      const el=document.querySelector('.d-title');if(el)el.value=v;}
+  }
   t[k]=(k==='title'||k==='note')?v.trim()||t[k]:v;
   if(k==='start'&&v&&!t.due)t.due=todayStr();      // a time implies a day
   if(k==='start'&&v&&t.end&&t.end<=v)t.end=null;   // drop a now-invalid end
@@ -5423,14 +5442,15 @@ function calAddOutside(e){const d=$('calAdd');if(d&&!d.contains(e.target))calAdd
 function calAddClose(){const d=$('calAdd');if(d)d.remove();document.removeEventListener('mousedown',calAddOutside);}
 function calAddGo(){
   const d=$('calAdd');if(!d)return;
-  const title=$('caTitle').value.trim();
+  let title=$('caTitle').value.trim();
   if(!title){$('caTitle').focus();return;}
+  const u=urgentStrip(title); if(u.has&&u.title)title=u.title;
   const bid=$('caBoard').value, b=board(bid);
   const col=b.columns.find(c=>c.kind!=='routine'&&!/^shelved$/i.test(String(c.name).trim()))||b.columns[0];
   const start=$('caTime').value||null;
   store.set('atelier.addBoard',bid);
   S.tasks.push({id:uid(),boardId:bid,colId:col.id,title,note:'',due:d.dataset.ds,start,
-    done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
+    urgent:u.has||undefined,done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
   calAddClose();save();render();
 }
 
