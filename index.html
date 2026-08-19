@@ -2261,10 +2261,10 @@ function nlParse(raw){
     if(h>23||mn>59)return null;
     return pad(h)+':'+pad(mn);
   };
-  /* urgency */
-  if(/(^|\s)(urgent|urgente|asap|!!)\b/i.test(s)){
+  /* urgency — the words, or any exclamation mark at all */
+  if(/(^|\s)(urgent|urgente|asap)\b/i.test(s)||s.includes('!')){
     out.urgent=true;
-    s=s.replace(/(^|\s)(urgent|urgente|asap|!!)\b[:,;\-\s]*/gi,' ');
+    s=s.replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,' ');
   }
   /* spanish meridiem phrases → am/pm markers */
   s=s.replace(/\s(?:de|por)\s+la\s+(mañana|manana)\b/gi,' am')
@@ -3207,8 +3207,8 @@ function openDrawer(tid){
       <button class="cl-btn ${t.claude?'del-on':''}" onclick="t_delegate()">
         ${t.claude?'✦ Delegated — take it back':'✦ Delegate to Claude'}</button>
       ${t.claude
-        ?`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','delegate'),this)">Hand it over now →</button>
-          <div class="kind-note">Handed off — it's in the morning brief, or press the button to start Claude on it this minute.</div>`
+        ?`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','delegate'),this)">Copy the handoff again →</button>
+          <div class="kind-note">✓ Handoff copied — paste it to Claude (⌘V). It stays tracked here (and in the morning brief) until finished.</div>`
         :`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','discuss'),this)">Discuss with Claude →</button>`}</div>
     <div class="d-field"><div class="d-label">Status</div>
       <select onchange="t_setCol(this.value)">${colOpts}</select>
@@ -3258,28 +3258,36 @@ function openDrawer(tid){
   $('drawer').classList.add('open');$('scrim').classList.add('open');
 }
 function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');render();}
-/* typing "urgent" (or urgente / asap / !!) anywhere in a title IS the urgent tag */
+/* typing "urgent" / "urgente" / "asap" — or any ! — anywhere in a title IS the urgent tag */
 function urgentStrip(v){
-  const has=/(^|\s)(urgent|urgente|asap|!!)\b/i.test(v);
-  return {has, title:String(v).replace(/(^|\s)(urgent|urgente|asap|!!)\b[:,;\-\s]*/gi,' ').replace(/\s+/g,' ').trim()};
+  const has=/(^|\s)(urgent|urgente|asap)\b/i.test(v)||String(v).includes('!');
+  return {has, title:String(v).replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,'').replace(/\s+/g,' ').trim()};
 }
 function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  let reopen=false;
   if(k==='title'){
-    const u=urgentStrip(v);
-    if(u.has&&u.title){t.urgent=true;v=u.title;
+    /* edits get the same natural-language treatment as new tasks: dates, times, urgency */
+    const p=nlParse(v);
+    if(p.urgent)t.urgent=true;
+    if(p.due){t.due=p.due;reopen=true;}
+    if(p.start){t.start=p.start;if(!t.due)t.due=todayStr();reopen=true;}
+    if(p.end){t.end=p.end;reopen=true;}
+    if(p.title&&p.title!==v){v=p.title;
       const el=document.querySelector('.d-title');if(el)el.value=v;}
   }
   t[k]=(k==='title'||k==='note')?v.trim()||t[k]:v;
   if(k==='start'&&v&&!t.due)t.due=todayStr();      // a time implies a day
   if(k==='start'&&v&&t.end&&t.end<=v)t.end=null;   // drop a now-invalid end
   touch(t);save();
-  if(k!=='title'&&k!=='note')openDrawer(drawerTask); // refresh chips & gcal link
+  if((k!=='title'&&k!=='note')||reopen)openDrawer(drawerTask); // refresh chips, dates & gcal link
 }
 function t_delegate(){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   t.claude=t.claude?undefined:true;
-  touch(t);save();openDrawer(drawerTask);render();
+  touch(t);save();
+  if(t.claude)askClaude(taskPrompt(t.id,'delegate'));   // delegating means: get Claude on it now
+  openDrawer(drawerTask);render();
 }
 function clUndelegate(id){
   const t=S.tasks.find(x=>x.id===id); if(!t)return;
@@ -5655,13 +5663,13 @@ function calAddGo(){
   const d=$('calAdd');if(!d)return;
   let title=$('caTitle').value.trim();
   if(!title){$('caTitle').focus();return;}
-  const u=urgentStrip(title); if(u.has&&u.title)title=u.title;
+  const p=nlParse(title); if(p.title)title=p.title;
   const bid=$('caBoard').value, b=board(bid);
   const col=b.columns.find(c=>c.kind!=='routine'&&!/^shelved$/i.test(String(c.name).trim()))||b.columns[0];
-  const start=$('caTime').value||null;
+  const start=$('caTime').value||p.start||null;
   store.set('atelier.addBoard',bid);
-  S.tasks.push({id:uid(),boardId:bid,colId:col.id,title,note:'',due:d.dataset.ds,start,
-    urgent:u.has||undefined,done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
+  S.tasks.push({id:uid(),boardId:bid,colId:col.id,title,note:'',due:d.dataset.ds,start,end:p.end||null,
+    urgent:p.urgent||undefined,done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
   calAddClose();save();render();
 }
 
