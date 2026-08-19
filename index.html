@@ -1775,6 +1775,9 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-review-pulse{font-size:12px; color:var(--ink-faint)}
 .chip.del-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line)}
 .cl-btn.del-on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.chip.dep-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); cursor:pointer}
+.chip.dep-chip:hover{border-color:var(--ink-faint); color:var(--ink)}
+.tcard.blocked{opacity:.68}
 .dropzone{position:fixed; inset:0; z-index:90; display:none; pointer-events:none;
   background:color-mix(in srgb, var(--paper) 84%, transparent); backdrop-filter:blur(2px)}
 .dropzone.show{display:flex; align-items:center; justify-content:center}
@@ -2233,6 +2236,9 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
 /* appointments: commitments AT a time, not work you can knock out early.
    Anything with a start time is one, unless explicitly kept a task. */
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
+/* dependencies: a task can wait for another; blocked = its blocker exists and is unfinished */
+const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
+function depCycle(id,after){let cur=after,g=0;while(cur&&g++<100){if(cur===id)return true;const n=S.tasks.find(x=>x.id===cur);cur=n&&n.after;}return false;}
 /* a column named "on the horizon" is a shelf — it asks nothing of you today */
 const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon|^shelved$/i.test(c.name));};
 const plusHour=hm=>{           // an appointment with no stated end runs an hour
@@ -2938,7 +2944,7 @@ function progBar(t){
 function taskCard(t){
   const g=t.goalId?goal(t.goalId):null;
   const rt=isRoutine(t);
-  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''}" draggable="true" data-tid="${t.id}"
+  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''} ${blockerOf(t)?'blocked':''}" draggable="true" data-tid="${t.id}"
       ondragstart="dragTask(event,'${t.id}')" ondragend="dragEnd(event)"
       onclick="openDrawer('${t.id}')">
     ${rt?'<span class="inf" title="An ongoing practice — nothing to check off">∞</span>'
@@ -2950,6 +2956,7 @@ function taskCard(t){
         ${urgentChip(t)}
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
+        ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -3147,8 +3154,17 @@ function toggleDone(id){
   t.completedAt=t.done?Date.now():null;
   if(t.done){
     const ev=window.event;
-    if(ev&&ev.clientX)celebrate(ev.clientX,ev.clientY);
-    else celebrate(innerWidth/2,innerHeight*0.35);
+    const cx=ev&&ev.clientX?ev.clientX:innerWidth/2, cy=ev&&ev.clientX?ev.clientY:innerHeight*0.35;
+    celebrate(cx,cy);
+    const freed=S.tasks.filter(x=>x.after===id&&!x.done);
+    if(freed.length)setTimeout(()=>{
+      const w=document.createElement('div');
+      w.className='burst-word';
+      w.textContent='unblocks '+(freed.length===1?'\u201c'+(freed[0].title.length>26?freed[0].title.slice(0,25)+'\u2026':freed[0].title)+'\u201d':freed.length+' tasks');
+      w.style.cssText='left:'+cx+'px;top:'+(cy+26)+'px';
+      document.body.appendChild(w);
+      setTimeout(()=>w.remove(),1600);
+    },420);
   }
   touch(t);
   render();
@@ -3234,6 +3250,14 @@ function openDrawer(tid){
         ${t.start?`<button class="btn-ghost" onclick="t_clearTime()">clear</button>`:''}
       </div>
       ${t.start&&!t.end?`<div class="kind-note">Ends ${fmtTime(plusHour(t.start))} — an hour, unless you say otherwise.</div>`:''}</div>
+    <div class="d-field"><div class="d-label">Waits for ${t.after?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">— optional</span>'}</div>
+      <select onchange="t_set('after',this.value||null)">
+        ${['<option value="">— nothing, it can start anytime —</option>',
+          ...S.tasks.filter(x=>!x.done&&x.id!==t.id&&!isRoutine(x)&&!depCycle(t.id,x.id))
+            .map(x=>{const bb=board(x.boardId);
+              return `<option value="${x.id}" ${t.after===x.id?'selected':''}>${esc((bb?bb.name+' · ':'')+x.title)}</option>`;}) ].join('')}
+      </select>
+      ${blockerOf(t)?`<div class="kind-note">Blocked until &ldquo;${esc(blockerOf(t).title)}&rdquo; is finished — dimmed on the board and out of quick wins until then.</div>`:''}</div>
     ${appt?'':`<div class="d-field"><div class="d-label">Priority (master board)</div>
       <select onchange="t_set('priCol',this.value||null)">
         <option value="">— follow the rules —</option>
@@ -3635,6 +3659,7 @@ function ptCard(t){
         ${urgentChip(t)}
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
+        ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -4155,7 +4180,7 @@ function renderClaude(){
   const btn=(label,fn,danger)=>`<button class="cl-btn ${danger?'danger':''}" onclick="${fn}">${label}</button>`;
   const overdue=open.filter(t=>t.due&&t.due<today);
   const QW=/^(buy|call|book|send|schedule|check|email|text|ask|pay|order|register|renew|clean)\b/i;
-  const wins=open.filter(t=>!t.due&&QW.test(t.title)).slice(0,7);
+  const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!blockerOf(t)).slice(0,7);
   const stale=open.filter(t=>!t.due&&!t.priCol&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
   const sec=(title,subtitle,items,empty)=>`
     <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
