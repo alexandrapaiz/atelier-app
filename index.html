@@ -1773,6 +1773,11 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-review-pulse{font-size:12px; color:var(--ink-faint)}
 .chip.del-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line)}
 .cl-btn.del-on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.dropzone{position:fixed; inset:0; z-index:90; display:none; pointer-events:none;
+  background:color-mix(in srgb, var(--paper) 84%, transparent); backdrop-filter:blur(2px)}
+.dropzone.show{display:flex; align-items:center; justify-content:center}
+.dz-card{border:2px dashed var(--ink-faint); border-radius:20px; padding:40px 58px; text-align:center;
+  font-family:var(--serif); font-size:22px; line-height:1.4; color:var(--ink-soft); background:var(--card)}
 .cl-wrap .list-group-name{
   font-family:var(--sans) !important; font-size:10.5px !important; font-weight:500 !important;
   letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
@@ -1931,6 +1936,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 </div>
 </div>
 
+<div class="dropzone" id="dropzone"><div class="dz-card">✦<br>Drop it in the tray —<br>Claude will turn it into tasks</div></div>
 <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer"></div>
 
@@ -2069,6 +2075,7 @@ function ensureDefaults(){
   }
   if(!S.claude)S.claude={notes:[],inbox:[]};
   if(!S.claude.inbox)S.claude.inbox=[];
+  if(!S.imports)S.imports=[];
   if(!S.rewards)S.rewards=[];
   if(!S.meta.ints)S.meta.ints={gcal:{}};
   purgeBuried();
@@ -2142,6 +2149,7 @@ function purgeBuried(){
   S.plan.forEach(e=>{e.items=live(e.items);});
   S.priCols=live(S.priCols);
   S.rewards=live(S.rewards);
+  S.imports=live(S.imports||[]);
   if(S.claude){S.claude.notes=live(S.claude.notes);S.claude.inbox=live(S.claude.inbox);}
 }
 function applyReset(){
@@ -3938,9 +3946,54 @@ function rw_del(id){tombstone(id);S.rewards=(S.rewards||[]).filter(r=>r.id!==id)
 function rw_clearGoal(gid){const g=goal(gid);if(g){g.reward=null;g.rewardClaimed=null;}save();render();}
 
 /* ============ claude — the resident reviewer ============ */
+/* ============ the tray — drop a file anywhere, Claude turns it into tasks ============ */
+const IMPORT_API='https://atelier-mcp.vercel.app/api/import';
+let dzDepth=0;
+window.addEventListener('dragenter',e=>{
+  if(!e.dataTransfer||![].slice.call(e.dataTransfer.types||[]).includes('Files'))return;
+  dzDepth++;const d=$('dropzone');if(d)d.classList.add('show');
+});
+window.addEventListener('dragleave',()=>{
+  dzDepth=Math.max(0,dzDepth-1);
+  if(!dzDepth){const d=$('dropzone');if(d)d.classList.remove('show');}
+});
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',async e=>{
+  e.preventDefault();dzDepth=0;const d=$('dropzone');if(d)d.classList.remove('show');
+  const files=[].slice.call((e.dataTransfer&&e.dataTransfer.files)||[]);
+  if(!files.length)return;
+  if(!(SB.client&&SB.user)){alert('Sign in first — the tray lives in your account.');sbSignIn();return;}
+  const {data:{session}}=await SB.client.auth.getSession();
+  if(!session){sbSignIn();return;}
+  for(const f of files){
+    if(f.size>4*1024*1024){alert(f.name+' is over 4MB — too big for the tray.');continue;}
+    try{
+      const r=await fetch(IMPORT_API,{method:'POST',headers:{
+        'Authorization':'Bearer '+session.access_token,
+        'Content-Type':f.type||'application/octet-stream',
+        'X-Filename':encodeURIComponent(f.name)},body:f});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||('upload failed ('+r.status+')'));
+      S.imports.push({id:uid(),name:j.name,path:j.path,type:j.type,size:j.size,addedAt:Date.now()});
+    }catch(err){alert('Could not add '+f.name+' — '+(err.message||err));}
+  }
+  save();go('claude');
+});
+async function trayRemove(id){
+  const item=S.imports.find(i=>i.id===id);if(!item)return;
+  tombstone(id);
+  S.imports=S.imports.filter(i=>i.id!==id);save();render();
+  try{
+    const {data:{session}}=await SB.client.auth.getSession();
+    if(session)fetch(IMPORT_API,{method:'DELETE',headers:{
+      'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({path:item.path})});
+  }catch(e){}
+}
+
 /* the rituals — crafted prompts for your Claude, armed with the connector */
 const RITUALS={
-  morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Also check the delegations tool — if I've handed you tasks, say how you'll handle each and get started (draft the email, do the research, make the booking plan), checking with me before anything goes out. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped that I should rescue or let go. Be honest and brief.`,
+  morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Check the delegations tool — if I've handed you tasks, say how you'll handle each and get started (draft the email, do the research, make the booking plan), checking with me before anything goes out. Check pending_imports too — read each dropped file and turn it into the tasks or appointments it implies, then resolve it. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped. Be honest and brief.`,
   evening:`Using my Atelier connector, look at what I finished today (the laurels tool) and what was due but didn't happen. Give me my evening close: celebrate what got done in a sentence or two, tell me plainly what rolls to tomorrow, and one honest observation about how the day went. If something due today should move, propose the change and make it if I agree.`,
   weekly:`Using my Atelier connector, read my compass — mission, north stars, chapters, goals — and my boards. Give me my weekly review: which goals actually moved this week and which are drifting, whether my open tasks serve my stated priorities or something else entirely, and one hard question I should sit with. Challenge me where the boards and the compass disagree.`,
 };
@@ -4088,7 +4141,8 @@ function renderClaude(){
         <button class="rit" onclick="clRitual('weekly',this)">
           <span class="rit-n">Weekly compass</span><span class="rit-sub">the hard questions</span></button>
       </div>
-      <div class="i-note" style="margin:-2px 0 20px">Each copies its prompt and opens claude.ai — paste it there, and Claude answers from your live boards.</div>
+      <div class="i-note" style="margin:-2px 0 20px">Each copies its prompt and opens claude.ai — paste it there, and Claude answers from your live boards.
+        And drop any file onto Atelier — an invitation PDF, a screenshot — and it lands in my tray to become tasks.</div>
       <div class="cl-compose">
         <textarea id="clMsg" rows="2" oninput="window.clDraft=this.value"
           placeholder="Write to Claude — instruct, ask, push back. ‘Split the Nature paper into smaller tasks’, ‘date all the gift-buying for Friday’, ‘why the CV nagging?’…">${esc(window.clDraft||'')}</textarea>
@@ -4114,6 +4168,15 @@ function renderClaude(){
         return del.length?sec('Delegated to Claude','handed off — I take these up the moment we next talk',
           del.map(t=>row(t,btn('Take back',`clUndelegate('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),''):'';
       })()}
+      ${(S.imports||[]).length?`
+        <div class="list-group-name" style="cursor:default;margin-top:30px">The Tray</div>
+        <div class="cl-sub">dropped for me — invitations, flyers, screenshots. I turn them into tasks when we talk.</div>
+        ${S.imports.map(i=>`<div class="cl-row">
+          <span class="dot" style="background:var(--ink-faint)"></span>
+          <span class="cl-row-t" style="cursor:default">${esc(i.name)}</span>
+          <span class="b-tag">${esc((i.type||'').split('/')[1]||'file')}</span>
+          <span class="cl-row-btns"><button class="cl-btn danger" onclick="trayRemove('${i.id}')">Remove</button></span>
+        </div>`).join('')}`:''}
       <div class="cl-review-h">
         <span class="cl-review-t">The Standing Review</span>
         <span class="cl-review-pulse">${(()=>{
@@ -4122,6 +4185,7 @@ function renderClaude(){
           if(wins.length)bits.push(wins.length+' quick win'+(wins.length>1?'s':'')+' on the table');
           if(stale.length)bits.push(stale.length+' gathering dust');
           if(unmeasured.length)bits.push(unmeasured.length+' goal'+(unmeasured.length>1?'s':'')+' unmeasured');
+          if((S.imports||[]).length)bits.push(S.imports.length+' in the tray');
           return bits.length?bits.join(' · '):'all quiet — the boards are in order';
         })()}</span>
       </div>
@@ -4982,6 +5046,7 @@ function mergeStates(loc,rem){
   merge(loc.boards,rem.boards);
   merge(loc.stars=loc.stars||[],rem.stars);
   merge(loc.goals,rem.goals);
+  merge(loc.imports=loc.imports||[],rem.imports);   // the tray travels too; resolved items stay buried
   /* tasks resolve per-item: newer touch wins, regardless of which side is globally newer */
   {
     const m=new Map(loc.tasks.map((x,i)=>[x.id,i]));
