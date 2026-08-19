@@ -2246,6 +2246,9 @@ const endOf=t=>t.end||(t.start?plusHour(t.start):null);
 const NL_MONTHS={jan:0,january:0,ene:0,enero:0,feb:1,february:1,febrero:1,march:2,marzo:2,apr:3,april:3,abr:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,ago:7,agosto:7,sep:8,sept:8,september:8,septiembre:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,dic:11,diciembre:11};
 const NL_DOWS={sunday:0,sun:0,domingo:0,dom:0,monday:1,mon:1,lunes:1,lun:1,tuesday:2,tue:2,tues:2,martes:2,wednesday:3,wed:3,miercoles:3,'miércoles':3,mie:3,thursday:4,thu:4,thur:4,thurs:4,jueves:4,jue:4,friday:5,fri:5,viernes:5,vie:5,saturday:6,sat:6,sabado:6,'sábado':6,sab:6};
 function nlParse(raw){
+  /* the escape hatch: a fully-quoted title is taken exactly as written — no dates, no urgency */
+  const qm=String(raw).trim().match(/^"(.*)"$/s)||String(raw).trim().match(/^'(.*)'$/s)||String(raw).trim().match(/^\u201c(.*)\u201d$/s);
+  if(qm)return {due:null,start:null,end:null,urgent:false,appt:false,title:qm[1].trim()};
   let s=' '+raw+' ';
   const out={due:null,start:null,end:null,urgent:false,title:raw};
   const pad=n=>String(n).padStart(2,'0');
@@ -3260,6 +3263,8 @@ function openDrawer(tid){
 function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');render();}
 /* typing "urgent" / "urgente" / "asap" — or any ! — anywhere in a title IS the urgent tag */
 function urgentStrip(v){
+  const q=String(v).trim().match(/^"(.*)"$/s)||String(v).trim().match(/^'(.*)'$/s);
+  if(q)return {has:false,title:q[1].trim()};
   const has=/(^|\s)(urgent|urgente|asap)\b/i.test(v)||String(v).includes('!');
   return {has, title:String(v).replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,'').replace(/\s+/g,' ').trim()};
 }
@@ -4109,14 +4114,6 @@ function goalPrompt(id){
   const st=g.starId&&(S.stars||[]).find(s=>s.id===g.starId);
   return `Using my Atelier connector, look at my goal "${g.title}"${st?` (it serves my north star "${st.title}")`:''}. Read the compass and my boards, then be honest with me: is my current work actually serving this goal? Break it into key results if it lacks them, and give me the single next move for this week.`;
 }
-function clAskNow(){
-  const v=($('clMsg')&&$('clMsg').value.trim())||'';
-  if(!v)return;
-  const rn=window.clReplyTo?((S.claude&&S.claude.notes)||[]).find(n=>n.id===window.clReplyTo):null;
-  const pre=rn?`Re your note in my Atelier ("${rn.text.slice(0,140)}"): `:'';
-  askClaude('Using my Atelier connector for context on my boards, goals, and calendar. '+pre+v);
-  window.clDraft='';window.clReplyTo=null;
-}
 function renderClaude(){
   const now=Date.now(), today=todayStr();
   const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
@@ -4250,17 +4247,7 @@ function renderClaude(){
       </div>
       <div class="i-note" style="margin:-2px 0 20px">Each copies its prompt and opens claude.ai — paste it there, and Claude answers from your live boards.
         And drop any file onto Atelier — an invitation PDF, a screenshot — and it lands in my tray to become tasks.</div>
-      <div class="cl-compose">
-        <textarea id="clMsg" rows="2" oninput="window.clDraft=this.value"
-          placeholder="Ask Claude anything — ‘split the Nature paper into smaller tasks’, ‘plan my week around the wedding’, ‘which goal am I neglecting?’ It opens claude.ai with your boards as context.">${esc(window.clDraft||'')}</textarea>
-        <div class="cl-compose-row">
-          <span class="small muted" id="clReplyTag">${(()=>{
-            const rn=window.clReplyTo?((S.claude&&S.claude.notes)||[]).find(n=>n.id===window.clReplyTo):null;
-            return rn?`replying to: “${esc(exc(rn.text,60))}” <button class="cl-cancel" onclick="clCancelReply()">×</button>`:'';
-          })()}</span>
-          <button class="btn-ink" onclick="clAskNow()">Ask Claude →</button>
-        </div>
-      </div>
+      
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${(()=>{
         const del=S.tasks.filter(t=>!t.done&&t.claude);
@@ -4314,11 +4301,9 @@ function clDelete(id){
 }
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
 function clReply(nid){
-  window.clReplyTo=nid;
-  render();
-  const el=$('clMsg'); if(el)el.focus();
+  const n=S.claude.notes.find(x=>x.id===nid); if(!n)return;
+  askClaude('Using my Atelier connector for context on my boards. About your note in my Atelier — "'+n.text.slice(0,300)+'" — let\'s talk about it.');
 }
-function clCancelReply(){window.clReplyTo=null;render();}
 function clNoteAct(nid,i){
   const n=S.claude.notes.find(n=>n.id===nid); if(!n)return;
   const a=(n.actions||[])[i]; if(!a)return;
