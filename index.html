@@ -3196,6 +3196,9 @@ function openDrawer(tid){
     <div class="small muted" style="letter-spacing:1.5px;text-transform:uppercase;font-size:10.5px">
       <span class="dot" style="background:${b.accent};display:inline-block;width:7px;height:7px;margin-right:6px"></span>${esc(b.name)}</div>
     <textarea class="d-title" rows="2" onchange="t_set('title',this.value)">${esc(t.title)}</textarea>
+    ${appt?'':`<div class="d-field"><div class="d-label">Urgency</div>
+      <button class="urgent-toggle ${t.urgent?'on':''}" onclick="t_toggleUrgent()">
+        ${t.urgent?'! Urgent — floats to the top everywhere':'Mark as urgent'}</button></div>`}
     <div class="d-field"><div class="d-label">Kind</div>
       <div class="seg kind-seg">
         <button class="${appt?'':'on'}" onclick="t_setKind('task')">Task</button>
@@ -3221,9 +3224,6 @@ function openDrawer(tid){
       <div class="kind-note">${t.done
         ?'It keeps its place on the board — it just stops being shown until you look at the Laurels.'
         :'Finishing it leaves it where it is. Nothing moves.'}</div></div>
-    ${appt?'':`<div class="d-field"><div class="d-label">Urgency</div>
-      <button class="urgent-toggle ${t.urgent?'on':''}" onclick="t_toggleUrgent()">
-        ${t.urgent?'! Urgent — floats to the top everywhere':'Mark as urgent'}</button></div>`}
     <div class="d-field"><div class="d-label">Date</div>
       <input type="date" value="${t.due||''}" onchange="t_set('due',this.value||null)"></div>
     <div class="d-field"><div class="d-label">Time slot ${t.start?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">— optional</span>'}</div>
