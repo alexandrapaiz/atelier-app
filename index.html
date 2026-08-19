@@ -1710,9 +1710,11 @@ textarea.kr-t.fitw{flex:0 0 auto; max-width:100%}
 .tr-branch::before,.tr-branch::after{display:none}
 .tr-branch{padding-left:16px}
 .tr-kids .tr-branch{padding-left:26px}
-.gnode .grip,.tr-node .more,.tr-node .anchor.none{opacity:0; transition:opacity .15s}
+.gnode .grip,.tr-node .more,.tr-node .anchor.none,.tr-node .gask{opacity:0; transition:opacity .15s}
 .tr-node:hover .grip{opacity:.6}
-.tr-node:hover .more,.tr-node:hover .anchor.none,.tr-node:focus-within .anchor.none{opacity:1}
+.tr-node:hover .more,.tr-node:hover .anchor.none,.tr-node:focus-within .anchor.none,.tr-node:hover .gask{opacity:1}
+.gask{color:var(--ink-faint); font-size:12px; padding:2px 5px; flex-shrink:0}
+.gask:hover{color:var(--ink)}
 .chap-caret{font-size:12px; margin-top:14px; color:var(--ink-faint)}
 @media (hover:none){.gnode .grip,.tr-node .more,.tr-node .anchor.none{opacity:.45}}
 .chap-head textarea,.chap-head .more{cursor:auto}
@@ -3219,8 +3221,10 @@ function openDrawer(tid){
     <div class="d-field"><div class="d-label">Claude</div>
       <button class="cl-btn ${t.claude?'del-on':''}" onclick="t_delegate()">
         ${t.claude?'✦ Delegated — take it back':'✦ Delegate to Claude'}</button>
-      ${t.claude?`<div class="kind-note">Handed off. Claude sees it the moment you next talk — it's in the morning brief,
-        or just say &ldquo;check your delegations.&rdquo; He'll report back on your Claude page.</div>`:''}</div>
+      ${t.claude
+        ?`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','delegate'),this)">Hand it over now →</button>
+          <div class="kind-note">Handed off — it's in the morning brief, or press the button to start Claude on it this minute.</div>`
+        :`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','discuss'),this)">Discuss with Claude →</button>`}</div>
     <div class="d-field"><div class="d-label">Status</div>
       <select onchange="t_setCol(this.value)">${colOpts}</select>
       <button class="done-toggle ${t.done?'on':''}" onclick="toggleDone('${t.id}');openDrawer('${t.id}')">
@@ -4070,7 +4074,8 @@ const RITUALS={
   morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Check the delegations tool — if I've handed you tasks, say how you'll handle each and get started (draft the email, do the research, make the booking plan), checking with me before anything goes out. Check pending_imports too — read each dropped file and turn it into the tasks or appointments it implies, then resolve it. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped. Be honest and brief.`,
   evening:`Using my Atelier connector, look at what I finished today (the laurels tool) and what was due but didn't happen. Give me my evening close: celebrate what got done in a sentence or two, tell me plainly what rolls to tomorrow, and one honest observation about how the day went. If something due today should move, propose the change and make it if I agree.`,
   weekly:`Using my Atelier connector, read my compass — mission, north stars, chapters, goals — and my boards. Give me my weekly review: which goals actually moved this week and which are drifting, whether my open tasks serve my stated priorities or something else entirely, and one hard question I should sit with. Challenge me where the boards and the compass disagree.`,
-  tray:`Using my Atelier connector, check pending_imports and process the tray now: read each dropped file with read_import, create the tasks or appointments it implies (invitations get kind 'appt' with their date and time), then resolve each one. Check delegations too while you're at it. Tell me exactly what you created.`,
+  tray:`Using my Atelier connector, check the pending_imports tool and process the tray now: read each dropped file with read_import, create the tasks or appointments it implies (invitations get kind 'appt' with their date and time), then resolve each with resolve_import. Check the delegations tool too while you're at it. Tell me exactly what you created. (If you don't see these tools, tell me to refresh the connector.)`,
+  deleg:`Using my Atelier connector, check the delegations tool and take those tasks on right now: say how you'll handle each, do what you can with your tools (checking with me before anything goes out or gets sent), then complete each one or leave a note with where it stands.`,
 };
 /* copy that works everywhere: the old synchronous way first, the modern API as backup */
 function copyText(t){
@@ -4087,14 +4092,34 @@ function copyText(t){
   try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t);return true;}}catch(e){}
   return false;
 }
-function clRitual(key,btn){
-  const p=RITUALS[key];
-  if(!copyText(p)){prompt('Copy this, then paste it to Claude:',p);return;}
+function clRitual(key,btn){askClaude(RITUALS[key],btn);}
+/* the universal door: copy any prompt, open claude.ai, paste — from anywhere in the app */
+function askClaude(text,btn){
+  if(!text)return;
+  if(!copyText(text)){prompt('Copy this, then paste it to Claude:',text);return;}
   if(btn){const s=btn.querySelector('.rit-sub');
     if(s)s.textContent='✓ copied — paste it to Claude (⌘V)';
-    else btn.textContent='✓ copied — paste it (⌘V)';}
+    else btn.textContent='✓ copied — paste (⌘V)';}
   window.open('https://claude.ai/new','_blank');
   setTimeout(()=>render(),3600);
+}
+function taskPrompt(id,mode){
+  const t=S.tasks.find(x=>x.id===id); if(!t)return '';
+  const b=board(t.boardId);
+  const ctx=`"${t.title}"${b?' on my '+b.name+' board':''}${t.due?', due '+t.due:''}${t.start?' at '+t.start:''}${t.note?' — note: '+t.note:''}`;
+  return mode==='delegate'
+    ?`Using my Atelier connector: I've delegated this task to you — take it on now: ${ctx} (task id ${t.id}). Do what you can with your tools, check with me before anything goes out, then mark it complete or leave a note with where things stand.`
+    :`Using my Atelier connector for context, help me with this task: ${ctx} (task id ${t.id}). Advise me, break it into smaller tasks on the board if that would help, or take parts of it on yourself.`;
+}
+function goalPrompt(id){
+  const g=goal(id); if(!g)return '';
+  const st=g.starId&&(S.stars||[]).find(s=>s.id===g.starId);
+  return `Using my Atelier connector, look at my goal "${g.title}"${st?` (it serves my north star "${st.title}")`:''}. Read the compass and my boards, then be honest with me: is my current work actually serving this goal? Break it into key results if it lacks them, and give me the single next move for this week.`;
+}
+function clAskNow(){
+  const v=($('clMsg')&&$('clMsg').value.trim())||'';
+  if(!v)return;
+  askClaude('Using my Atelier connector for context on my boards, goals, and calendar: '+v);
 }
 function renderClaude(){
   const now=Date.now(), today=todayStr();
@@ -4239,7 +4264,10 @@ function renderClaude(){
             const rn=window.clReplyTo?((S.claude&&S.claude.notes)||[]).find(n=>n.id===window.clReplyTo):null;
             return rn?`replying to: “${esc(exc(rn.text,60))}” <button class="cl-cancel" onclick="clCancelReply()">×</button>`:'';
           })()}</span>
-          <button class="btn-ink" onclick="clSend()">Send to Claude</button>
+          <span style="display:flex;gap:8px">
+            <button class="cl-btn" onclick="clAskNow()" title="Copies your message with connector context and opens claude.ai">Ask now →</button>
+            <button class="btn-ink" onclick="clSend()">Send to Claude</button>
+          </span>
         </div>
       </div>
       ${((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed).map(m=>{
@@ -4253,8 +4281,11 @@ function renderClaude(){
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${(()=>{
         const del=S.tasks.filter(t=>!t.done&&t.claude);
-        return del.length?sec('Delegated to Claude','handed off — I take these up the moment we next talk',
-          del.map(t=>row(t,btn('Take back',`clUndelegate('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),''):'';
+        return del.length?`
+          <div class="list-group-name" style="cursor:default;margin-top:30px">Delegated to Claude
+            <button class="cl-btn" style="margin-left:12px;text-transform:none;letter-spacing:0" onclick="clRitual('deleg',this)">✦ Work these now</button></div>
+          <div class="cl-sub">handed off — press the button, or they ride along with the next morning brief</div>
+          ${del.map(t=>row(t,btn('Take back',`clUndelegate('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))).join('')}`:'';
       })()}
       ${(S.imports||[]).length?`
         <div class="list-group-name" style="cursor:default;margin-top:30px">The Tray
@@ -4553,6 +4584,7 @@ function goalBlock(g,opts){
         <span class="gmini-mark" style="left:${TARGET_PCT}%"></span></span>`}</span>
       <span class="gcol pct ${p!==null&&p>=TARGET_PCT?'won':''}">${p===null?'':p+'%'}</span>
       <span class="gcol anch">${anchorChip(g)}</span>
+      <button class="gask" onclick="event.stopPropagation();askClaude(goalPrompt('${g.id}'))" title="Take this goal to Claude">✦</button>
       <button class="more" onclick="event.stopPropagation();g_delete('${g.id}')" title="Delete this goal">×</button>
     </div>
     ${open?`<div class="tr-kids">
