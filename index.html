@@ -2578,21 +2578,6 @@ function icsBuild(list){
   L.push('END:VCALENDAR');
   return L.join('\r\n');
 }
-/* Claude holds the Google credentials, so the app just tells him what's outstanding.
-   No .ics, no download, nothing for you to open. */
-async function calAsk(){
-  const list=syncQueue();
-  if(!list.length)return;
-  S.claude.inbox=S.claude.inbox||[];
-  S.claude.inbox.push({id:uid(),createdAt:Date.now(),topic:'calendar',
-    text:'Put these on my Google Calendar: '+list.map(t=>{
-      const b=board(t.boardId);
-      return t.title+' — '+t.due+(t.start?' '+t.start+(t.end?'–'+t.end:''):'')+(b?' ('+b.name+')':'');
-    }).join('; ')+'.'});
-  save();
-  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();}}catch(e){}
-  window.calAsked=list.length; render();
-}
 function calSyncFileFallback(){
   const list=syncQueue();
   if(!list.length)return;
@@ -4319,13 +4304,6 @@ function clDelete(id){
   tombstone(id);
   S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
 }
-function clUnsend(mid){
-  if(!confirm('Delete this message? If I have already read it, it stays read — this only removes it from here.'))return;
-  tombstone(mid);
-  S.claude.inbox=(S.claude.inbox||[]).filter(m=>m.id!==mid);
-  save();render();
-  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);ghPush();}}catch(e){}
-}
 function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
 function clReply(nid){
   window.clReplyTo=nid;
@@ -4333,22 +4311,6 @@ function clReply(nid){
   const el=$('clMsg'); if(el)el.focus();
 }
 function clCancelReply(){window.clReplyTo=null;render();}
-async function clPing(){
-  save();
-  let ok=false;
-  try{if(typeof GH!=='undefined'&&GH.cfg){clearTimeout(GH.timer);await ghPush();ok=true;}}catch(e){}
-  const tag=$('clReplyTag');
-  if(tag)tag.innerHTML=ok
-    ?'<b>saved for Claude ✓</b> — he reads it next time you two talk'
-    :'saved — will reach Claude when sync reconnects';
-}
-function clSend(){
-  const el=$('clMsg'); if(!el||!el.value.trim())return;
-  S.claude.inbox=S.claude.inbox||[];
-  S.claude.inbox.push({id:uid(),text:el.value.trim(),re:window.clReplyTo||null,createdAt:Date.now()});
-  window.clReplyTo=null; window.clDraft='';
-  save();render();
-}
 function clNoteAct(nid,i){
   const n=S.claude.notes.find(n=>n.id===nid); if(!n)return;
   const a=(n.actions||[])[i]; if(!a)return;
