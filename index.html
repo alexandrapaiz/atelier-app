@@ -1771,6 +1771,8 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-review-h{display:flex; align-items:baseline; gap:14px; margin:36px 0 0; flex-wrap:wrap}
 .cl-review-t{font-family:var(--serif); font-size:21px; font-weight:600}
 .cl-review-pulse{font-size:12px; color:var(--ink-faint)}
+.chip.del-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line)}
+.cl-btn.del-on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
 .cl-wrap .list-group-name{
   font-family:var(--sans) !important; font-size:10.5px !important; font-weight:500 !important;
   letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
@@ -2933,6 +2935,7 @@ function taskCard(t){
       <div class="chips">
         ${urgentChip(t)}
         ${whenChip(t)}
+        ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -3161,6 +3164,11 @@ function openDrawer(tid){
         :'Work you can do whenever — sortable, urgent-able, counts toward progress.'}</div></div>
     ${blockOf?`<div class="d-field"><div class="d-label">Time blocked for</div>
       <button class="cl-btn" onclick="openDrawer('${blockOf.id}')">${esc(blockOf.title)} ↗</button></div>`:''}
+    <div class="d-field"><div class="d-label">Claude</div>
+      <button class="cl-btn ${t.claude?'del-on':''}" onclick="t_delegate()">
+        ${t.claude?'✦ Delegated — take it back':'✦ Delegate to Claude'}</button>
+      ${t.claude?`<div class="kind-note">Handed off. Claude sees it the moment you next talk — it's in the morning brief,
+        or just say &ldquo;check your delegations.&rdquo; He'll report back on your Claude page.</div>`:''}</div>
     <div class="d-field"><div class="d-label">Status</div>
       <select onchange="t_setCol(this.value)">${colOpts}</select>
       <button class="done-toggle ${t.done?'on':''}" onclick="toggleDone('${t.id}');openDrawer('${t.id}')">
@@ -3226,6 +3234,15 @@ function t_set(k,v){
   if(k==='start'&&v&&t.end&&t.end<=v)t.end=null;   // drop a now-invalid end
   touch(t);save();
   if(k!=='title'&&k!=='note')openDrawer(drawerTask); // refresh chips & gcal link
+}
+function t_delegate(){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  t.claude=t.claude?undefined:true;
+  touch(t);save();openDrawer(drawerTask);render();
+}
+function clUndelegate(id){
+  const t=S.tasks.find(x=>x.id===id); if(!t)return;
+  t.claude=undefined;touch(t);save();render();
 }
 function t_setProg(v,final){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
@@ -3563,6 +3580,7 @@ function ptCard(t){
       <div class="chips">
         ${urgentChip(t)}
         ${whenChip(t)}
+        ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -3922,7 +3940,7 @@ function rw_clearGoal(gid){const g=goal(gid);if(g){g.reward=null;g.rewardClaimed
 /* ============ claude — the resident reviewer ============ */
 /* the rituals — crafted prompts for your Claude, armed with the connector */
 const RITUALS={
-  morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped that I should rescue or let go. Be honest and brief — not a list of everything, just what matters.`,
+  morning:`Using my Atelier connector, read my agenda for today and the next few days, my priorities, and anything overdue. Also check the delegations tool — if I've handed you tasks, say how you'll handle each and get started (draft the email, do the research, make the booking plan), checking with me before anything goes out. Then give me my morning brief: three sentences on what today is actually about, the one thing to protect, and anything that slipped that I should rescue or let go. Be honest and brief.`,
   evening:`Using my Atelier connector, look at what I finished today (the laurels tool) and what was due but didn't happen. Give me my evening close: celebrate what got done in a sentence or two, tell me plainly what rolls to tomorrow, and one honest observation about how the day went. If something due today should move, propose the change and make it if I agree.`,
   weekly:`Using my Atelier connector, read my compass — mission, north stars, chapters, goals — and my boards. Give me my weekly review: which goals actually moved this week and which are drifting, whether my open tasks serve my stated priorities or something else entirely, and one hard question I should sit with. Challenge me where the boards and the compass disagree.`,
 };
@@ -4091,6 +4109,11 @@ function renderClaude(){
           <div class="cl-you-s">sent — it's in your account, and I see it the moment we next talk</div>
         </div>`;}).join('')}
       ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
+      ${(()=>{
+        const del=S.tasks.filter(t=>!t.done&&t.claude);
+        return del.length?sec('Delegated to Claude','handed off — I take these up the moment we next talk',
+          del.map(t=>row(t,btn('Take back',`clUndelegate('${t.id}')`)+btn('Done ✓',`toggleDone('${t.id}')`))),''):'';
+      })()}
       <div class="cl-review-h">
         <span class="cl-review-t">The Standing Review</span>
         <span class="cl-review-pulse">${(()=>{
