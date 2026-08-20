@@ -4098,7 +4098,7 @@ const RITUALS={
   evening:`Using my Atelier connector, look at what I finished today (the laurels tool) and what was due but didn't happen. Give me my evening close: celebrate what got done in a sentence or two, tell me plainly what rolls to tomorrow, and one honest observation about how the day went. If something due today should move, propose the change and make it if I agree.`,
   weekly:`Using my Atelier connector, read my compass — mission, north stars, chapters, goals — and my boards. Give me my weekly review: which goals actually moved this week and which are drifting, whether my open tasks serve my stated priorities or something else entirely, and one hard question I should sit with. Challenge me where the boards and the compass disagree.`,
   tray:`Using my Atelier connector, check the pending_imports tool and process the tray now: read each dropped file with read_import, create the tasks or appointments it implies (invitations get kind 'appt' with their date and time), then resolve each with resolve_import. Check the delegations tool too while you're at it. Tell me exactly what you created. (If you don't see these tools, tell me to refresh the connector.)`,
-  deleg:`Using my Atelier connector, check the delegations tool and take those tasks on right now: say how you'll handle each, do what you can with your tools (checking with me before anything goes out or gets sent), then complete each one or leave a note with where it stands.`,
+  deleg:`Using my Atelier connector, check the delegations tool and take those tasks on right now: say how you'll handle each, do what you can with your tools (checking with me before anything goes out or gets sent), then complete each one or tell me where it stands, right there in the chat.`,
 };
 /* copy that works everywhere: the old synchronous way first, the modern API as backup */
 function copyText(t){
@@ -4145,30 +4145,6 @@ function renderClaude(){
   const taskOf=id=>S.tasks.find(t=>t.id===id);
   const bAcc=t=>{const b=board(t.boardId);return b?b.accent:'#999';};
   const bName=t=>{const b=board(t.boardId);return b?b.name:'';};
-  /* my letters — written from our sessions, actionable in place */
-  const notes=((S.claude&&S.claude.notes)||[]).filter(n=>{
-    if(n.resolved)return false;
-    if(n.taskId){const t=taskOf(n.taskId);if(!t||t.done)return false;}
-    return true;
-  });
-  const exc=(s,k)=>s&&s.length>k?s.slice(0,k-1)+'…':(s||'');
-  const repliedTo=new Set(((S.claude&&S.claude.inbox)||[]).filter(m=>!m.processed&&m.re).map(m=>m.re));
-  const noteHtml=notes.map(n=>{
-    const t=n.taskId?taskOf(n.taskId):null;
-    return `<div class="cl-note">
-      ${n.reText?`<div class="cl-quote">you said: “${esc(exc(n.reText,110))}”</div>`:''}
-      <div class="cl-text">${esc(n.text)}</div>
-      ${t?`<div class="cl-task"><span class="dot" style="background:${bAcc(t)}"></span>
-        <span class="cl-task-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
-        <span class="b-tag">${esc(bName(t))}</span>${whenChip(t)}</div>`:''}
-      <div class="cl-actions">
-        ${(n.actions||[]).map((a,i)=>`<button class="cl-btn ${a.act==='delete'?'danger':''}" onclick="clNoteAct('${n.id}',${i})">${esc(a.label)}</button>`).join('')}
-        <button class="cl-btn ghost" onclick="clReply('${n.id}')">Reply</button>
-        <button class="cl-btn ghost" onclick="clDismiss('${n.id}')">Not now</button>
-      </div>
-      <div class="cl-sig">— Claude</div>
-    </div>`;
-  }).join('');
   /* standing reviews — computed fresh every time */
   const row=(t,btns)=>`<div class="cl-row">
     <span class="dot" style="background:${bAcc(t)}"></span>
@@ -4251,7 +4227,7 @@ function renderClaude(){
   const live=(typeof SB!=='undefined'&&SB.user);
   return `<div class="view-head">
       <div class="view-title">Claude <span style="color:var(--ink-faint);font-size:22px">✦</span></div>
-      <div class="view-sub">your resident reviewer — notes, replies, and standing audits of the boards</div>
+      <div class="view-sub">your resident reviewer — rituals, delegations, and standing audits of the boards</div>
     </div>
     <div class="cl-wrap">
       <div class="cl-live ${live?'on':''}">
@@ -4273,7 +4249,6 @@ function renderClaude(){
       <div class="i-note" style="margin:-2px 0 20px">Each copies its prompt and opens claude.ai — paste it there, and Claude answers from your live boards.
         And drop any file onto Atelier — an invitation PDF, a screenshot — and it lands in my tray to become tasks.</div>
       
-      ${noteHtml||'<div class="empty-note">No new notes from me — write above or ask in our chat, and my reply lands here.</div>'}
       ${(()=>{
         const del=S.tasks.filter(t=>!t.done&&t.claude);
         return del.length?`
@@ -4324,22 +4299,6 @@ function clDelete(id){
   tombstone(id);
   S.tasks=S.tasks.filter(t=>t.id!==id);save();render();
 }
-function clDismiss(nid){const n=S.claude.notes.find(n=>n.id===nid);if(n)n.resolved=Date.now();save();render();}
-function clReply(nid){
-  const n=S.claude.notes.find(x=>x.id===nid); if(!n)return;
-  askClaude('Using my Atelier connector for context on my boards. About your note in my Atelier — "'+n.text.slice(0,300)+'" — let\'s talk about it.');
-}
-function clNoteAct(nid,i){
-  const n=S.claude.notes.find(n=>n.id===nid); if(!n)return;
-  const a=(n.actions||[])[i]; if(!a)return;
-  if(a.act==='date-today'&&n.taskId){const t=S.tasks.find(t=>t.id===n.taskId);if(t){t.due=todayStr();touch(t);}}
-  else if(a.act==='do-now'&&n.taskId)clDoNow(n.taskId);
-  else if(a.act==='done'&&n.taskId){const t=S.tasks.find(t=>t.id===n.taskId);if(t&&!t.done)toggleDone(n.taskId);}
-  else if(a.act==='delete'&&n.taskId)S.tasks=S.tasks.filter(t=>t.id!==n.taskId);
-  else if(a.act==='open'&&n.taskId){openDrawer(n.taskId);return;}
-  n.resolved=Date.now();save();render();
-}
-
 /* ============ compass — stars, goals, and the plan as one instrument ============ */
 let compassMode='stars';
 const star=id=>(S.stars||[]).find(s=>s.id===id);
