@@ -5041,6 +5041,7 @@ function era_del(id){
   const e=S.plan.find(e=>e.id===id);
   if(e.items.length&&!confirm('Delete this chapter and its '+e.items.length+' intention(s)?'))return;
   tombstone.apply(null,[id].concat((e.items||[]).map(i=>i.id)));
+  S.goals.forEach(g=>{if(g.era===id)g.era=undefined;});   // its goals fall back to unscheduled, not into the void
   S.plan=S.plan.filter(x=>x.id!==id);render();
 }
 function p_add(eraId){
