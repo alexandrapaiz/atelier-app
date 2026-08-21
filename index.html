@@ -2951,13 +2951,30 @@ function rhythmStrip(){
       </div>`;}).join('')}
   </div>`;
 }
+/* adherence — how the recent rhythm words lean: 1 kept, 0 slipped, quietly in between */
+function adherence(t){
+  const ps=(t.pulse||[]).slice(-4);
+  if(!ps.length)return null;
+  const val={kept:1,wobbly:.5,slipped:0};
+  let num=0,den=0;
+  ps.forEach((p,i)=>{const w=i+1;num+=w*(val[p.v]??.5);den+=w;});
+  return num/den;
+}
+/* a whisper of colour: green where the practice holds, rust where it slips */
+function adhStyle(t){
+  const a=adherence(t);
+  if(a===null)return '';
+  const tint=`color-mix(in oklab, #7d9b6e ${Math.round(a*100)}%, #bf6a55)`;
+  return `background:color-mix(in oklab, var(--card) ${100-Math.round(7+9*Math.abs(a-.5)*2)}%, ${tint});`+
+         `border-color:color-mix(in oklab, var(--line) 62%, ${tint});`;
+}
 function practicesStrip(){
   const routines=S.tasks.filter(isRoutine);
   if(!routines.length)return '';
   return `<div class="practices">
     <span class="practices-label">Practices</span>
     ${routines.map(t=>{const b=board(t.boardId);
-      return `<button class="practice" onclick="openDrawer('${t.id}')" title="${esc(b?b.name:'')}">
+      return `<button class="practice" style="${adhStyle(t)}" onclick="openDrawer('${t.id}')" title="${esc(b?b.name:'')}">
         <span class="dot" style="background:${b?b.accent:'#999'}"></span><span>${esc(t.title)}</span>
       </button>`;}).join('')}
   </div>`;
@@ -3047,7 +3064,7 @@ function progBar(t){
 function taskCard(t){
   const g=t.goalId?goal(t.goalId):null;
   const rt=isRoutine(t);
-  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''} ${blockerOf(t)?'blocked':''}" draggable="true" data-tid="${t.id}"
+  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''} ${blockerOf(t)?'blocked':''}" ${rt?`style="${adhStyle(t)}"`:''} draggable="true" data-tid="${t.id}"
       ondragstart="dragTask(event,'${t.id}')" ondragend="dragEnd(event)"
       onclick="openDrawer('${t.id}')">
     ${rt?'<span class="inf" title="An ongoing practice — nothing to check off">∞</span>'
@@ -3150,7 +3167,7 @@ function renderList(b){
     const rows=ts.map(t=>{
       const g=t.goalId?goal(t.goalId):null;
       const rt=isRoutine(t);
-      return `<div class="lrow ${t.done?'done-card':''} ${rt?'routine-card':''}" onclick="openDrawer('${t.id}')">
+      return `<div class="lrow ${t.done?'done-card':''} ${rt?'routine-card':''}" ${rt?`style="${adhStyle(t)}"`:''} onclick="openDrawer('${t.id}')">
         ${rt?'<span class="inf">∞</span>'
            :`<button class="tick ${t.done?'on':''}" onclick="event.stopPropagation();toggleDone('${t.id}')">
           <svg viewBox="0 0 12 12"><path d="M2 6.5 4.8 9 10 3"/></svg></button>`}
