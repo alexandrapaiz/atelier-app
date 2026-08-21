@@ -304,8 +304,11 @@ main{padding:26px 40px 60px}
 .tick{
   width:17px; height:17px; border-radius:50%; border:1.4px solid var(--ink-faint);
   flex-shrink:0; margin-top:1px; display:grid; place-items:center;
-  transition:all .15s; background:transparent; padding:0;
+  transition:all .15s; background:transparent; padding:0; position:relative;
 }
+/* fingers get 44px even where the eye gets 17 */
+.tick::after,.cal-addbtn::after,.col-del::after,.d-close::after{content:''; position:absolute; inset:-12px}
+.cal-addbtn,.col-del,.d-close{position:relative}
 .tick:hover{border-color:var(--sage)}
 .tick.on{background:var(--sage); border-color:var(--sage)}
 .tick svg{width:9px; height:9px; stroke:var(--paper); stroke-width:2.6; fill:none; opacity:0}
@@ -1032,6 +1035,7 @@ footer button:hover, footer label:hover{color:var(--ink)}
     flex-direction:column; flex-wrap:nowrap; gap:2px; padding:26px 24px 44px;
   }
   body.menu-open{overflow:hidden}
+  body.drawer-open{overflow:hidden}
   body.menu-open aside.side .wordmark{margin:0 0 22px 8px; font-size:28px}
   body.menu-open .snav{width:100%; padding:12px 14px; font-size:16px; border-radius:11px}
   body.menu-open .snav-sub{padding-left:34px}
@@ -1069,7 +1073,11 @@ footer button:hover, footer label:hover{color:var(--ink)}
   /* month becomes a heatmap: tint + count, tap a day to open it */
   .cal-grid{overflow-x:hidden}
   input,select,textarea{font-size:16px}   /* under 16px, iOS zooms the page on focus */
-  .practices{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
+  main .cl-btn,.cl-row .cl-btn,.cl-actions .cl-btn{padding:8px 13px !important; font-size:13px !important}
+  main .rhythm-btn{padding:7px 13px; font-size:13px}
+  main .cl-live-link,.rhythm-head .cl-live-link{padding:6px 2px; display:inline-block}
+  .practices{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; scrollbar-width:none}
+  .practices::-webkit-scrollbar{display:none}
   .practice{flex:0 0 auto}
   .cal-cell{min-height:56px; padding:6px 2px 4px; overflow:hidden}
   .cal-grid .cal-ev{display:none}
@@ -2885,7 +2893,6 @@ function renderMaster(){
       <div class="spacer"></div>
       <span class="gc-add"><button class="btn-ghost" onclick="newMCol(this.parentElement)">+ Domain</button></span>
     </div>
-    ${rhythmStrip()}
     ${practicesStrip()}
     <div class="cols">${cols}</div>`;
 }
@@ -3363,9 +3370,9 @@ function openDrawer(tid){
         :'No date — nothing to put on the calendar.'}</span>
       <button class="d-delete" onclick="t_delete()">Delete task</button>
     </div>`;
-  $('drawer').classList.add('open');$('scrim').classList.add('open');
+  $('drawer').classList.add('open');$('scrim').classList.add('open');document.body.classList.add('drawer-open');
 }
-function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');render();}
+function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');document.body.classList.remove('drawer-open');render();}
 /* typing "urgent" / "urgente" / "asap" — or any ! — anywhere in a title IS the urgent tag */
 function urgentStrip(v){
   const q=String(v).trim().match(/^"(.*)"$/s)||String(v).trim().match(/^'(.*)'$/s);
@@ -3804,6 +3811,7 @@ function renderPriorities(){
       <button class="btn-ghost" onclick="priAdd()">+ Column</button>
     </div>
     ${apptStrip(7,'Commitments')}
+    ${rhythmStrip()}
     ${practicesStrip()}
     <div class="cols">${un}${cols}</div>`;
 }
@@ -5818,7 +5826,7 @@ function openInts(){
     ${card(true,'Appearance',PALETTES.find(p=>p.id===palCurrent()).name,look)}
     ${card(!!cfg.clientId,'Google Calendar',cfg.clientId?'Ready':'Set up once',gcal)}
     ${card(false,'Claude','Walkthrough',claude)}`;
-  $('drawer').classList.add('open');$('scrim').classList.add('open');
+  $('drawer').classList.add('open');$('scrim').classList.add('open');document.body.classList.add('drawer-open');
 }
 
 /* ============ init ============ */
