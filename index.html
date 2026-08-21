@@ -107,7 +107,8 @@ try{
 [data-theme=dark] .wk-ev{background:color-mix(in srgb, var(--acc) 24%, #201d18)}
 [data-theme=dark] .wk-ev.gcal{background:var(--paper-2)}
 [data-theme=dark] .cal-today{background:var(--paper-2)}
-*{box-sizing:border-box; margin:0; padding:0}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent}
+button:focus:not(:focus-visible){outline:none}
 html,body{height:100%}
 body{
   background:var(--paper);
@@ -194,6 +195,13 @@ main{padding:26px 40px 60px}
 .h-serif{font-family:var(--serif); font-weight:600}
 .muted{color:var(--ink-faint)}
 .small{font-size:12px}
+.b-more{position:relative; display:inline-block}
+.b-more summary{list-style:none; cursor:pointer; padding:4px 10px; border-radius:8px; color:var(--ink-faint); font-size:16px; letter-spacing:1px}
+.b-more summary::-webkit-details-marker{display:none}
+.b-more summary:hover{color:var(--ink); background:var(--paper-2)}
+.b-more[open] .b-more-menu{position:absolute; right:0; top:100%; z-index:40; background:var(--card);
+  border:1px solid var(--line); border-radius:10px; padding:6px; box-shadow:0 8px 26px rgba(0,0,0,.09); white-space:nowrap}
+.b-more .danger{color:var(--danger)}
 .btn-ghost{
   font-size:12.5px; color:var(--ink-faint); padding:6px 10px; border-radius:8px;
   letter-spacing:.2px;
@@ -607,7 +615,7 @@ main{padding:26px 40px 60px}
   max-width:1400px; border:1px solid var(--line-soft); border-radius:14px;
   overflow:hidden; background:var(--card); box-shadow:var(--shadow);
 }
-.wk-row{display:grid; grid-template-columns:58px repeat(7,1fr)}
+.wk-row{display:grid; grid-template-columns:58px repeat(7,minmax(0,1fr))}   /* minmax(0,…): a long all-day title can't widen its day */
 .wk-gutter-head{border-bottom:1px solid var(--line)}
 .wk-day-head{
   border-left:1px solid var(--line-soft); border-bottom:1px solid var(--line);
@@ -1038,6 +1046,9 @@ footer button:hover, footer label:hover{color:var(--ink)}
   .wk-row{grid-template-columns:42px repeat(7,minmax(120px,1fr)); min-width:900px}
   /* month becomes a heatmap: tint + count, tap a day to open it */
   .cal-grid{overflow-x:hidden}
+  input,select,textarea{font-size:16px}   /* under 16px, iOS zooms the page on focus */
+  .practices{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
+  .practice{flex:0 0 auto}
   .cal-cell{min-height:56px; padding:6px 2px 4px; overflow:hidden}
   .cal-grid .cal-ev{display:none}
   .cal-heatn{
@@ -1267,6 +1278,7 @@ textarea.kr-t:focus{border-bottom:1px solid var(--ink-faint)}
   flex:0 1 auto; min-width:60px; width:auto;
 }
 .chap-title:focus{border-bottom:1px solid var(--ink-faint)}
+.chap-title[readonly]{cursor:pointer}
 .chap-head .col-count{margin-left:auto; font-size:11px}
 .chap-goals{margin-top:4px; padding-left:2px}
 .chap-goals .gcard:first-child{border-top:none}
@@ -1758,7 +1770,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-live-dot{width:7px; height:7px; border-radius:50%; background:var(--line); flex-shrink:0}
 .cl-live.on .cl-live-dot{background:var(--sage)}
 .cl-live.on{color:var(--ink-soft)}
-.cl-live-link{font-size:12px; color:var(--ink-faint); text-decoration:underline; text-underline-offset:2px; padding:0}
+.cl-live-link{white-space:nowrap; font-size:12px; color:var(--ink-faint); text-decoration:underline; text-underline-offset:2px; padding:0}
 .cl-live-link:hover{color:var(--ink)}
 /* the desk — three doors into a live conversation */
 .cl-desk{display:flex; gap:10px; margin:0 0 8px; flex-wrap:wrap}
@@ -2214,6 +2226,12 @@ function absorbEmbedded(){
 }
 function save(){
   S.meta.updatedAt=Date.now();
+  /* never let an empty shell pave over a real document — if this boot came up blank
+     (storage evicted, read raced, private mode) but the key now holds substance, keep it */
+  if(!S.tasks.length&&!S.boards.length&&!S.goals.length&&!Object.keys((S.meta&&S.meta.tomb)||{}).length){
+    const held=store.get(KEY);
+    if(held&&held.length>1000)return;
+  }
   store.set(KEY,JSON.stringify(S));
   const el=document.getElementById('saveStamp');
   if(el){
@@ -2980,7 +2998,9 @@ function renderBoard(){
         <button class="${route.mode!=='list'?'on':''}" onclick="route.mode='kanban';render()">Board</button>
         <button class="${route.mode==='list'?'on':''}" onclick="route.mode='list';render()">List</button>
       </div>
-      <button class="btn-ghost" onclick="b_delete('${b.id}')" title="Delete board">Delete</button>
+      <details class="b-more"><summary title="Board options">⋯</summary>
+        <div class="b-more-menu"><button class="btn-ghost danger" onclick="b_delete('${b.id}')">Delete board</button></div>
+      </details>
     </div>`;
   return head+(route.mode==='list'?renderList(b):renderKanban(b));
 }
@@ -3760,7 +3780,7 @@ function renderAch(){
   const today=todayStr();
   const yest=(()=>{const d=new Date();d.setDate(d.getDate()-1);return ymd(d.getTime());})();
   const wkAgo=Date.now()-7*864e5, moAgo=Date.now()-30*864e5;
-  const done=S.tasks.filter(t=>t.done)
+  const done=S.tasks.filter(t=>t.done&&!isAppt(t))
     .map(t=>({t,at:t.completedAt||t.createdAt||0}))
     .sort((a,b)=>b.at-a.at);
   const planDone=S.plan.flatMap(e=>e.items.filter(i=>i.done).map(i=>({text:i.text,era:e.era})));
@@ -4158,10 +4178,10 @@ function renderClaude(){
   const QW=/^(buy|call|book|send|schedule|check|email|text|ask|pay|order|register|renew|clean)\b/i;
   const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!blockerOf(t)).slice(0,7);
   const stale=open.filter(t=>!t.due&&!t.priCol&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
-  const sec=(title,subtitle,items,empty)=>`
+  const sec=(title,subtitle,items)=>items.length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
     <div class="cl-sub">${subtitle}</div>
-    ${items.length?items.join(''):`<div class="empty-note">${empty}</div>`}`;
+    ${items.join('')}`:'';
   /* what's coming at a fixed hour — nothing to do but show up */
   const tmr=(()=>{const d=new Date();d.setDate(d.getDate()+1);return dstr(d);})();
   const soon=S.tasks.filter(t=>!t.done&&isAppt(t)&&(t.due===today||t.due===tmr))
@@ -4595,7 +4615,8 @@ function resetCompass(){
 const timeShown=new Set();          // one tier per click: nothing opens two levels at once
 const chapShown=new Set();                 // chapters start closed; this remembers the ones you opened
 function chapToggle(ev,id){
-  if(ev&&ev.target.closest('input,textarea,select,a'))return;
+  const f=ev&&ev.target.closest('input,textarea,select,a');
+  if(f&&!(f.tagName==='TEXTAREA'&&f.readOnly))return;
   chapShown.has(id)?chapShown.delete(id):chapShown.add(id);
   render();
 }
@@ -4619,7 +4640,8 @@ function compassTime(){
       <div class="chap-head" onclick="chapToggle(event,'${e.id}')">
         <button class="chap-caret" title="${open?'Fold this chapter':'Open this chapter'}">${open?'▾':'▸'}</button>
         <span class="chap-mark">✦</span>
-        <textarea class="chap-title grow fitw" rows="1" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+        <textarea class="chap-title grow fitw" rows="1" readonly title="Double-click to rename" oninput="fitTA(this)" onkeydown="${TA_KEYS}"
+          ondblclick="this.readOnly=false;this.focus();this.select()" onblur="this.readOnly=true"
           onchange="era_rename('${e.id}',this.value)">${esc(e.era)}</textarea>
         <span class="chapspacer"></span>
         <span class="col-count">${got}/${gs.length}</span>
@@ -5530,7 +5552,7 @@ async function gcalToken(){
       client_id:cfg.clientId,
       scope:'https://www.googleapis.com/auth/calendar.events',
       callback:t=>{
-        if(t&&t.access_token){GC.token=t.access_token;GC.exp=Date.now()+(+t.expires_in||3600)*1000;res(GC.token);}
+        if(t&&t.access_token){GC.token=t.access_token;GC.exp=Date.now()+(+t.expires_in||3600)*1000;store.set('atelier.gcal.ok','1');res(GC.token);}
         else rej(new Error((t&&t.error)||'Google did not hand back access'));
       },
       error_callback:e=>rej(new Error((e&&e.type)||'sign-in window closed'))
@@ -5556,6 +5578,9 @@ function gcalEvent(t){
 function gcalNote(msg){GC.note=msg;const el=$('intsGcalNote');if(el)el.textContent=msg;}
 async function gcalSyncNow(auto){
   if(GC.busy||!gcalCfg().clientId)return;
+  /* auto attempts may never summon Google's window: they need a grant this browser
+     has already given, and one failure quiets them until a manual Sync succeeds */
+  if(auto&&(!store.get('atelier.gcal.ok')||GC.autoHold))return;
   if(auto&&!syncQueue().length)return;
   GC.busy=true;
   if(!auto){gcalNote('Syncing…');render();}
@@ -5577,12 +5602,11 @@ async function gcalSyncNow(auto){
     save();
     if(!auto)window.calSynced=n;
     gcalNote(n?('Synced '+n+' ✓'):'Everything already on your calendar ✓');
-    GC.busy=false;render();
+    GC.busy=false;GC.autoHold=false;render();
   }catch(e){
-    /* an auto attempt stays quiet — Google may just be waiting for its one-time
-       permission click, which the Calendar page's Sync button provides */
     GC.busy=false;
-    if(!auto){gcalNote('Could not sync — '+((e&&e.message)||'try again'));render();}
+    if(auto)GC.autoHold=true;   // stop retrying quietly; the manual Sync button clears this
+    else{gcalNote('Could not sync — '+((e&&e.message)||'try again'));render();}
   }
 }
 /* automatic sync: a few seconds after any edit, plus a steady heartbeat while open */
