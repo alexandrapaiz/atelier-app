@@ -2239,6 +2239,7 @@ function applyReset(){
   S.meta.resetAck=r.at;
 }
 ensureDefaults();
+resigAll(S);
 /* Claude's updates ride inside this file — merged on every load, no file link needed */
 function absorbEmbedded(){
   try{
@@ -2254,7 +2255,23 @@ function absorbEmbedded(){
     }
   }catch(e){}
 }
+/* who touched what: save() notices edited goals/stars/boards/chapters and stamps them,
+   so no mutation site anywhere needs to remember to. Signatures refresh after every merge
+   so freshly merged-in objects don't read as local edits. */
+var _sig=null;   // var: boot calls resigAll before this line executes
+function _sigOf(o){const c={...o};delete c.touchedAt;return JSON.stringify(c);}
+function resigAll(st){_sig={};[st.goals,st.stars,st.boards,st.plan,st.masterColumns].forEach(a=>(a||[]).forEach(o=>{if(o&&o.id)_sig[o.id]=_sigOf(o);}));}
+function stampChanged(){
+  if(!_sig){resigAll(S);return;}
+  [S.goals,S.stars,S.boards,S.plan,S.masterColumns].forEach(a=>(a||[]).forEach(o=>{
+    if(!o||!o.id)return;
+    const j=_sigOf(o);
+    if(_sig[o.id]!==undefined&&_sig[o.id]!==j)o.touchedAt=Date.now();
+    _sig[o.id]=j;
+  }));
+}
 function save(){
+  stampChanged();
   S.meta.updatedAt=Date.now();
   /* never let an empty shell pave over a real document — if this boot came up blank
      (storage evicted, read raced, private mode) but the key now holds substance, keep it */
@@ -5184,10 +5201,24 @@ function mergeStates(loc,rem){
     });
     return la;
   };
-  merge(loc.masterColumns,rem.masterColumns);
-  merge(loc.boards,rem.boards);
-  merge(loc.stars=loc.stars||[],rem.stars);
-  merge(loc.goals,rem.goals);
+  /* per-item: the freshest touch wins, no matter which side's document is globally newer —
+     a stale device editing one task must not drag the whole compass back with it */
+  const mergeT=(la,ra)=>{
+    if(!la||!ra)return la||ra||[];
+    const m=new Map(la.map((x,i)=>[x.id,i]));
+    ra.forEach(x=>{
+      if(buried(x))return;
+      if(!m.has(x.id)){la.push(x);return;}
+      const i=m.get(x.id), l=la[i];
+      const xs=x.touchedAt||x.createdAt||0, ls=l.touchedAt||l.createdAt||0;
+      if(xs>ls||(xs===ls&&preferRem))la[i]=x;
+    });
+    return la;
+  };
+  mergeT(loc.masterColumns,rem.masterColumns);
+  mergeT(loc.boards,rem.boards);
+  mergeT(loc.stars=loc.stars||[],rem.stars);
+  mergeT(loc.goals,rem.goals);
   merge(loc.imports=loc.imports||[],rem.imports);   // the tray travels too; resolved items stay buried
   /* tasks resolve per-item: newer touch wins, regardless of which side is globally newer */
   {
@@ -5206,15 +5237,21 @@ function mergeStates(loc,rem){
   const em=new Map((loc.plan||[]).map(e=>[e.id,e]));
   (rem.plan||[]).forEach(e=>{
     if(buried(e))return;
-    if(!em.has(e.id))loc.plan.push(e);
-    else merge(em.get(e.id).items,e.items);
+    if(!em.has(e.id)){loc.plan.push(e);return;}
+    const le=em.get(e.id);
+    if((e.touchedAt||0)>(le.touchedAt||0)||(!le.touchedAt&&!e.touchedAt&&preferRem))le.era=e.era;
+    if((e.touchedAt||0)>(le.touchedAt||0))le.touchedAt=e.touchedAt;
+    merge(le.items,e.items);
   });
-  /* board columns live one level down and need the same protection */
+  /* board columns live one level down: the winning board keeps its columns,
+     but columns born on the other side are still let in */
   {
     const bm=new Map(loc.boards.map(b=>[b.id,b]));
     (rem.boards||[]).forEach(rb=>{
       const lb=bm.get(rb.id);
-      if(lb&&rb.columns)merge(lb.columns,rb.columns);
+      if(lb&&rb.columns)rb.columns.forEach(c=>{
+        if(!buried(c)&&!lb.columns.some(x=>x.id===c.id))lb.columns.push(c);
+      });
     });
   }
   if(rem.gcal&&rem.gcal.length&&(preferRem||!(loc.gcal||[]).length))loc.gcal=rem.gcal;
@@ -5235,6 +5272,7 @@ function mergeStates(loc,rem){
   /* a reset always travels, newest wins, whichever side is globally newer */
   if(rem.meta.reset&&(rem.meta.reset.at||0)>((loc.meta.reset&&loc.meta.reset.at)||0))
     loc.meta.reset=rem.meta.reset;
+  resigAll(loc);   // merged-in objects are not local edits
   return loc;
 }
 async function adoptNewer(){
