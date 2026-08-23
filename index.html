@@ -2317,9 +2317,11 @@ const endOf=t=>t.end||(t.start?plusHour(t.start):null);
 const NL_MONTHS={jan:0,january:0,ene:0,enero:0,feb:1,february:1,febrero:1,march:2,marzo:2,apr:3,april:3,abr:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,ago:7,agosto:7,sep:8,sept:8,september:8,septiembre:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,dic:11,diciembre:11};
 const NL_DOWS={sunday:0,sun:0,domingo:0,dom:0,monday:1,mon:1,lunes:1,lun:1,tuesday:2,tue:2,tues:2,martes:2,wednesday:3,wed:3,miercoles:3,'miércoles':3,mie:3,thursday:4,thu:4,thur:4,thurs:4,jueves:4,jue:4,friday:5,fri:5,viernes:5,vie:5,saturday:6,sat:6,sabado:6,'sábado':6,sab:6};
 function nlParse(raw){
-  /* the escape hatch: a leading backslash takes the title exactly as written — no dates, no urgency */
-  const bs=String(raw).trim().match(/^\\\s*(.*)$/s);
-  if(bs)return {due:null,start:null,end:null,urgent:false,appt:false,title:bs[1].trim()};
+  /* the escape: \word shields that token — invisible to date, time, and urgency parsing,
+     it lands in the title verbatim.  "Prepare \friday agenda 3pm" keeps the word, takes the hour. */
+  const guards=[];
+  raw=String(raw).replace(/\\+([^\s\\]+)/g,(m,w)=>{guards.push(w);return '\u0001'+(guards.length-1)+'\u0001';});
+  const unguard=x=>String(x).replace(/\u0001(\d+)\u0001/g,(m,i)=>guards[+i]);
   let s=' '+raw+' ';
   const out={due:null,start:null,end:null,urgent:false,title:raw};
   const pad=n=>String(n).padStart(2,'0');
@@ -2397,6 +2399,7 @@ function nlParse(raw){
      .replace(/\s+(?:at|on|el|de|a|para|from|desde|@)[\s,;·—–-]*$/i,'')
      .replace(/^[\s,;·—–-]+|[\s,;·—–-]+$/g,'').replace(/\s{2,}/g,' ');
   if(t)out.title=t.charAt(0).toUpperCase()+t.slice(1);
+  out.title=unguard(out.title);
   return out;
 }
 /* social & scheduled-by-nature words — these are commitments, not chores */
@@ -3426,10 +3429,12 @@ function openDrawer(tid){
 function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');document.body.classList.remove('drawer-open');render();}
 /* typing "urgent" / "urgente" / "asap" — or any ! — anywhere in a title IS the urgent tag */
 function urgentStrip(v){
-  const q=String(v).trim().match(/^\\\s*(.*)$/s);
-  if(q)return {has:false,title:q[1].trim()};
-  const has=/(^|\s)(urgent|urgente|asap)\b/i.test(v)||String(v).includes('!');
-  return {has, title:String(v).replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,'').replace(/\s+/g,' ').trim()};
+  const g=[];
+  v=String(v).replace(/\\+([^\s\\]+)/g,(m,w)=>{g.push(w);return '\u0001'+(g.length-1)+'\u0001';});
+  const has=/(^|\s)(urgent|urgente|asap)\b/i.test(v)||v.includes('!');
+  const title=v.replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,'').replace(/\s+/g,' ').trim()
+    .replace(/\u0001(\d+)\u0001/g,(m,i)=>g[+i]);
+  return {has,title};
 }
 function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
