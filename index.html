@@ -5261,6 +5261,8 @@ function dropPlan(ev,eraId){
 document.addEventListener('input',e=>{
   const el=e.target;
   if(!(el instanceof HTMLElement))return;
+  if(el.tagName==='TEXTAREA')return;                   /* prose commits on blur — running the title
+      parser per keystroke ate trailing spaces and ! the instant they were typed */
   if(el.classList.contains('ghost-new'))return;        // quick-add commits on Enter/blur only
   if(el.matches('input[type=date],input[type=time],input[type=range],select'))return; // these fire change natively / handle input themselves
   if(el.getAttribute('onchange'))el.dispatchEvent(new Event('change'));
