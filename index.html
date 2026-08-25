@@ -2142,11 +2142,11 @@ function ensureDefaults(){
   if(!S.rewards)S.rewards=[];
   if(!S.meta.ints)S.meta.ints={gcal:{}};
   purgeBuried();
-  /* seed ghosts: an empty "Now" or "Boards" group is sample scaffolding leaked in from
-     an old build's merge — bury it on sight so it dies on every device, forever */
+  /* seed ghosts: an empty "Now", "Boards", or "This season" group is scaffolding leaked in
+     from an old build's merge — bury it on sight so it dies on every device, forever */
   if(S.masterColumns.length>1)
     S.masterColumns=S.masterColumns.filter(c=>{
-      if(/^(now|boards)$/i.test((c.name||'').trim())&&!S.boards.some(b=>b.masterCol===c.id)){
+      if(/^(now|boards|this season)$/i.test((c.name||'').trim())&&!S.boards.some(b=>b.masterCol===c.id)){
         tombstone(c.id);return false;
       }
       return true;
