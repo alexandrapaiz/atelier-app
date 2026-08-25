@@ -1822,6 +1822,20 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .cl-review-pulse{font-size:12px; color:var(--ink-faint)}
 .chip.del-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line)}
 .cl-btn.del-on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.dep-search{width:100%; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--paper); font-size:13px}
+.dep-results{margin-top:6px; display:flex; flex-direction:column; gap:2px; max-height:220px; overflow-y:auto}
+.dep-opt{display:flex; align-items:center; gap:8px; text-align:left; padding:7px 9px; border:none;
+  background:transparent; border-radius:8px; cursor:pointer; font-size:13px; color:var(--ink-soft)}
+.dep-opt:hover{background:var(--paper-2); color:var(--ink)}
+.dep-opt-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dep-same{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--sage,#8a9b7e)}
+.dep-empty{padding:8px 4px; font-size:12px; color:var(--ink-faint); font-style:italic}
+.dep-set{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--card)}
+.dep-set-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; cursor:pointer}
+.dep-set-t:hover{text-decoration:underline}
+.dep-done{font-size:11px; color:var(--sage,#8a9b7e)}
+.dep-x{border:none; background:transparent; color:var(--ink-faint); font-size:15px; cursor:pointer; padding:0 2px}
+.dep-x:hover{color:var(--danger)}
 .chip.dep-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); cursor:pointer}
 .chip.dep-chip:hover{border-color:var(--ink-faint); color:var(--ink)}
 .tcard.blocked{opacity:.68}
@@ -2316,6 +2330,29 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 /* dependencies: a task can wait for another; blocked = its blocker exists and is unfinished */
 const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
+function depResults(t,q){
+  const qq=String(q||'').trim().toLowerCase();
+  const hit=x=>!qq||x.title.toLowerCase().includes(qq)||((board(x.boardId)||{}).name||'').toLowerCase().includes(qq);
+  const cs=S.tasks.filter(x=>!x.done&&x.id!==t.id&&!isRoutine(x)&&!depCycle(t.id,x.id)&&hit(x));
+  const rec=x=>Math.max(x.touchedAt||0,x.createdAt||0);
+  const same=cs.filter(x=>x.boardId===t.boardId).sort((a,b)=>rec(b)-rec(a));
+  const rest=cs.filter(x=>x.boardId!==t.boardId).sort((a,b)=>rec(b)-rec(a));
+  return same.concat(rest).slice(0,qq?10:6).map(x=>({x,same:x.boardId===t.boardId}));
+}
+function depResultsHtml(t,q){
+  const rs=depResults(t,q);
+  if(!rs.length)return '<div class="dep-empty">nothing matches</div>';
+  return rs.map(({x,same})=>{const b=board(x.boardId);
+    return `<button class="dep-opt" onclick="t_set('after','${x.id}')">
+      <span class="dot" style="background:${b?b.accent:'#999'}"></span>
+      <span class="dep-opt-t">${esc(x.title)}</span>
+      ${same?'<span class="dep-same">this board</span>':`<span class="b-tag">${esc(b?b.name:'')}</span>`}
+    </button>`;}).join('');
+}
+function depSearch(v){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  const box=document.getElementById('depResults'); if(box)box.innerHTML=depResultsHtml(t,v);
+}
 function depCycle(id,after){let cur=after,g=0;while(cur&&g++<100){if(cur===id)return true;const n=S.tasks.find(x=>x.id===cur);cur=n&&n.after;}return false;}
 /* a column named "on the horizon" is a shelf — it asks nothing of you today */
 const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon|^shelved$/i.test(c.name));};
@@ -3445,13 +3482,21 @@ function openDrawer(tid){
       </div>
       ${t.start&&!t.end?`<div class="kind-note">Ends ${fmtTime(plusHour(t.start))} — an hour, unless you say otherwise.</div>`:''}</div>
     <div class="d-field"><div class="d-label">Waits for ${t.after?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">— optional</span>'}</div>
-      <select onchange="t_set('after',this.value||null)">
-        ${['<option value="">— nothing, it can start anytime —</option>',
-          ...S.tasks.filter(x=>!x.done&&x.id!==t.id&&!isRoutine(x)&&!depCycle(t.id,x.id))
-            .map(x=>{const bb=board(x.boardId);
-              return `<option value="${x.id}" ${t.after===x.id?'selected':''}>${esc((bb?bb.name+' · ':'')+x.title)}</option>`;}) ].join('')}
-      </select>
-      ${blockerOf(t)?`<div class="kind-note">Blocked until &ldquo;${esc(blockerOf(t).title)}&rdquo; is finished — dimmed on the board and out of quick wins until then.</div>`:''}</div>
+      ${(()=>{
+        if(t.after){
+          const bk=S.tasks.find(x=>x.id===t.after);
+          if(bk){const bb=board(bk.boardId);
+            return `<div class="dep-set">
+              <span class="dot" style="background:${bb?bb.accent:'#999'}"></span>
+              <span class="dep-set-t" onclick="openDrawer('${bk.id}')">${esc(bk.title)}</span>
+              ${bk.done?'<span class="dep-done">finished \u2713</span>':''}
+              <button class="dep-x" title="Clear the dependency" onclick="t_set('after',null)">\u00d7</button>
+            </div>${bk.done?'':'<div class="kind-note">Blocked until it\u2019s finished \u2014 dimmed on the board and out of quick wins until then.</div>'}`;}
+        }
+        return `<input class="dep-search" placeholder="Search a task to wait for\u2026"
+            oninput="depSearch(this.value)" onclick="event.stopPropagation()">
+          <div class="dep-results" id="depResults">${depResultsHtml(t,'')}</div>`;
+      })()}</div>
     ${appt?'':`<div class="d-field"><div class="d-label">Priority (master board)</div>
       <select onchange="t_set('priCol',this.value||null)">
         <option value="">— follow the rules —</option>
