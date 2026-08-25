@@ -1831,6 +1831,9 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
   0%{transform:translate(-50%,-50%) scale(.4); opacity:1}
   100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1); opacity:0}
 }
+#updatePill{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:90;
+  background:var(--ink); color:var(--paper); border:none; border-radius:999px;
+  padding:9px 18px; font-size:13px; cursor:pointer; box-shadow:0 10px 30px -10px rgba(0,0,0,.35)}
 .burst-word{
   position:fixed; z-index:120; pointer-events:none;
   font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink-soft);
@@ -2681,7 +2684,7 @@ function importData(ev){
   r.readAsText(f);
 }
 /* ============ routing ============ */
-let route={view:'master'};   // {view:'master'|'goals'|'board', boardId, mode:'kanban'|'list'}
+let route={view:'today'};   // the day is the front door; {view, boardId, mode}
 let filters={status:'all',due:'all',goal:'all'};
 function toggleMenu(){document.body.classList.toggle('menu-open');}
 function go(view,boardId){
@@ -2703,14 +2706,13 @@ function markRoute(){
 function restoreRoute(){
   try{
     let h=(location.hash||'').replace(/^#/,'');
-    if(!h)h=store.get('atelier.route')||'';
-    if(!h)return;
+    if(!h)return;   // no deep link → the day is the front door
     if(h.indexOf('board:')===0){
       const id=h.slice(6);
       if(S.boards.some(b=>b.id===id)){route={view:'board',boardId:id,mode:'kanban'};return;}
       return;
     }
-    if(['master','pri','cal','compass','ach','claude','goals','plan'].includes(h))
+    if(['master','today','pri','cal','compass','ach','claude','goals','plan'].includes(h))
       route={view:h,boardId:null,mode:'kanban'};
   }catch(e){}
 }
@@ -2743,6 +2745,7 @@ function render(){
       if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY+6.5*48-170});});
   }
   if(route.view==='master')m.innerHTML=renderMaster();
+  else if(route.view==='today')m.innerHTML=renderToday();
   else if(route.view==='compass'||route.view==='goals'||route.view==='plan')m.innerHTML=renderCompass();
   else if(route.view==='pri')m.innerHTML=renderPriorities();
   else if(route.view==='cal')m.innerHTML=renderCal();
@@ -2791,6 +2794,7 @@ function renderSidebar(){
     <div class="wordmark" onclick="go('master')">A<em>telier</em></div>
     <button class="snav ${route.view==='master'?'on':''}" onclick="go('master')">The Studio</button>
     <button class="snav ${route.view==='pri'?'on':''}" onclick="go('pri')">Priorities</button>
+    <button class="snav ${route.view==='today'?'on':''}" onclick="go('today')">Today</button>
     <button class="snav ${route.view==='cal'?'on':''}" onclick="go('cal')">Calendar</button>
     <button class="snav ${route.view==='compass'?'on':''}" onclick="go('compass')">Compass</button>
     <button class="snav ${route.view==='ach'?'on':''}" onclick="go('ach')">The Laurels</button>
@@ -3440,11 +3444,9 @@ function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   let reopen=false;
   if(k==='title'){
-    /* edits get the date/time treatment of new tasks, but typed characters are kept:
-       an unescaped ! still marks urgent, yet stays in the title — this is editing, not shorthand */
-    const hasBang=/(^|[^\\])!/.test(v);
-    const p=nlParse(v.replace(/(^|[^\\])!/g,'$1\\!'));
-    if(p.urgent||hasBang)t.urgent=true;
+    /* edits get the same natural-language treatment as new tasks: dates, times, urgency */
+    const p=nlParse(v);
+    if(p.urgent)t.urgent=true;
     if(p.due){t.due=p.due;reopen=true;}
     if(p.start){t.start=p.start;if(!t.due)t.due=todayStr();reopen=true;}
     if(p.end){t.end=p.end;reopen=true;}
@@ -3712,6 +3714,74 @@ function renderWeekGrid(start,byDate,gByDate,today){
     <div class="wk-row"><div class="wk-gutter-head"></div>${heads}</div>
     <div class="wk-row"><div class="wk-gutter">${gutter}</div>${cols}</div>
   </div>`;
+}
+/* ---------- Today — the landing page: your day on one quiet sheet ---------- */
+function renderToday(){
+  const today=todayStr();
+  const now=new Date();
+  const tmr=(()=>{const d=new Date();d.setDate(d.getDate()+1);return dstr(d);})();
+  /* same lenses the calendar uses */
+  const byDate={};
+  S.tasks.forEach(t=>{if(t.due)(byDate[t.due]=byDate[t.due]||[]).push(t);});
+  Object.values(byDate).forEach(a=>a.sort((x,z)=>{
+    const u=(z.urgent?1:0)-(x.urgent?1:0); if(u)return u;
+    return (x.start||'99')<(z.start||'99')?-1:1;}));
+  const gByDate={};
+  const syncedIds=new Set(S.tasks.filter(t=>t.gcalId).map(t=>t.gcalId));
+  (S.gcal||[]).forEach(e=>{if(e.date&&!syncedIds.has(e.id))(gByDate[e.date]=gByDate[e.date]||[]).push(e);});
+  Object.values(gByDate).forEach(a=>a.sort((x,z)=>(x.start||'99')<(z.start||'99')?-1:1));
+
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
+  const dueToday=(byDate[today]||[]).filter(t=>!t.done);
+  const appts=dueToday.filter(isAppt).length+((gByDate[today]||[]).length);
+  const overdue=open.filter(t=>t.due&&t.due<today).sort((a,b)=>a.due<b.due?-1:1);
+  const doNowCol=S.priCols.find(c=>/\bnow\b/i.test(c.name));
+  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today)).slice(0,8);
+  const struck=S.tasks.filter(t=>t.done&&!isRoutine(t)&&t.completedAt&&dstr(new Date(t.completedAt))===today)
+    .sort((a,b)=>b.completedAt-a.completedAt);
+  const tmrN=((byDate[tmr]||[]).filter(t=>!t.done).length)+((gByDate[tmr]||[]).length);
+
+  const bAcc=t=>{const b=board(t.boardId);return b?b.accent:'#999';};
+  const bName=t=>{const b=board(t.boardId);return b?b.name:'';};
+  const row=(t,btns)=>`<div class="cl-row">
+    <span class="dot" style="background:${bAcc(t)}"></span>
+    <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+    <span class="b-tag">${esc(bName(t))}</span>
+    ${whenChip(t)}
+    <span class="cl-row-btns">${btns}</span>
+  </div>`;
+  const btn=(label,fn)=>`<button class="cl-btn" onclick="${fn}">${label}</button>`;
+
+  const pulse=(()=>{
+    const bits=[];
+    if(appts)bits.push(appts+' to show up for');
+    const chores=dueToday.filter(t=>!isAppt(t)).length;
+    if(chores)bits.push(chores+' due');
+    if(overdue.length)bits.push(overdue.length+' slipped');
+    if(struck.length)bits.push(struck.length+' already struck');
+    return bits.length?bits.join(' · '):'nothing asked of today — it\u2019s yours';
+  })();
+
+  return `<div class="view-head">
+      <div class="view-title">Today</div>
+      <div class="view-sub">${now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} — ${pulse}</div>
+    </div>
+    ${practicesStrip()}
+    ${renderWeekAgenda(now,byDate,gByDate,today,1)}
+    ${overdue.length?`
+      <div class="list-group-name" style="cursor:default;margin-top:28px">Slipped</div>
+      <div class="cl-sub">carried from days past — finish, or give an honest new date</div>
+      ${overdue.slice(0,8).map(t=>row(t,btn('Today',`clToday('${t.id}')`)+btn('Done \u2713',`toggleDone('${t.id}')`))).join('')}`:''}
+    ${front.length?`
+      <div class="list-group-name" style="cursor:default;margin-top:28px">The front of the queue</div>
+      <div class="cl-sub">urgent or marked for now — the day\u2019s discretionary hours go here</div>
+      ${front.map(t=>row(t,btn('Today',`clToday('${t.id}')`)+btn('Done \u2713',`toggleDone('${t.id}')`))).join('')}`:''}
+    ${struck.length?`
+      <div class="list-group-name" style="cursor:default;margin-top:28px">Struck today</div>
+      ${struck.slice(0,8).map(t=>`<div class="cl-row"><span class="dot" style="background:${bAcc(t)}"></span>
+        <span class="cl-row-t" style="text-decoration:line-through;color:var(--ink-faint)" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+        <span class="b-tag">${esc(bName(t))}</span></div>`).join('')}`:''}
+    <div class="cl-sub" style="margin-top:30px">${tmrN?'tomorrow holds '+tmrN+' \u2014 it can wait':'tomorrow is clear'}</div>`;
 }
 function renderCal(){
   if(!calCur){const n=new Date();calCur={y:n.getFullYear(),m:n.getMonth(),d:n.getDate()};}
@@ -5913,6 +5983,30 @@ function openInts(){
 absorbEmbedded();
 dedupeState();
 restoreRoute();
+/* stale builds cause ghost bugs (resurrected domains, dead keys) — so every copy checks
+   for a newer self: a pill offers the refresh, and a hidden tab takes it silently */
+let _newerBuild=false;
+async function updateCheck(){
+  try{
+    const r=await fetch(location.pathname+'?uc='+Date.now(),{method:'HEAD',cache:'no-store'});
+    const lm=r.headers.get('last-modified'); if(!lm)return;
+    const mine=new Date(document.lastModified).getTime(), theirs=new Date(lm).getTime();
+    if(theirs&&mine&&theirs-mine>60000&&!_newerBuild){
+      _newerBuild=true;
+      const p=document.createElement('button');
+      p.id='updatePill'; p.textContent='A newer Atelier is ready — refresh';
+      p.onclick=()=>location.reload();
+      document.body.appendChild(p);
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&_newerBuild){
+    const ae=document.activeElement;
+    if(!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')))location.reload();
+  }
+});
+setTimeout(updateCheck,8000); setInterval(updateCheck,20*60*1000);
 render();
 sbInit();
 if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());
