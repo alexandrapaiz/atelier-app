@@ -2093,6 +2093,11 @@ function seed(){
 /* storage that never throws — some phone/preview contexts forbid localStorage */
 let CAN_STORE=true;
 try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){CAN_STORE=false;}
+['keydown','keypress','keyup'].forEach(ev=>window.addEventListener(ev,e=>{
+  const t=e.target;
+  if(t&&(t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.isContentEditable)
+     &&!e.metaKey&&!e.ctrlKey&&!e.altKey)e.stopPropagation();
+},true));
 const store={
   get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
@@ -2742,7 +2747,9 @@ function render(){
   if(typeof calJump!=='undefined'&&calJump&&route.view==='cal'&&calMode==='week'){
     calJump=0;
     requestAnimationFrame(()=>{const el=document.querySelector('.wk .wk-row:nth-child(2)');
-      if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY+6.5*48-170});});
+      if(el){const top=el.getBoundingClientRect().top+window.scrollY-150;
+        if(top>window.scrollY+40)window.scrollTo({top});}   // never scroll past the grid's own start
+      else window.scrollTo({top:0});});
   }
   if(route.view==='master')m.innerHTML=renderMaster();
   else if(route.view==='today')m.innerHTML=renderToday();
