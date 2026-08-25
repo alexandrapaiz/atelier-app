@@ -1830,6 +1830,7 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .dep-opt-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .dep-same{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--sage,#8a9b7e)}
 .dep-empty{padding:8px 4px; font-size:12px; color:var(--ink-faint); font-style:italic}
+.dep-at{font-size:13px; color:var(--ink-faint)}
 .dep-set{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--card)}
 .dep-set-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; cursor:pointer}
 .dep-set-t:hover{text-decoration:underline}
@@ -2330,6 +2331,7 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 /* dependencies: a task can wait for another; blocked = its blocker exists and is unfinished */
 const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
+const isWaiting=t=>!!(t&&(blockerOf(t)||t.waitWho));
 function depResults(t,q){
   const qq=String(q||'').trim().toLowerCase();
   const hit=x=>!qq||x.title.toLowerCase().includes(qq)||((board(x.boardId)||{}).name||'').toLowerCase().includes(qq);
@@ -2341,13 +2343,24 @@ function depResults(t,q){
 }
 function depResultsHtml(t,q){
   const rs=depResults(t,q);
-  if(!rs.length)return '<div class="dep-empty">nothing matches</div>';
+  const qq=String(q||'').trim();
+  const who=qq?`<button class="dep-opt" onclick="t_setWho('${esc(qq).replace(/'/g,"\\'")}')">
+      <span class="dep-at">@</span>
+      <span class="dep-opt-t">waiting on \u201c${esc(qq)}\u201d</span>
+      <span class="dep-same" style="color:var(--ink-faint)">a person</span>
+    </button>`:'';
+  if(!rs.length&&!who)return '<div class="dep-empty">nothing matches</div>';
   return rs.map(({x,same})=>{const b=board(x.boardId);
     return `<button class="dep-opt" onclick="t_set('after','${x.id}')">
       <span class="dot" style="background:${b?b.accent:'#999'}"></span>
       <span class="dep-opt-t">${esc(x.title)}</span>
       ${same?'<span class="dep-same">this board</span>':`<span class="b-tag">${esc(b?b.name:'')}</span>`}
-    </button>`;}).join('');
+    </button>`;}).join('')+who;
+}
+function t_setWho(who){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  t.waitWho=who||null; if(who)t.after=null;
+  touch(t);save();openDrawer(drawerTask);
 }
 function depSearch(v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
@@ -3173,7 +3186,7 @@ function progBar(t){
 function taskCard(t){
   const g=t.goalId?goal(t.goalId):null;
   const rt=isRoutine(t);
-  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''} ${blockerOf(t)?'blocked':''}" ${rt?`style="${adhStyle(t)}"`:''} draggable="true" data-tid="${t.id}"
+  return `<div class="tcard ${t.done?'done-card':''} ${rt?'routine-card':''} ${isWaiting(t)?'blocked':''}" ${rt?`style="${adhStyle(t)}"`:''} draggable="true" data-tid="${t.id}"
       ondragstart="dragTask(event,'${t.id}')" ondragend="dragEnd(event)"
       onclick="openDrawer('${t.id}')">
     ${rt?'<span class="inf" title="An ongoing practice — nothing to check off">∞</span>'
@@ -3186,6 +3199,7 @@ function taskCard(t){
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
+        ${t.waitWho?`<span class="chip dep-chip" title="Waiting on ${esc(t.waitWho)}">@ ${esc(t.waitWho)}</span>`:''}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -3483,6 +3497,11 @@ function openDrawer(tid){
       ${t.start&&!t.end?`<div class="kind-note">Ends ${fmtTime(plusHour(t.start))} — an hour, unless you say otherwise.</div>`:''}</div>
     <div class="d-field"><div class="d-label">Waits for ${t.after?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">— optional</span>'}</div>
       ${(()=>{
+        if(t.waitWho)return `<div class="dep-set">
+            <span class="dep-at">@</span>
+            <span class="dep-set-t">${esc(t.waitWho)}</span>
+            <button class="dep-x" title="They came through — clear it" onclick="t_setWho(null)">\u00d7</button>
+          </div><div class="kind-note">Waiting on them \u2014 dimmed on the board and out of quick wins until you clear it.</div>`;
         if(t.after){
           const bk=S.tasks.find(x=>x.id===t.after);
           if(bk){const bb=board(bk.boardId);
@@ -3535,6 +3554,7 @@ function urgentStrip(v){
 }
 function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  if(k==='after'&&v)t.waitWho=null;   // one wait at a time
   let reopen=false;
   if(k==='title'){
     /* edits get the same natural-language treatment as new tasks: dates, times, urgency */
@@ -3969,6 +3989,7 @@ function ptCard(t){
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
+        ${t.waitWho?`<span class="chip dep-chip" title="Waiting on ${esc(t.waitWho)}">@ ${esc(t.waitWho)}</span>`:''}
         ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
       </div>
       ${progBar(t)}
@@ -4466,7 +4487,7 @@ function renderClaude(){
   const btn=(label,fn,danger)=>`<button class="cl-btn ${danger?'danger':''}" onclick="${fn}">${label}</button>`;
   const overdue=open.filter(t=>t.due&&t.due<today);
   const QW=/^(buy|call|book|send|schedule|check|email|text|ask|pay|order|register|renew|clean)\b/i;
-  const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!blockerOf(t)).slice(0,7);
+  const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!isWaiting(t)).slice(0,7);
   const stale=open.filter(t=>!t.due&&!t.priCol&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
   const sec=(title,subtitle,items)=>items.length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
