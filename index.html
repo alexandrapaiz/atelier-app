@@ -3440,9 +3440,11 @@ function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   let reopen=false;
   if(k==='title'){
-    /* edits get the same natural-language treatment as new tasks: dates, times, urgency */
-    const p=nlParse(v);
-    if(p.urgent)t.urgent=true;
+    /* edits get the date/time treatment of new tasks, but typed characters are kept:
+       an unescaped ! still marks urgent, yet stays in the title — this is editing, not shorthand */
+    const hasBang=/(^|[^\\])!/.test(v);
+    const p=nlParse(v.replace(/(^|[^\\])!/g,'$1\\!'));
+    if(p.urgent||hasBang)t.urgent=true;
     if(p.due){t.due=p.due;reopen=true;}
     if(p.start){t.start=p.start;if(!t.due)t.due=todayStr();reopen=true;}
     if(p.end){t.end=p.end;reopen=true;}
