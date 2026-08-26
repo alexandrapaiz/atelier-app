@@ -2358,6 +2358,15 @@ function depResultsHtml(t,q){
       ${same?'<span class="dep-same">this board</span>':`<span class="b-tag">${esc(b?b.name:'')}</span>`}
     </button>`;}).join('')+who;
 }
+function t_setBoard(bid){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t||t.boardId===bid)return;
+  const b=board(bid); if(!b)return;
+  const cur=colOf(t);
+  const col=(cur&&b.columns.find(c=>c.name.toLowerCase()===cur.name.toLowerCase()))   // same column name if it exists
+    ||b.columns.find(c=>c.kind!=='routine'&&!/^shelved$/i.test(c.name))||b.columns[0];
+  t.boardId=bid; t.colId=col.id;
+  touch(t);save();openDrawer(drawerTask);render();
+}
 function t_setWho(who){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   t.waitWho=who||null; if(who)t.after=null;
@@ -3492,6 +3501,10 @@ function openDrawer(tid){
         ?`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','delegate'),this)">Copy the handoff again →</button>
           <div class="kind-note">✓ Handoff copied — paste it to Claude (⌘V). It stays tracked here (and in the morning brief) until finished.</div>`
         :`<button class="cl-btn" onclick="askClaude(taskPrompt('${t.id}','discuss'),this)">Discuss with Claude →</button>`}</div>
+    <div class="d-field"><div class="d-label">Board</div>
+      <select onchange="t_setBoard(this.value)">
+        ${S.boards.map(x=>`<option value="${x.id}" ${t.boardId===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}
+      </select></div>
     <div class="d-field"><div class="d-label">Status</div>
       <select onchange="t_setCol(this.value)">${colOpts}</select>
       <button class="done-toggle ${t.done?'on':''}" onclick="toggleDone('${t.id}');openDrawer('${t.id}')">
