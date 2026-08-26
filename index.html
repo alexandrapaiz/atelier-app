@@ -3735,18 +3735,22 @@ function calCellHTML(d,inMonth,extra,byDate,gByDate,today){
   return `<div class="cal-cell ${extra} ${inMonth?'':'cal-out'} ${ds===today?'cal-today':''}${heat}" onclick="calOpenDay('${ds}')" title="Open ${ds}">
     <div class="cal-dnum"><span>${d.getDate()}</span><button class="cal-addbtn" onclick="calAddPop(event,'${ds}')" title="Add a task on this day">+</button></div>
     <span class="cal-heatn">${n||''}</span>
-    ${ts.filter(t=>!t.done).map(t=>{const b=board(t.boardId);
-      return `<div class="cal-ev" onclick="event.stopPropagation();openDrawer('${t.id}')" title="${esc(b?b.name:'')} — ${esc(t.title)}">
-        <span class="dot" style="background:${b?b.accent:'#999'}"></span>
-        ${t.urgent?'<span class="cal-urg">!</span>':''}
-        ${t.start?`<span class="cal-time">${fmtSlot(t)}</span>`:''}
-        <span class="cal-ev-t">${esc(t.title)}</span>
-      </div>`;}).join('')}
-    ${gs.map(e=>`<div class="cal-ev gcal" title="From Google Calendar">
+    ${[...ts.filter(t=>!t.done).map(t=>({t,s:t.start||'99:99'})),...gs.map(e=>({e,s:e.start||'99:99'}))]
+      .sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:0)
+      .map(x=>{
+        if(x.t){const t=x.t,b=board(t.boardId);
+          return `<div class="cal-ev" onclick="event.stopPropagation();openDrawer('${t.id}')" title="${esc(b?b.name:'')} — ${esc(t.title)}">
+            <span class="dot" style="background:${b?b.accent:'#999'}"></span>
+            ${t.urgent?'<span class="cal-urg">!</span>':''}
+            ${t.start?`<span class="cal-time">${fmtSlot(t)}</span>`:''}
+            <span class="cal-ev-t">${esc(t.title)}</span>
+          </div>`;}
+        const e=x.e;
+        return `<div class="cal-ev gcal" title="From Google Calendar">
         <span class="gc-mark">G</span>
         ${e.start?`<span class="cal-time">${fmtSlot(e)}</span>`:''}
         <span class="cal-ev-t">${esc(e.title)}</span>
-      </div>`).join('')}
+      </div>`;}).join('')}
   </div>`;
 }
 function calOpenDay(ds){
@@ -3852,8 +3856,9 @@ function renderToday(){
   const byDate={};
   S.tasks.forEach(t=>{if(t.due)(byDate[t.due]=byDate[t.due]||[]).push(t);});
   Object.values(byDate).forEach(a=>a.sort((x,z)=>{
-    const u=(z.urgent?1:0)-(x.urgent?1:0); if(u)return u;
-    return (x.start||'99')<(z.start||'99')?-1:1;}));
+    const xs=x.start||'99:99', zs=z.start||'99:99';
+    if(xs!==zs)return xs<zs?-1:1;
+    return (z.urgent?1:0)-(x.urgent?1:0);}));
   const gByDate={};
   const syncedIds=new Set(S.tasks.filter(t=>t.gcalId).map(t=>t.gcalId));
   (S.gcal||[]).forEach(e=>{if(e.date&&!syncedIds.has(e.id))(gByDate[e.date]=gByDate[e.date]||[]).push(e);});
@@ -3917,8 +3922,9 @@ function renderCal(){
   const byDate={};
   S.tasks.forEach(t=>{if(t.due)(byDate[t.due]=byDate[t.due]||[]).push(t);});
   Object.values(byDate).forEach(a=>a.sort((x,z)=>{
-    const u=(z.urgent?1:0)-(x.urgent?1:0); if(u)return u;
-    return (x.start||'99')<(z.start||'99')?-1:1;}));
+    const xs=x.start||'99:99', zs=z.start||'99:99';
+    if(xs!==zs)return xs<zs?-1:1;
+    return (z.urgent?1:0)-(x.urgent?1:0);}));
   const gByDate={};
   const syncedIds=new Set(S.tasks.filter(t=>t.gcalId).map(t=>t.gcalId));
   (S.gcal||[]).forEach(e=>{if(e.date&&!syncedIds.has(e.id))(gByDate[e.date]=gByDate[e.date]||[]).push(e);});
