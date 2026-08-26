@@ -199,7 +199,7 @@ main{padding:26px 40px 60px}
 .b-more summary{list-style:none; cursor:pointer; padding:4px 10px; border-radius:8px; color:var(--ink-faint); font-size:16px; letter-spacing:1px}
 .b-more summary::-webkit-details-marker{display:none}
 .b-more summary:hover{color:var(--ink); background:var(--paper-2)}
-.b-more[open] .b-more-menu{position:absolute; right:0; top:100%; z-index:40; background:var(--card);
+.b-more[open] .b-more-menu{display:flex; flex-direction:column; align-items:stretch; gap:2px; position:absolute; right:0; top:100%; z-index:40; background:var(--card);
   border:1px solid var(--line); border-radius:10px; padding:6px; box-shadow:0 8px 26px rgba(0,0,0,.09); white-space:nowrap}
 .b-more .danger{color:var(--danger)}
 .btn-ghost{
@@ -2332,6 +2332,7 @@ const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 /* dependencies: a task can wait for another; blocked = its blocker exists and is unfinished */
 const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
 const isWaiting=t=>!!(t&&(blockerOf(t)||t.waitWho));
+const priEligible=t=>{const b=board(t.boardId);return !(b&&b.noPri);};
 function depResults(t,q){
   const qq=String(q||'').trim().toLowerCase();
   const hit=x=>!qq||x.title.toLowerCase().includes(qq)||((board(x.boardId)||{}).name||'').toLowerCase().includes(qq);
@@ -2964,8 +2965,10 @@ function dropSideGroup(ev,mcolId){
 /* how much a board still asks of you: 0 = live work, 1 = only scheduled, 2 = at rest */
 function boardTier(b){
   const all=boardTasks(b.id).filter(t=>!t.done&&!isRoutine(t)&&!isShelved(t));
-  const open=all.filter(t=>!isAppt(t)&&!t.done).length;
+  const live=all.filter(t=>!isAppt(t)&&!t.done);
+  const open=live.filter(t=>!isWaiting(t)).length;   // waiting work isn't callable work
   if(open)return 0;
+  if(live.length)return 2;                            // everything here waits on something or someone
   const appt=all.filter(t=>isAppt(t)&&!t.done&&(!t.due||t.due>=todayStr())).length;
   return appt?1:2;
 }
@@ -3227,7 +3230,10 @@ function renderBoard(){
         <button class="${route.mode==='list'?'on':''}" onclick="route.mode='list';render()">List</button>
       </div>
       <details class="b-more"><summary title="Board options">⋯</summary>
-        <div class="b-more-menu"><button class="btn-ghost danger" onclick="b_delete('${b.id}')">Delete board</button></div>
+        <div class="b-more-menu">
+          <button class="btn-ghost" onclick="b_togglePri('${b.id}')">${b.noPri?'Show in Priorities':'Hide from Priorities'}</button>
+          <button class="btn-ghost danger" onclick="b_delete('${b.id}')">Delete board</button>
+        </div>
       </details>
     </div>`;
   return head+(route.mode==='list'?renderList(b):renderKanban(b));
@@ -3330,13 +3336,17 @@ function quickAddList(ev,bid,cid){
 /* board ops */
 function b_rename(id,v){const b=board(id);if(b&&v.trim())b.name=v.trim();save();}
 function b_accent(id,a){board(id).accent=a;render();}
+function b_togglePri(id){const b=board(id);if(!b)return;b.noPri=b.noPri?undefined:true;save();render();}
 function b_delete(id){
-  const n=boardTasks(id).length;
-  if(!confirm('Delete this board'+(n?' and its '+n+' task(s)':'')+'?'))return;
-  tombstone.apply(null,[id].concat(boardTasks(id).map(t=>t.id),
-    (board(id).columns||[]).map(c=>c.id)));
-  S.tasks=S.tasks.filter(t=>t.boardId!==id);
-  S.boards=S.boards.filter(b=>b.id!==id);
+  const b=board(id);
+  const mine=boardTasks(id), openN=mine.filter(t=>!t.done).length, doneN=mine.length-openN;
+  if(!confirm('Delete this board'+(openN?' and its '+openN+' open task(s)':'')+'?'
+      +(doneN?' Its '+doneN+' finished one(s) stay in the Laurels.':'')))return;
+  mine.forEach(t=>{if(t.done){t.boardName=b.name;t.touchedAt=Date.now();}});   // the record keeps the name
+  tombstone.apply(null,[id].concat(mine.filter(t=>!t.done).map(t=>t.id),
+    (b.columns||[]).map(c=>c.id)));
+  S.tasks=S.tasks.filter(t=>!(t.boardId===id&&!t.done));
+  S.boards=S.boards.filter(x=>x.id!==id);
   go('master');
 }
 function colRename(bid,cid,v){const c=board(bid).columns.find(c=>c.id===cid);if(c&&v.trim())c.name=v.trim();save();}
@@ -3850,9 +3860,9 @@ function renderToday(){
   const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
   const dueToday=(byDate[today]||[]).filter(t=>!t.done);
   const appts=dueToday.filter(isAppt).length+((gByDate[today]||[]).length);
-  const overdue=open.filter(t=>t.due&&t.due<today).sort((a,b)=>a.due<b.due?-1:1);
+  const overdue=open.filter(t=>t.due&&t.due<today&&!isWaiting(t)).sort((a,b)=>a.due<b.due?-1:1);
   const doNowCol=S.priCols.find(c=>/\bnow\b/i.test(c.name));
-  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today&&!isWaiting(t))).slice(0,8);
+  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today&&!isWaiting(t)&&priEligible(t))).slice(0,8);
   const struck=S.tasks.filter(t=>t.done&&!isRoutine(t)&&t.completedAt&&dstr(new Date(t.completedAt))===today)
     .sort((a,b)=>b.completedAt-a.completedAt);
   const tmrN=((byDate[tmr]||[]).filter(t=>!t.done).length)+((gByDate[tmr]||[]).length);
@@ -4018,8 +4028,8 @@ function apptStrip(days,title){
   </div>`;
 }
 function renderPriorities(){
-  /* triage is for live work only: no appointments, no shelved horizons */
-  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
+  /* triage is for live work only: no appointments, no shelved horizons, no opted-out boards */
+  const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t)&&priEligible(t));
   const valid=id=>S.priCols.some(c=>c.id===id);
   const horizon=S.priCols.find(c=>/horizon|later|someday|eventual/i.test(c.name));
   const wk=new Date();wk.setDate(wk.getDate()+7);
@@ -4128,7 +4138,7 @@ function renderAch(){
   const wk=Date.now()-7*864e5, mo=Date.now()-30*864e5;
   const kept=done.filter(x=>isAppt(x.t)), fin=done.filter(x=>!isAppt(x.t));
   const byBoard={};
-  fin.forEach(x=>{const b=board(x.t.boardId);if(!b)return;
+  fin.forEach(x=>{const b=board(x.t.boardId)||(x.t.boardName?{id:'gone-'+x.t.boardName,name:x.t.boardName,accent:'#9a938a'}:null);if(!b)return;
     (byBoard[b.id]=byBoard[b.id]||{b,n:0,recent:0}).n++;
     if(x.at>=mo)byBoard[b.id].recent++;});
   const ranked=Object.values(byBoard).sort((a,b)=>b.n-a.n);
@@ -4229,7 +4239,7 @@ function renderAch(){
     <div class="list-group-name" style="cursor:default">${g.label}
       <span class="col-count">${g.items.length}</span></div>
     ${g.items.map(x=>{
-      const b=board(x.t.boardId), gl=x.t.goalId?goal(x.t.goalId):null;
+      const b=board(x.t.boardId)||(x.t.boardName?{name:x.t.boardName}:null), gl=x.t.goalId?goal(x.t.goalId):null;
       const when=!x.at?'':(ymd(x.at)===today
         ?new Date(x.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
         :new Date(x.at).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
@@ -4488,10 +4498,10 @@ function renderClaude(){
     <span class="cl-row-btns">${btns}</span>
   </div>`;
   const btn=(label,fn,danger)=>`<button class="cl-btn ${danger?'danger':''}" onclick="${fn}">${label}</button>`;
-  const overdue=open.filter(t=>t.due&&t.due<today);
+  const overdue=open.filter(t=>t.due&&t.due<today&&!isWaiting(t));
   const QW=/^(buy|call|book|send|schedule|check|email|text|ask|pay|order|register|renew|clean)\b/i;
-  const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!isWaiting(t)).slice(0,7);
-  const stale=open.filter(t=>!t.due&&!t.priCol&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
+  const wins=open.filter(t=>!t.due&&QW.test(t.title)&&!isWaiting(t)&&priEligible(t)).slice(0,7);
+  const stale=open.filter(t=>!t.due&&!t.priCol&&!isWaiting(t)&&priEligible(t)&&Math.max(t.touchedAt||0,t.createdAt||0)<now-7*864e5).slice(0,10);
   const sec=(title,subtitle,items)=>items.length?`
     <div class="list-group-name" style="cursor:default;margin-top:30px">${title}</div>
     <div class="cl-sub">${subtitle}</div>
