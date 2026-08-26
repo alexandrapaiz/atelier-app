@@ -2479,7 +2479,10 @@ function nlHint(p){
   if(p.urgent)bits.push('urgent');
   return '<b>'+esc(p.title)+'</b> · '+bits.join(' · ');
 }
-const byUrgent=a=>[...a].sort((x,z)=>(z.urgent?1:0)-(x.urgent?1:0));
+const byUrgent=a=>[...a].sort((x,z)=>{
+  const k=t=>isWaiting(t)?2:(t.urgent?0:1);   // waiting sinks: it isn't yours to do right now
+  return k(x)-k(z);
+});
 const touch=t=>{t.touchedAt=Date.now();};  // per-task stamp — merge resolves conflicts by last touch
 const urgentChip=t=>t.urgent?'<span class="chip urgent-chip">! urgent</span>':'';
 const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -3849,7 +3852,7 @@ function renderToday(){
   const appts=dueToday.filter(isAppt).length+((gByDate[today]||[]).length);
   const overdue=open.filter(t=>t.due&&t.due<today).sort((a,b)=>a.due<b.due?-1:1);
   const doNowCol=S.priCols.find(c=>/\bnow\b/i.test(c.name));
-  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today)).slice(0,8);
+  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today&&!isWaiting(t))).slice(0,8);
   const struck=S.tasks.filter(t=>t.done&&!isRoutine(t)&&t.completedAt&&dstr(new Date(t.completedAt))===today)
     .sort((a,b)=>b.completedAt-a.completedAt);
   const tmrN=((byDate[tmr]||[]).filter(t=>!t.done).length)+((gByDate[tmr]||[]).length);
@@ -4023,8 +4026,8 @@ function renderPriorities(){
   const wkS=wk.getFullYear()+'-'+String(wk.getMonth()+1).padStart(2,'0')+'-'+String(wk.getDate()).padStart(2,'0');
   const unassigned=t=>!t.priCol||!valid(t.priCol);
   const doNow=S.priCols.find(c=>/\bnow\b/i.test(c.name))||S.priCols[0];
-  const autoHor=t=>!!horizon&&unassigned(t)&&!t.urgent&&(!t.due||t.due>wkS);
-  const autoNow=t=>!!doNow&&unassigned(t)&&t.urgent;
+  const autoHor=t=>!!horizon&&unassigned(t)&&(isWaiting(t)||(!t.urgent&&(!t.due||t.due>wkS)));
+  const autoNow=t=>!!doNow&&unassigned(t)&&t.urgent&&!isWaiting(t);
   const unsorted=byUrgent(open.filter(t=>unassigned(t)&&!autoHor(t)&&!autoNow(t)));
   const un=unsorted.length?`<div class="col" ondragover="overCol(event)" ondragleave="leaveCol(event)" ondrop="dropPri(event,null)">
       <div class="col-head"><span class="col-name" style="color:var(--ink-faint)">Unsorted</span>
