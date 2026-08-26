@@ -2986,9 +2986,11 @@ function boardCard(b){
   const now=ts.filter(t=>!t.done&&t.due===today).length;
   const call=late?`<div class="bcard-due overdue">${late} overdue</div>`
     :now?`<div class="bcard-due">${now} due today</div>`:'';
-  const rest=open===0&&apptOpen===0;          // nothing open at all — fully at rest
-  const sched=open===0&&apptOpen>0;           // only appointments left — scheduled is half done
-  const alldone=rest&&ts.length>0;            // earned its checkmark by finishing
+  /* dim exactly as we sort: the same tier drives both, so a dimmed board is always low */
+  const tier=boardTier(b);
+  const rest=tier===2;                        // at rest, or everything on it waits
+  const sched=tier===1;                       // only appointments left
+  const alldone=rest&&ts.length>0&&ts.every(t=>t.done);   // the checkmark is for finishing, not waiting
   return `<div class="bcard ${rest?'bcard-rest':''} ${sched?'bcard-sched':''} ${alldone?'bcard-alldone':''}" draggable="true" data-bid="${b.id}"
       ondragstart="dragBoard(event,'${b.id}')" ondragend="dragEnd(event)"
       onclick="go('board','${b.id}')">
