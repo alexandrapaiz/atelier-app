@@ -1837,6 +1837,8 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 .dep-done{font-size:11px; color:var(--sage,#8a9b7e)}
 .dep-x{border:none; background:transparent; color:var(--ink-faint); font-size:15px; cursor:pointer; padding:0 2px}
 .dep-x:hover{color:var(--danger)}
+.chip.age-chip{background:transparent; border:1px solid var(--line-soft); color:var(--ink-faint)}
+.d-created{margin-top:16px; font-size:11.5px; color:var(--ink-faint); font-style:italic}
 .chip.dep-chip{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); cursor:pointer}
 .chip.dep-chip:hover{border-color:var(--ink-faint); color:var(--ink)}
 .tcard.blocked{opacity:.68}
@@ -2333,6 +2335,14 @@ const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
 const isWaiting=t=>!!(t&&(blockerOf(t)||t.waitWho));
 const priEligible=t=>{const b=board(t.boardId);return !(b&&b.noPri);};
+const taskAgeDays=t=>Math.floor((Date.now()-(t.createdAt||Date.now()))/864e5);
+function ageChip(t){
+  if(t.done||isAppt(t)||isRoutine(t))return '';
+  const d=taskAgeDays(t);
+  if(d<14)return '';
+  const label=d<63?Math.floor(d/7)+'w':Math.floor(d/30)+'mo';
+  return `<span class="chip age-chip" title="In the ledger ${d} days">${label}</span>`;
+}
 function depResults(t,q){
   const qq=String(q||'').trim().toLowerCase();
   const hit=x=>!qq||x.title.toLowerCase().includes(qq)||((board(x.boardId)||{}).name||'').toLowerCase().includes(qq);
@@ -3213,6 +3223,7 @@ function taskCard(t){
       <div class="t-title">${esc(t.title)}</div>
       <div class="chips">
         ${urgentChip(t)}
+        ${ageChip(t)}
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
@@ -3317,6 +3328,7 @@ function renderList(b){
         <span class="t-title">${esc(t.title)}</span>
         <span class="lmeta">
           ${urgentChip(t)}
+        ${ageChip(t)}
           ${t.progress!=null&&!t.done?`<span class="chip">${t.progress}%</span>`:''}
           ${g?`<span class="chip goal-chip">${esc(g.title)}</span>`:''}
           ${whenChip(t)}
@@ -3562,6 +3574,7 @@ function openDrawer(tid){
       <select onchange="t_set('goalId',this.value||null)">${goalOpts}</select></div>
     <div class="d-field"><div class="d-label">Notes</div>
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
+    ${t.createdAt?`<div class="d-created">In the ledger since ${new Date(t.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric'})}${taskAgeDays(t)>0?' \u2014 '+taskAgeDays(t)+' day'+(taskAgeDays(t)===1?'':'s'):''}${t.completedAt?' \u00b7 finished '+new Date(t.completedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):''}</div>`:''}
     <div class="d-actions">
       <span class="small muted">${t.due
         ?(needsSync(t)?'Claude puts this on your Google Calendar next time you two talk.':'On your Google Calendar ✓')
@@ -4020,6 +4033,7 @@ function ptCard(t){
       <div class="t-title">${esc(t.title)}</div>
       <div class="chips">
         ${urgentChip(t)}
+        ${ageChip(t)}
         ${whenChip(t)}
         ${t.claude?'<span class="chip del-chip" title="Delegated to Claude">✦ Claude</span>':''}
         ${(()=>{const bk=blockerOf(t);return bk?`<span class="chip dep-chip" onclick="event.stopPropagation();openDrawer('${bk.id}')" title="Waits for: ${esc(bk.title)}">⧗ ${esc(bk.title.length>20?bk.title.slice(0,19)+'…':bk.title)}</span>`:''})()}
