@@ -2115,11 +2115,6 @@ function seed(){
 /* storage that never throws — some phone/preview contexts forbid localStorage */
 let CAN_STORE=true;
 try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){CAN_STORE=false;}
-['keydown','keypress','keyup'].forEach(ev=>window.addEventListener(ev,e=>{
-  const t=e.target;
-  if(t&&(t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.isContentEditable)
-     &&!e.metaKey&&!e.ctrlKey&&!e.altKey)e.stopPropagation();
-},true));
 const store={
   get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
@@ -2343,6 +2338,19 @@ function ageChip(t){
   const label=d<63?Math.floor(d/7)+'w':Math.floor(d/30)+'mo';
   return `<span class="chip age-chip" title="In the ledger ${d} days">${label}</span>`;
 }
+function resolveWait(tok,bid,selfId){
+  const q=String(tok).toLowerCase();
+  const people=new Set(S.tasks.map(x=>x.waitWho&&x.waitWho.toLowerCase()).filter(Boolean));
+  if(people.has(q)){const known=S.tasks.find(x=>x.waitWho&&x.waitWho.toLowerCase()===q);return {who:known.waitWho};}
+  const rec=x=>Math.max(x.touchedAt||0,x.createdAt||0);
+  const cand=S.tasks.filter(x=>!x.done&&!isRoutine(x)&&x.id!==selfId&&!depCycle(selfId||'',x.id)
+    &&x.title.toLowerCase().includes(q));
+  if(cand.length){
+    const same=cand.filter(x=>x.boardId===bid).sort((a,b)=>rec(b)-rec(a));
+    return {after:(same[0]||cand.sort((a,b)=>rec(b)-rec(a))[0]).id};
+  }
+  return {who:tok};
+}
 function depResults(t,q){
   const qq=String(q||'').trim().toLowerCase();
   const hit=x=>!qq||x.title.toLowerCase().includes(qq)||((board(x.boardId)||{}).name||'').toLowerCase().includes(qq);
@@ -2405,6 +2413,8 @@ function nlParse(raw){
   const guards=[];
   raw=String(raw).replace(/\\+([^\s\\]+)/g,(m,w)=>{guards.push(w);return '\u0001'+(guards.length-1)+'\u0001';});
   const unguard=x=>String(x).replace(/\u0001(\d+)\u0001/g,(m,i)=>guards[+i]);
+  let atTok=null;
+  raw=raw.replace(/(^|\s)@(?:"([^"]+)"|\u201c([^\u201d]+)\u201d|([^\s@]+))/,(m,sp,q1,q2,w)=>{atTok=(q1||q2||w).trim();return sp;});
   let s=' '+raw+' ';
   const out={due:null,start:null,end:null,urgent:false,title:raw};
   const pad=n=>String(n).padStart(2,'0');
@@ -2483,12 +2493,13 @@ function nlParse(raw){
      .replace(/^[\s,;·—–-]+|[\s,;·—–-]+$/g,'').replace(/\s{2,}/g,' ');
   if(t)out.title=t.charAt(0).toUpperCase()+t.slice(1);
   out.title=unguard(out.title);
+  if(atTok)out.at=atTok;
   return out;
 }
 /* social & scheduled-by-nature words — these are commitments, not chores */
 const NL_APPT=/\b(lunch|dinner|breakfast|brunch|coffee|caf[ée]|drinks|dinner|almuerzo|cena|desayuno|comida|cafecito|meeting|reuni[óo]n|junta|appointment|cita|consulta|call|llamada|interview|entrevista|class|clase|church|iglesia|misa|party|fiesta|birthday|cumplea[ñn]os|date|flight|vuelo|doctor|dentist|dentista|session|sesi[óo]n|retiro|retreat|wedding|boda)\b/i;
 function nlHint(p){
-  if(!p.due&&!p.start&&!p.urgent&&!p.appt)return '';
+  if(!p.due&&!p.start&&!p.urgent&&!p.appt&&!p.at)return '';
   const bits=[];
   if(p.appt)bits.push('◷ appointment');
   if(p.due){
@@ -2497,6 +2508,7 @@ function nlHint(p){
   }
   if(p.start)bits.push(fmtSlot({start:p.start,end:p.end}));
   if(p.urgent)bits.push('urgent');
+  if(p.at)bits.push('@ waits on \u201c'+esc(p.at)+'\u201d');
   return '<b>'+esc(p.title)+'</b> · '+bits.join(' · ');
 }
 const byUrgent=a=>[...a].sort((x,z)=>{
@@ -3406,21 +3418,27 @@ function nlComposer(container,before,bid,cid){
     const h=v?nlHint(nlParse(v)):'';
     hint.innerHTML=h;hint.style.display=h?'block':'none';
   };
-  const commit=()=>{
+  const commit=(again)=>{
     if(doneAdding)return; doneAdding=true;
     const v=inp.value.trim();
     if(v){
       const p=nlParse(v);
-      S.tasks.push({id:uid(),boardId:bid,colId:cid,title:p.title,note:'',
+      const nt={id:uid(),boardId:bid,colId:cid,title:p.title,note:'',
         due:p.due,start:p.start,end:p.end,urgent:p.appt?false:(p.urgent||undefined),
         kind:p.appt?'appt':'task',       // a stated hour, or a word like "dinner", means be there
-        done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()});
+        done:false,goalId:null,createdAt:Date.now(),touchedAt:Date.now()};
+      if(p.at){const w=resolveWait(p.at,bid,nt.id); if(w.after)nt.after=w.after; else nt.waitWho=w.who;}
+      S.tasks.push(nt);
     }
     render();
+    if(again&&v)requestAnimationFrame(()=>{
+      const btn=document.querySelector(`[onclick="quickAdd('${bid}','${cid}',this)"]`);
+      if(btn)quickAdd(bid,cid,btn);
+    });
   };
   inp.addEventListener('input',refresh);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){doneAdding=true;render();}});
-  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit(true);}if(e.key==='Escape'){doneAdding=true;render();}});
+  inp.addEventListener('blur',()=>commit(false));
 }
 function quickAdd(bid,cid,btn){
   nlComposer(btn.parentElement.querySelector('.col-body'),null,bid,cid);
@@ -3601,6 +3619,7 @@ function t_set(k,v){
     /* edits get the same natural-language treatment as new tasks: dates, times, urgency */
     const p=nlParse(v);
     if(p.urgent)t.urgent=true;
+    if(p.at){const w=resolveWait(p.at,t.boardId,t.id); if(w.after){t.after=w.after;t.waitWho=null;} else {t.waitWho=w.who;t.after=null;} reopen=true;}
     if(p.due){t.due=p.due;reopen=true;}
     if(p.start){t.start=p.start;if(!t.due)t.due=todayStr();reopen=true;}
     if(p.end){t.end=p.end;reopen=true;}
