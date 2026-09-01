@@ -2390,6 +2390,28 @@ function t_setWho(who){
   t.waitWho=who||null; if(who)t.after=null;
   touch(t);save();openDrawer(drawerTask);
 }
+function goalResults(t,q){
+  const qq=String(q||'').trim().toLowerCase();
+  const hit=g=>{const p=g.parentId?goal(g.parentId):null;
+    return !qq||g.title.toLowerCase().includes(qq)||(p&&p.title.toLowerCase().includes(qq));};
+  const live=S.goals.filter(g=>!g.achieved&&hit(g));
+  const tops=live.filter(g=>!g.parentId), subs=live.filter(g=>g.parentId);
+  return tops.concat(subs).slice(0,qq?10:6);
+}
+function goalResultsHtml(t,q){
+  const rs=goalResults(t,q);
+  if(!rs.length)return '<div class="dep-empty">nothing matches</div>';
+  return rs.map(g=>{const p=g.parentId?goal(g.parentId):null;
+    return `<button class="dep-opt" onclick="t_set('goalId','${g.id}')">
+      <span class="dep-at">${p?'\u2014':'\u25c7'}</span>
+      <span class="dep-opt-t">${esc(g.title)}</span>
+      ${p?`<span class="b-tag">${esc(p.title)}</span>`:''}
+    </button>`;}).join('');
+}
+function goalSearch(v){
+  const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
+  const box=document.getElementById('goalResults'); if(box)box.innerHTML=goalResultsHtml(t,v);
+}
 function depSearch(v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   const box=document.getElementById('depResults'); if(box)box.innerHTML=depResultsHtml(t,v);
@@ -3588,8 +3610,19 @@ function openDrawer(tid){
       </div></div>
     <div class="d-field"><div class="d-label">Focus time</div>
       <button class="cl-btn" onclick="t_blockTime()" title="Create an appointment reserved for this task">◷ Block time for this</button></div>`}
-    <div class="d-field"><div class="d-label">Linked goal</div>
-      <select onchange="t_set('goalId',this.value||null)">${goalOpts}</select></div>
+    <div class="d-field"><div class="d-label">Linked goal ${t.goalId?'':'<span style="text-transform:none;letter-spacing:0;font-size:11px">\u2014 optional</span>'}</div>
+      ${(()=>{
+        const g=t.goalId?goal(t.goalId):null;
+        if(g){const parent=g.parentId?goal(g.parentId):null;
+          return `<div class="dep-set">
+            <span class="dep-at">\u25c7</span>
+            <span class="dep-set-t">${esc(g.title)}${parent?` <span class="muted small">\u00b7 ${esc(parent.title)}</span>`:''}</span>
+            <button class="dep-x" title="Unlink from this goal" onclick="t_set('goalId',null)">\u00d7</button>
+          </div>`;}
+        return `<input class="dep-search" placeholder="Search a goal to serve\u2026"
+            oninput="goalSearch(this.value)" onclick="event.stopPropagation()">
+          <div class="dep-results" id="goalResults">${goalResultsHtml(t,'')}</div>`;
+      })()}</div>
     <div class="d-field"><div class="d-label">Notes</div>
       <textarea class="d-notes" placeholder="Anything worth remembering…" onchange="t_set('note',this.value)">${esc(t.note)}</textarea></div>
     ${t.createdAt?`<div class="d-created">In the ledger since ${new Date(t.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric'})}${taskAgeDays(t)>0?' \u2014 '+taskAgeDays(t)+' day'+(taskAgeDays(t)===1?'':'s'):''}${t.completedAt?' \u00b7 finished '+new Date(t.completedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):''}</div>`:''}
