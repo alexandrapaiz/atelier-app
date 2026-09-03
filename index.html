@@ -2385,6 +2385,7 @@ function t_setBoard(bid){
   t.boardId=bid; t.colId=col.id;
   touch(t);save();openDrawer(drawerTask);render();
 }
+function clWhoDone(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;t.waitWho=null;touch(t);save();render();}
 function t_setWho(who){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   t.waitWho=who||null; if(who)t.after=null;
@@ -2931,9 +2932,9 @@ function renderSidebar(){
   $('sidebar').innerHTML=`
     <button class="side-close" onclick="toggleMenu()">×</button>
     <div class="wordmark" onclick="go('master')">A<em>telier</em></div>
+    <button class="snav ${route.view==='today'?'on':''}" onclick="go('today')">Today</button>
     <button class="snav ${route.view==='master'?'on':''}" onclick="go('master')">The Studio</button>
     <button class="snav ${route.view==='pri'?'on':''}" onclick="go('pri')">Priorities</button>
-    <button class="snav ${route.view==='today'?'on':''}" onclick="go('today')">Today</button>
     <button class="snav ${route.view==='cal'?'on':''}" onclick="go('cal')">Calendar</button>
     <button class="snav ${route.view==='compass'?'on':''}" onclick="go('compass')">Compass</button>
     <button class="snav ${route.view==='ach'?'on':''}" onclick="go('ach')">The Laurels</button>
@@ -3945,8 +3946,11 @@ function renderToday(){
   const open=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&!isAppt(t)&&!isShelved(t));
   const dueToday=(byDate[today]||[]).filter(t=>!t.done);
   const appts=dueToday.filter(isAppt).length+((gByDate[today]||[]).length);
-  const overdue=open.filter(t=>t.due&&t.due<today&&!isWaiting(t)).sort((a,b)=>a.due<b.due?-1:1);
   const doNowCol=S.priCols.find(c=>/\bnow\b/i.test(c.name));
+  const doSoonCol=S.priCols.find(c=>/\bsoon\b/i.test(c.name));
+  const priRank=t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))?0:(doSoonCol&&t.priCol===doSoonCol.id)?1:2;
+  const overdue=open.filter(t=>t.due&&t.due<today&&!isWaiting(t))
+    .sort((a,b)=>priRank(a)-priRank(b)||(a.due<b.due?-1:1));
   const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today&&!isWaiting(t)&&priEligible(t))).slice(0,8);
   const struck=S.tasks.filter(t=>t.done&&!isRoutine(t)&&t.completedAt&&dstr(new Date(t.completedAt))===today)
     .sort((a,b)=>b.completedAt-a.completedAt);
@@ -3987,6 +3991,23 @@ function renderToday(){
       <div class="list-group-name" style="cursor:default;margin-top:28px">The front of the queue</div>
       <div class="cl-sub">urgent or marked for now — the day\u2019s discretionary hours go here</div>
       ${front.map(t=>row(t,btn('Today',`clToday('${t.id}')`)+btn('Done \u2713',`toggleDone('${t.id}')`))).join('')}`:''}
+    ${(()=>{
+      const stuck=S.tasks.filter(t=>!t.done&&!isRoutine(t)&&isWaiting(t)
+          &&Date.now()-Math.max(t.touchedAt||0,t.createdAt||0)>7*864e5)
+        .sort((a,b)=>(a.touchedAt||a.createdAt||0)-(b.touchedAt||b.createdAt||0)).slice(0,6);
+      return stuck.length?`
+      <div class="list-group-name" style="cursor:default;margin-top:28px">Waiting too long</div>
+      <div class="cl-sub">held for over a week \u2014 worth a nudge, or an honest release</div>
+      ${stuck.map(t=>{const days=Math.floor((Date.now()-Math.max(t.touchedAt||0,t.createdAt||0))/864e5);
+        const bk=blockerOf(t);
+        return `<div class="cl-row">
+          <span class="dot" style="background:${bAcc(t)}"></span>
+          <span class="cl-row-t" onclick="openDrawer('${t.id}')">${esc(t.title)}</span>
+          <span class="b-tag">${t.waitWho?'@ '+esc(t.waitWho):bk?'\u29d7 '+esc(bk.title.length>16?bk.title.slice(0,15)+'\u2026':bk.title):''}</span>
+          <span class="muted small">${days}d</span>
+          <span class="cl-row-btns">${t.waitWho?btn('Came through \u2713',`clWhoDone('${t.id}')`):bk?btn('Open blocker',`openDrawer('${bk.id}')`):''}</span>
+        </div>`;}).join('')}`:'';
+    })()}
     ${struck.length?`
       <div class="list-group-name" style="cursor:default;margin-top:28px">Struck today</div>
       ${struck.slice(0,8).map(t=>`<div class="cl-row"><span class="dot" style="background:${bAcc(t)}"></span>
