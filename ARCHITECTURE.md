@@ -85,7 +85,13 @@ share a slice of a jsonb blob; you can share rows.
    urgentStrip, mergeStates (stale-device revert, tombstones, chapter renames,
    column rescue), depCycle, resolveWait, byUrgent sinking, krSeason windows,
    adherence weighting, taskAgeDays. `npm test` locally; GitHub Actions runs
-   it on every push and PR (.github/workflows/tests.yml).*
+   it on every push and PR (.github/workflows/tests.yml). Extraction step 1
+   done the same day: core/parse.js (todayStr, dstr, nlParse, urgentStrip),
+   core/waits.js (blockerOf, isWaiting, priEligible, taskAgeDays, depCycle,
+   byUrgent, resolveWait), core/merge.js (mergeStates) — plain classic scripts
+   loaded before the main script, so behavior and deployment are unchanged;
+   the harness evals them in browser order and the suite stayed 24/24 across
+   the move. Views split later; they work.*
 3. **Scale** (when doc size or user count says so): per-entity schema + sync
    engine + one-time migration.
 4. **Share** (when a real second user wants a board): memberships, shared

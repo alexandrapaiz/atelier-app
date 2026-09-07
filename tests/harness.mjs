@@ -85,6 +85,11 @@ sandbox.document = new Proxy({}, {
 });
 
 vm.createContext(sandbox);
+/* core files load first, in the same order the browser sees them */
+for (const m of html.matchAll(/<script src="(core\/[^"]+)"><\/script>/g)) {
+  const src = fs.readFileSync(path.join(root, m[1]), "utf8");
+  vm.runInContext(src, sandbox, { filename: m[1] });
+}
 vm.runInContext(main, sandbox, { filename: "index.html<main script>" });
 
 /* const/let top-level bindings live in the script scope, not on the context —

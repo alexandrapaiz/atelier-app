@@ -2029,6 +2029,9 @@ textarea.chap-title.fitw{flex:0 0 auto; max-width:100%}
 <div class="drawer" id="drawer"></div>
 
 <script type="application/json" id="claudeData">__CLAUDE_EMBED__</script>
+<script src="core/parse.js"></script>
+<script src="core/waits.js"></script>
+<script src="core/merge.js"></script>
 <script>
 /* ============ state & persistence ============ */
 const KEY='atelier.v2';
@@ -2327,29 +2330,12 @@ const isRoutine=t=>{const c=colOf(t);return !!(c&&c.kind==='routine');};
    Anything with a start time is one, unless explicitly kept a task. */
 const isAppt=t=>t.kind==='appt'||(!t.kind&&!!t.start);
 /* dependencies: a task can wait for another; blocked = its blocker exists and is unfinished */
-const blockerOf=t=>t&&t.after?S.tasks.find(x=>x.id===t.after&&!x.done):null;
-const isWaiting=t=>!!(t&&(blockerOf(t)||t.waitWho));
-const priEligible=t=>{const b=board(t.boardId);return !(b&&b.noPri);};
-const taskAgeDays=t=>Math.floor((Date.now()-(t.createdAt||Date.now()))/864e5);
 function ageChip(t){
   if(t.done||isAppt(t)||isRoutine(t))return '';
   const d=taskAgeDays(t);
   if(d<14)return '';
   const label=d<63?Math.floor(d/7)+'w':Math.floor(d/30)+'mo';
   return `<span class="chip age-chip" title="In the ledger ${d} days">${label}</span>`;
-}
-function resolveWait(tok,bid,selfId){
-  const q=String(tok).toLowerCase();
-  const people=new Set(S.tasks.map(x=>x.waitWho&&x.waitWho.toLowerCase()).filter(Boolean));
-  if(people.has(q)){const known=S.tasks.find(x=>x.waitWho&&x.waitWho.toLowerCase()===q);return {who:known.waitWho};}
-  const rec=x=>Math.max(x.touchedAt||0,x.createdAt||0);
-  const cand=S.tasks.filter(x=>!x.done&&!isRoutine(x)&&x.id!==selfId&&!depCycle(selfId||'',x.id)
-    &&x.title.toLowerCase().includes(q));
-  if(cand.length){
-    const same=cand.filter(x=>x.boardId===bid).sort((a,b)=>rec(b)-rec(a));
-    return {after:(same[0]||cand.sort((a,b)=>rec(b)-rec(a))[0]).id};
-  }
-  return {who:tok};
 }
 function depResults(t,q){
   const qq=String(q||'').trim().toLowerCase();
@@ -2417,7 +2403,6 @@ function depSearch(v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   const box=document.getElementById('depResults'); if(box)box.innerHTML=depResultsHtml(t,v);
 }
-function depCycle(id,after){let cur=after,g=0;while(cur&&g++<100){if(cur===id)return true;const n=S.tasks.find(x=>x.id===cur);cur=n&&n.after;}return false;}
 /* a column named "on the horizon" is a shelf — it asks nothing of you today */
 const isShelved=t=>{const c=colOf(t);return !!(c&&/on the horizon|^shelved$/i.test(c.name));};
 const plusHour=hm=>{           // an appointment with no stated end runs an hour
@@ -2430,97 +2415,6 @@ const endOf=t=>t.end||(t.start?plusHour(t.start):null);
    "dinner at zuzu's 8:30pm today" → title + date + time, understood as you type. */
 const NL_MONTHS={jan:0,january:0,ene:0,enero:0,feb:1,february:1,febrero:1,march:2,marzo:2,apr:3,april:3,abr:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,ago:7,agosto:7,sep:8,sept:8,september:8,septiembre:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,dic:11,diciembre:11};
 const NL_DOWS={sunday:0,sun:0,domingo:0,dom:0,monday:1,mon:1,lunes:1,lun:1,tuesday:2,tue:2,tues:2,martes:2,wednesday:3,wed:3,miercoles:3,'miércoles':3,mie:3,thursday:4,thu:4,thur:4,thurs:4,jueves:4,jue:4,friday:5,fri:5,viernes:5,vie:5,saturday:6,sat:6,sabado:6,'sábado':6,sab:6};
-function nlParse(raw){
-  /* the escape: \word shields that token — invisible to date, time, and urgency parsing,
-     it lands in the title verbatim.  "Prepare \friday agenda 3pm" keeps the word, takes the hour. */
-  const guards=[];
-  raw=String(raw).replace(/\\+([^\s\\]+)/g,(m,w)=>{guards.push(w);return '\u0001'+(guards.length-1)+'\u0001';});
-  const unguard=x=>String(x).replace(/\u0001(\d+)\u0001/g,(m,i)=>guards[+i]);
-  let atTok=null;
-  raw=raw.replace(/(^|\s)@(?:"([^"]+)"|\u201c([^\u201d]+)\u201d|([^\s@]+))/,(m,sp,q1,q2,w)=>{atTok=(q1||q2||w).trim();return sp;});
-  let s=' '+raw+' ';
-  const out={due:null,start:null,end:null,urgent:false,title:raw};
-  const pad=n=>String(n).padStart(2,'0');
-  const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-  const now=new Date();
-  const eat=re=>{const m=s.match(re); if(m)s=s.replace(m[0],' '); return m;};
-  const hm=(h,mn,mer)=>{
-    h=+h; mn=mn?+mn:0;
-    if(mer){mer=mer.toLowerCase();
-      if(/^p/.test(mer)&&h<12)h+=12;
-      if(/^a/.test(mer)&&h===12)h=0;
-    }
-    if(h>23||mn>59)return null;
-    return pad(h)+':'+pad(mn);
-  };
-  /* urgency — the words, or any exclamation mark at all */
-  if(/(^|\s)(urgent|urgente|asap)\b/i.test(s)||s.includes('!')){
-    out.urgent=true;
-    s=s.replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,' ');
-  }
-  /* spanish meridiem phrases → am/pm markers */
-  s=s.replace(/\s(?:de|por)\s+la\s+(mañana|manana)\b/gi,' am')
-     .replace(/\s(?:de|por)\s+la\s+(tarde|noche)\b/gi,' pm')
-     .replace(/\bp\.?\s?m\.?\b/gi,'pm').replace(/\ba\.?\s?m\.?\b/gi,'am');
-  const T='(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?';
-  /* time range: 8:30-10pm · 5 to 6pm · de 5 a 6pm */
-  let m=eat(new RegExp('\\s(?:from|de|desde)?\\s*'+T+'\\s*(?:-|–|—|to|a|hasta|until)\\s*'+T+'\\s','i'));
-  if(m&&(m[3]||m[6]||m[2]||m[5])){
-    const a=hm(m[1],m[2],m[3]||m[6]), b=hm(m[4],m[5],m[6]);
-    if(a&&b){out.start=a;out.end=b;}
-  }
-  /* single time — needs am/pm, a colon, or an "at / a las / @" cue */
-  if(!out.start){
-    m=eat(new RegExp('\\s(?:at|@|a\\s+las?|para\\s+las?)\\s*'+T+'\\s','i'))
-     ||eat(/\s(\d{1,2}):(\d{2})\s*(am|pm)?\s/i)
-     ||eat(/\s(\d{1,2})()\s*(am|pm)\s/i);
-    if(m){const a=hm(m[1],m[2],m[3]); if(a)out.start=a;}
-  }
-  if(eat(/\s(noon|mediod[ií]a)\s/i))out.start=out.start||'12:00';
-  if(eat(/\s(midnight|medianoche)\s/i))out.start=out.start||'00:00';
-  /* dates, most explicit first */
-  const setD=d=>{out.due=ymd(d);};
-  if(eat(/\s(today|hoy|tonight|esta\s+noche)\s/i))setD(now);
-  else if(eat(/\s(tomorrow|mañana|manana)\s/i)){const d=new Date(now);d.setDate(d.getDate()+1);setD(d);}
-  else if((m=eat(/\s(?:in|en)\s+(\d{1,2})\s+(days?|d[ií]as?)\s/i))){const d=new Date(now);d.setDate(d.getDate()+ +m[1]);setD(d);}
-  else if(eat(/\s(next\s+week|pr[óo]xima\s+semana)\s/i)){const d=new Date(now);d.setDate(d.getDate()+7);setD(d);}
-  else if((m=eat(new RegExp('\\s(next\\s+|pr[óo]ximo\\s+|este\\s+|this\\s+)?('+Object.keys(NL_DOWS).join('|')+')\\s','i')))){
-    const target=NL_DOWS[m[2].toLowerCase()], d=new Date(now);
-    let diff=(target-d.getDay()+7)%7;
-    if(/next|próximo|proximo/i.test(m[1]||''))diff=diff||7,diff+= (diff<7&&/next|próximo|proximo/i.test(m[1])&&diff!==7)?7-diff>0?0:0:0;
-    if(/next|próximo|proximo/i.test(m[1]||'')&&diff===0)diff=7;
-    d.setDate(d.getDate()+diff);setD(d);
-  }
-  else if((m=eat(new RegExp('\\s('+Object.keys(NL_MONTHS).join('|')+')\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s','i')))){
-    const d=new Date(now.getFullYear(),NL_MONTHS[m[1].toLowerCase()],+m[2]);
-    if(d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
-    setD(d);
-  }
-  else if((m=eat(new RegExp('\\s(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:de\\s+)?('+Object.keys(NL_MONTHS).join('|')+')\\.?\\s','i')))){
-    const d=new Date(now.getFullYear(),NL_MONTHS[m[2].toLowerCase()],+m[1]);
-    if(d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
-    setD(d);
-  }
-  else if((m=eat(/\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s/))){   // d/m — the way you write dates
-    let a=+m[1],b=+m[2],yr=m[3]?(+m[3]<100?2000+ +m[3]:+m[3]):now.getFullYear();
-    if(a>12&&b<=12){}else if(b>12&&a<=12){const t=a;a=b;b=t;}   // swap if clearly m/d
-    const d=new Date(yr,b-1,a);
-    if(!m[3]&&d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(d.getFullYear()+1);
-    if(!isNaN(d))setD(d);
-  }
-  if(out.start&&!out.due)out.due=ymd(now);          // a time implies today
-  out.appt=!!out.start||NL_APPT.test(raw);          // an hour, or a word that means "be there"
-  /* tidy the leftover title */
-  let t=s.replace(/\s+/g,' ').trim()
-     .replace(/\s+(?:at|on|el|de|a|para|from|desde|@)[\s,;·—–-]*$/i,'')
-     .replace(/^[\s,;·—–-]+|[\s,;·—–-]+$/g,'').replace(/\s{2,}/g,' ');
-  if(t)out.title=t.charAt(0).toUpperCase()+t.slice(1);
-  out.title=unguard(out.title);
-  if(atTok)out.at=atTok;
-  return out;
-}
-/* social & scheduled-by-nature words — these are commitments, not chores */
-const NL_APPT=/\b(lunch|dinner|breakfast|brunch|coffee|caf[ée]|drinks|dinner|almuerzo|cena|desayuno|comida|cafecito|meeting|reuni[óo]n|junta|appointment|cita|consulta|call|llamada|interview|entrevista|class|clase|church|iglesia|misa|party|fiesta|birthday|cumplea[ñn]os|date|flight|vuelo|doctor|dentist|dentista|session|sesi[óo]n|retiro|retreat|wedding|boda)\b/i;
 function nlHint(p){
   if(!p.due&&!p.start&&!p.urgent&&!p.appt&&!p.at)return '';
   const bits=[];
@@ -2534,13 +2428,8 @@ function nlHint(p){
   if(p.at)bits.push('@ waits on \u201c'+esc(p.at)+'\u201d');
   return '<b>'+esc(p.title)+'</b> · '+bits.join(' · ');
 }
-const byUrgent=a=>[...a].sort((x,z)=>{
-  const k=t=>isWaiting(t)?2:(t.urgent?0:1);   // waiting sinks: it isn't yours to do right now
-  return k(x)-k(z);
-});
 const touch=t=>{t.touchedAt=Date.now();};  // per-task stamp — merge resolves conflicts by last touch
 const urgentChip=t=>t.urgent?'<span class="chip urgent-chip">! urgent</span>':'';
-const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 function dueClass(t){
   if(!t.due||t.done)return '';
   const today=todayStr();
@@ -3636,15 +3525,6 @@ function openDrawer(tid){
   $('drawer').classList.add('open');$('scrim').classList.add('open');document.body.classList.add('drawer-open');
 }
 function closeDrawer(){drawerTask=null;$('drawer').classList.remove('open');$('scrim').classList.remove('open');document.body.classList.remove('drawer-open');render();}
-/* typing "urgent" / "urgente" / "asap" — or any ! — anywhere in a title IS the urgent tag */
-function urgentStrip(v){
-  const g=[];
-  v=String(v).replace(/\\+([^\s\\]+)/g,(m,w)=>{g.push(w);return '\u0001'+(g.length-1)+'\u0001';});
-  const has=/(^|\s)(urgent|urgente|asap)\b/i.test(v)||v.includes('!');
-  const title=v.replace(/(^|\s)(urgent|urgente|asap)\b[:,;\-\s]*/gi,' ').replace(/!+/g,'').replace(/\s+/g,' ').trim()
-    .replace(/\u0001(\d+)\u0001/g,(m,i)=>g[+i]);
-  return {has,title};
-}
 function t_set(k,v){
   const t=S.tasks.find(x=>x.id===drawerTask); if(!t)return;
   if(k==='after'&&v)t.waitWho=null;   // one wait at a time
@@ -3804,7 +3684,6 @@ function g_delete(id){
 /* ============ calendar ============ */
 let calCur=null;          // {y,m,d} — anchor date
 let calMode='month';      // 'month' | 'week'
-const dstr=d=>{const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
 const hmToMin=hm=>{const[a,b]=(hm||'0:0').split(':').map(Number);return a*60+(b||0);};
 function calCellHTML(d,inMonth,extra,byDate,gByDate,today){
   const ds=dstr(d);
@@ -5541,100 +5420,6 @@ async function reconnectFile(){
 }
 /* Merge, never clobber: entities that exist on only one side are kept;
    for entities on both sides, the side with the newer overall stamp wins. */
-function mergeStates(loc,rem){
-  if(!rem||!rem.meta)return loc;
-  const preferRem=(rem.meta.updatedAt||0)>(loc.meta.updatedAt||0);
-  /* graves first — every side's deletions, newest wins, before anything is let back in */
-  loc.meta.tomb=loc.meta.tomb||{};
-  if(rem.meta.tomb)Object.keys(rem.meta.tomb).forEach(k=>{
-    if(!loc.meta.tomb[k]||rem.meta.tomb[k]>loc.meta.tomb[k])loc.meta.tomb[k]=rem.meta.tomb[k];
-  });
-  const tomb=loc.meta.tomb;
-  const buried=x=>!!(x&&x.id&&tomb[x.id]);
-  const merge=(la,ra)=>{
-    if(!la||!ra)return la||ra||[];
-    const m=new Map(la.map((x,i)=>[x.id,i]));
-    ra.forEach(x=>{
-      if(buried(x))return;                       // it was deleted on purpose; don't resurrect it
-      if(!m.has(x.id))la.push(x);
-      else if(preferRem)la[m.get(x.id)]=x;
-    });
-    return la;
-  };
-  /* per-item: the freshest touch wins, no matter which side's document is globally newer —
-     a stale device editing one task must not drag the whole compass back with it */
-  const mergeT=(la,ra)=>{
-    if(!la||!ra)return la||ra||[];
-    const m=new Map(la.map((x,i)=>[x.id,i]));
-    ra.forEach(x=>{
-      if(buried(x))return;
-      if(!m.has(x.id)){la.push(x);return;}
-      const i=m.get(x.id), l=la[i];
-      const xs=x.touchedAt||x.createdAt||0, ls=l.touchedAt||l.createdAt||0;
-      if(xs>ls||(xs===ls&&preferRem))la[i]=x;
-    });
-    return la;
-  };
-  mergeT(loc.masterColumns,rem.masterColumns);
-  mergeT(loc.boards,rem.boards);
-  mergeT(loc.stars=loc.stars||[],rem.stars);
-  mergeT(loc.goals,rem.goals);
-  merge(loc.imports=loc.imports||[],rem.imports);   // the tray travels too; resolved items stay buried
-  /* tasks resolve per-item: newer touch wins, regardless of which side is globally newer */
-  {
-    const m=new Map(loc.tasks.map((x,i)=>[x.id,i]));
-    (rem.tasks||[]).forEach(x=>{
-      if(buried(x))return;
-      if(!m.has(x.id))loc.tasks.push(x);
-      else{
-        const i=m.get(x.id), l=loc.tasks[i];
-        if((x.touchedAt||x.createdAt||0)>(l.touchedAt||l.createdAt||0))loc.tasks[i]=x;
-      }
-    });
-  }
-  merge(loc.priCols,rem.priCols);
-  merge(loc.rewards=loc.rewards||[],rem.rewards);
-  const em=new Map((loc.plan||[]).map(e=>[e.id,e]));
-  (rem.plan||[]).forEach(e=>{
-    if(buried(e))return;
-    if(!em.has(e.id)){loc.plan.push(e);return;}
-    const le=em.get(e.id);
-    if((e.touchedAt||0)>(le.touchedAt||0)||(!le.touchedAt&&!e.touchedAt&&preferRem))le.era=e.era;
-    if((e.touchedAt||0)>(le.touchedAt||0))le.touchedAt=e.touchedAt;
-    merge(le.items,e.items);
-  });
-  /* board columns live one level down: the winning board keeps its columns,
-     but columns born on the other side are still let in */
-  {
-    const bm=new Map(loc.boards.map(b=>[b.id,b]));
-    (rem.boards||[]).forEach(rb=>{
-      const lb=bm.get(rb.id);
-      if(lb&&rb.columns)rb.columns.forEach(c=>{
-        if(!buried(c)&&!lb.columns.some(x=>x.id===c.id))lb.columns.push(c);
-      });
-    });
-  }
-  if(rem.gcal&&rem.gcal.length&&(preferRem||!(loc.gcal||[]).length))loc.gcal=rem.gcal;
-  if(rem.claude){
-    if(!loc.claude)loc.claude={notes:[],inbox:[]};
-    const sticky=(la,ra,flag)=>{
-      if(!ra)return;
-      const m=new Map(la.map((x,i)=>[x.id,i]));
-      ra.forEach(x=>{
-        if(!m.has(x.id))la.push(x);
-        else{const l=la[m.get(x.id)]; if(x[flag]&&!l[flag])l[flag]=x[flag];}
-      });
-    };
-    sticky(loc.claude.notes=loc.claude.notes||[],rem.claude.notes,'resolved');
-    sticky(loc.claude.inbox=loc.claude.inbox||[],rem.claude.inbox,'processed');
-  }
-  if(preferRem&&rem.meta.mission)loc.meta.mission=rem.meta.mission;
-  /* a reset always travels, newest wins, whichever side is globally newer */
-  if(rem.meta.reset&&(rem.meta.reset.at||0)>((loc.meta.reset&&loc.meta.reset.at)||0))
-    loc.meta.reset=rem.meta.reset;
-  resigAll(loc);   // merged-in objects are not local edits
-  return loc;
-}
 async function adoptNewer(){
   try{
     const f=await fileHandle.getFile(), txt=await f.text();
