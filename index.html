@@ -3830,7 +3830,7 @@ function renderToday(){
   const priRank=t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))?0:(doSoonCol&&t.priCol===doSoonCol.id)?1:2;
   const overdue=open.filter(t=>t.due&&t.due<today&&!isWaiting(t))
     .sort((a,b)=>priRank(a)-priRank(b)||(a.due<b.due?-1:1));
-  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&t.due!==today&&!isWaiting(t)&&priEligible(t))).slice(0,8);
+  const front=byUrgent(open.filter(t=>(t.urgent||(doNowCol&&t.priCol===doNowCol.id))&&(!t.due||t.due>today)&&!isWaiting(t)&&priEligible(t))).slice(0,8);   // overdue lives in Slipped, not here
   const struck=S.tasks.filter(t=>t.done&&!isRoutine(t)&&t.completedAt&&dstr(new Date(t.completedAt))===today)
     .sort((a,b)=>b.completedAt-a.completedAt);
   const tmrN=((byDate[tmr]||[]).filter(t=>!t.done).length)+((gByDate[tmr]||[]).length);
