@@ -78,6 +78,14 @@ share a slice of a jsonb blob; you can share rows.
    *Tracked as the App Store column on Side Hustles.*
 2. **Harden** (background): extract `packages/core`, add tests, split the
    monolith into modules. Zero user-visible change.
+   *Started 2026-08-25 — tests first, extraction second, so extraction can't
+   silently change behavior. `tests/` runs the REAL index.html script in Node
+   via a vm harness (`tests/harness.mjs`) — no copied code, no drift. 24 tests
+   pin the bug-history layer: nlParse (dates, urgency, backslash shields, @),
+   urgentStrip, mergeStates (stale-device revert, tombstones, chapter renames,
+   column rescue), depCycle, resolveWait, byUrgent sinking, krSeason windows,
+   adherence weighting, taskAgeDays. `npm test` locally; GitHub Actions runs
+   it on every push and PR (.github/workflows/tests.yml).*
 3. **Scale** (when doc size or user count says so): per-entity schema + sync
    engine + one-time migration.
 4. **Share** (when a real second user wants a board): memberships, shared
