@@ -26,6 +26,25 @@ Goal: Atelier boots as a native iOS app on the simulator.
 | **Wrap Atelier in Capacitor** — Xcode shell, bundled build (no remote loading), native storage adapter replacing localStorage | Claude | Sep 20 |
 | Boots + syncs on the iOS simulator, core suite still green | Claude | Sep 20 |
 
+### Sprint 1 plan (set Sep 11)
+
+| Day | The work |
+|---|---|
+| **Thu 11** | Scaffold: Capacitor project in the repo (`ios/` + config), app bundle assembled from index.html + core/ — Pages deploy untouched |
+| **Fri 12** | The real engineering: a storage adapter — native Preferences on iOS, localStorage on web — loaded *before* the app script so boot stays synchronous. This is the sprint's risk item; it goes early |
+| **Sun 14** | **Alexandra: Developer Program enrolled** (approval latency starts ticking) |
+| **Mon 15** | First Xcode build → simulator boot; viewport, status bar, first safe-area pass |
+| **Tue 16** | Supabase auth + sync from inside the shell (capacitor:// origin); the self-update pill stands down in native builds — updates ship through the store |
+| **Wed 17** | App icon + splash from the padded icon; `npm test` green; harness untouched |
+| **Thu–Fri 18–19** | Buffer for what the simulator surfaces; simulator screen-recording as the demo |
+| **Sun 20** | Sprint review inside the weekly compass: demo, retro, Sprint 2 confirmed |
+
+*Definition of done:* the app cold-boots on the iOS simulator from the bundled
+build with no network, signs in, syncs when the network returns, and the
+24-test suite passes untouched. *Known risks:* the async-storage boot refactor
+(scheduled first for exactly that reason); Apple enrollment latency (hers,
+urgent, day 3).
+
 ## Sprint 2 — *What Apple demands* · Sep 21 → Sun Sep 27
 
 Goal: the account lifecycle is complete and the app is on Alexandra's phone.
