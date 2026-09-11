@@ -172,7 +172,7 @@ aside.side .wordmark{margin:0 0 24px 10px}
 /* ---------- chrome ---------- */
 .top{
   display:flex; align-items:baseline; gap:26px;
-  padding:26px 40px 0;
+  padding:calc(26px + env(safe-area-inset-top, 0px)) 40px 0;
 }
 .wordmark{
   font-family:var(--serif); font-size:30px; font-weight:600; letter-spacing:.4px;
@@ -893,7 +893,7 @@ main{padding:26px 40px 60px}
   position:fixed; top:0; right:0; bottom:0; width:420px; max-width:92vw;
   background:var(--paper); border-left:1px solid var(--line);
   transform:translateX(102%); transition:transform .22s ease; z-index:41;
-  padding:30px 30px 40px; overflow-y:auto; box-shadow:-20px 0 60px -30px rgba(50,42,28,.3);
+  padding:calc(30px + env(safe-area-inset-top, 0px)) 30px 40px; overflow-y:auto; box-shadow:-20px 0 60px -30px rgba(50,42,28,.3);
 }
 .drawer.open{transform:translateX(0)}
 .d-close{position:absolute; top:18px; right:20px; font-size:17px; color:var(--ink-faint)}
@@ -1036,6 +1036,7 @@ footer button:hover, footer label:hover{color:var(--ink)}
   }
   body.menu-open{overflow:hidden}
   body.drawer-open{overflow:hidden}
+  body.menu-open aside.side{padding-top:calc(26px + env(safe-area-inset-top, 0px))}
   body.menu-open aside.side .wordmark{margin:0 0 22px 8px; font-size:28px}
   body.menu-open .snav{width:100%; padding:12px 14px; font-size:16px; border-radius:11px}
   body.menu-open .snav-sub{padding-left:34px}
@@ -1052,7 +1053,7 @@ footer button:hover, footer label:hover{color:var(--ink)}
     padding-left:calc(22px + env(safe-area-inset-left, 0px));
     padding-right:calc(22px + env(safe-area-inset-right, 0px));
   }
-  .top{padding-top:14px; align-items:center; gap:14px}
+  .top{padding-top:calc(14px + env(safe-area-inset-top, 0px)); align-items:center; gap:14px}
   .rule{margin-left:22px; margin-right:22px; margin-top:12px}
   main{padding-top:16px}
   .view-title{font-size:26px}
@@ -3940,7 +3941,8 @@ function renderCal(){
       <div class="view-title">Calendar</div>
       <div class="view-sub">every dated task in its place in time — click one to open it</div>
       <div class="spacer"></div>
-      ${(()=>{const n=syncQueue().length;
+      ${(()=>{if(window.ATELIER_NATIVE)return '';
+        const n=syncQueue().length;
         if(GC.busy)return `<span class="small muted" style="margin-right:4px">syncing…</span>`;
         return n?`<button class="cl-btn" onclick="atelierCalSync()" title="Write these straight onto your Google Calendar">
             ◷ Sync ${n} to Google</button>`
@@ -5830,6 +5832,7 @@ function gcalEvent(t){
 }
 function gcalNote(msg){GC.note=msg;const el=$('intsGcalNote');if(el)el.textContent=msg;}
 async function gcalSyncNow(auto){
+  if(window.ATELIER_NATIVE)return;   // no popup OAuth in the shell; Sprint 3 decides gcal's native story
   if(GC.busy||!gcalCfg().clientId)return;
   /* auto attempts may never summon Google's window: they need a grant this browser
      has already given, and one failure quiets them until a manual Sync succeeds */
@@ -6017,6 +6020,26 @@ function openInts(){
 absorbEmbedded();
 dedupeState();
 restoreRoute();
+/* native safety mirror: the doc (and session keys) shadow-copy into iOS Preferences;
+   if the webview ever comes up empty, the copy walks straight back in */
+if(window.ATELIER_NATIVE){
+  const NKEYS=['atelier.v2','atelier.auth','atelier.theme','atelier.pal','atelier.route','atelier.gcal.ok'];
+  const P=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Preferences;
+  (async()=>{try{
+    if(!P())return;
+    if(!store.get(KEY)){
+      const {value}=await P().get({key:KEY});
+      if(value){
+        for(const k of NKEYS){const r=await P().get({key:k});if(r.value)store.set(k,r.value);}
+        location.reload();return;
+      }
+    }
+  }catch(e){}})();
+  setInterval(()=>{try{
+    if(!P())return;
+    for(const k of NKEYS){const v=store.get(k);if(v)P().set({key:k,value:v});}
+  }catch(e){}},20000);
+}
 /* stale builds cause ghost bugs (resurrected domains, dead keys) — so every copy checks
    for a newer self: a pill offers the refresh, and a hidden tab takes it silently */
 let _newerBuild=false;
@@ -6040,7 +6063,7 @@ document.addEventListener('visibilitychange',()=>{
     if(!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')))location.reload();
   }
 });
-setTimeout(updateCheck,8000); setInterval(updateCheck,20*60*1000);
+if(!window.ATELIER_NATIVE){setTimeout(updateCheck,8000); setInterval(updateCheck,20*60*1000);}
 render();
 sbInit();
 if(window.matchMedia)matchMedia('(max-width:700px)').addEventListener('change',()=>render());

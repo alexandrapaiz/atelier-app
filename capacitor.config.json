@@ -1,0 +1,8 @@
+{
+  "appId": "com.alexandrapaiz.atelier",
+  "appName": "Atelier",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never"
+  }
+}
