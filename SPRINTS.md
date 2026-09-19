@@ -7,6 +7,13 @@ this file is the sprint board of record. Companion to
 
 **Team:** Alexandra (product owner — decisions, money, device testing) ·
 Claude (everything buildable).
+**The worthiness gate (added Sep 19):** the $99 Developer Program waits until
+Alexandra judges the product worthy of deployment — her call, no date. Nothing
+buildable is blocked: simulator development is free, and a free-Apple-ID cable
+install puts any build on her real iPhone (7-day installs). Enrollment,
+TestFlight proper, the listing, and submission queue behind that call as a
+dependency chain on the board, not as dated boxes.
+
 **Cadence:** sprints end Sundays, closed by the **Weekly compass** ritual
 (review + retro + next sprint's plan in one conversation). The **Morning
 brief** is the daily standup — Claude reads the board's dates and says what
@@ -22,7 +29,7 @@ Goal: Atelier boots as a native iOS app on the simulator.
 
 | Item | Owner | Due |
 |---|---|---|
-| **Enroll in Apple Developer Program** ($99, apple.com — the only step Claude can't do; approval takes days, so it leads) | **Alexandra** | Sep 14 ⚡ |
+| ~~Enroll in Apple Developer Program~~ → moved behind the worthiness gate (Sep 19) | **Alexandra** | when worthy |
 | **Wrap Atelier in Capacitor** — Xcode shell, bundled build (no remote loading), native storage adapter replacing localStorage | Claude | Sep 20 |
 | Boots + syncs on the iOS simulator, core suite still green | Claude | Sep 20 |
 
@@ -54,7 +61,7 @@ Goal: the account lifecycle is complete and the app is on Alexandra's phone.
 | Password reset flow ("forgot?" → Supabase reset email → reset page) | Claude | Sep 24 |
 | In-app account deletion (guideline 5.1.1(v): auth user + state row + MCP tokens, typed confirmation) | Claude | Sep 25 |
 | First-run welcome + starter board (no more blank Studio) | Claude | Sep 27 |
-| **TestFlight build on the real iPhone** — safe areas, keyboard vs drawer, offline boot, cross-device sync | Claude builds · **Alexandra tests** | Sep 27 |
+| **On-device test on the real iPhone** — free-Apple-ID cable install: safe areas, keyboard vs drawer, offline boot, cross-device sync (TestFlight proper comes after the worthiness call) | Claude builds · **Alexandra tests** | Sep 27 |
 
 ## Sprint 3 — *Review-proof* · Sep 28 → Sun Oct 4
 
@@ -68,14 +75,17 @@ Goal: everything a reviewer touches is ready before submission.
 | App Review demo account with lived-in sample data (the demo generator exists) | Claude | Oct 2 |
 | Listing: name availability ("Atelier" likely contested — backup ready), subtitle, keywords, description, 6.7" screenshots | Claude drafts · Alexandra approves | Oct 4 |
 
-## Sprint 4 — *Submit & ride the review* · Oct 5 → Sun Oct 11
+## Sprint 4 — *Submit & ride the review* · after the worthiness call
 
-Goal: submitted by Tuesday; the rest of the week absorbs Apple's feedback.
+Goal: enrollment → TestFlight → listing → submission, as one unbroken run
+once Alexandra declares the product worthy. Sprints 1–3 exist to make that
+declaration easy.
 
 | Item | Owner | Due |
 |---|---|---|
-| **Submit from App Store Connect** (demo credentials in review notes) | Alexandra presses · Claude preps | Oct 6 |
+| **Submit from App Store Connect** (demo credentials in review notes) | Alexandra presses · Claude preps | gate + ~5 days |
 | Respond to review feedback — rejections come with reasons and are usually one fix away | Claude | as it comes |
+| (Enrollment approval and a TestFlight pass precede submission — about a week from the worthiness call to the button) | both | — |
 | 🍾 **Atelier is on the App Store** | both | — |
 
 **After the finish line** (deliberately last, chained behind Publish on the
