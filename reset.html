@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="icon-rounded.png">
+<meta name="theme-color" content="#faf8f3">
+<script>/* the app's theme, applied before first paint */
+try{
+  var _t=localStorage.getItem('atelier.theme');
+  if(!_t)_t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  if(_t==='dark')document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+</script>
+<style>
+:root{
+  --paper:#faf8f3; --card:#fffefb;
+  --ink:#211e19; --ink-soft:#5c564c; --ink-faint:#948c7e;
+  --line:#e6e1d5; --danger:#b2543f;
+  --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --shadow-lift:0 2px 6px rgba(50,42,28,.08), 0 18px 40px -18px rgba(50,42,28,.25);
+}
+[data-theme=dark]{
+  --paper:#181613; --card:#201d18;
+  --ink:#ece6d9; --ink-soft:#b8b0a0; --ink-faint:#837b6d;
+  --line:#37322a; --danger:#e08a74;
+  --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 18px 40px -18px rgba(0,0,0,.7);
+}
+*{margin:0; padding:0; box-sizing:border-box; font-family:inherit}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:14px;
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+}
+.sb-card{
+  width:min(340px,100%); background:var(--card); border:1px solid var(--line);
+  border-radius:14px; box-shadow:var(--shadow-lift); padding:22px 24px 20px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.sb-card h3{font-family:var(--serif); font-size:20px; font-weight:600}
+.sb-card input{
+  border:1px solid var(--line); border-radius:9px; padding:9px 12px; background:var(--paper);
+  color:var(--ink); font-size:13.5px; width:100%;
+}
+.sb-card input:focus{outline:none; border-color:var(--ink-faint)}
+.sb-hint{font-size:12px; color:var(--ink-faint); line-height:1.45}
+.sb-row{display:flex; gap:8px; justify-content:flex-end; margin-top:4px}
+.sb-row button{
+  background:var(--ink); color:var(--paper); border:none; border-radius:999px;
+  padding:7px 16px; font-size:13px; cursor:pointer;
+}
+#msg{font-size:12px; color:var(--danger); line-height:1.45}
+a{color:var(--ink-soft)}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main class="sb-card">
+  <h3>New password</h3>
+  <p id="msg">Checking the link.</p>
+  <div id="form" hidden>
+    <input id="pass" type="password" autocomplete="new-password" placeholder="new password">
+    <input id="pass2" type="password" autocomplete="new-password" placeholder="again" style="margin-top:10px">
+    <div class="sb-row"><button id="go">Save</button></div>
+  </div>
+  <p class="sb-hint" id="back" hidden><a href="index.html">Open Atelier</a></p>
+</main>
+<script type="module">
+/* The landing page for Supabase's recovery link. The email carries a one-time
+   recovery token; this page trades it for a session held in memory only, sets
+   the new password, and sends her back to the app to sign in with it. The app's
+   own stored session (atelier.auth) is never touched from here. */
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+/* the app's home database — keep in step with SB_FIXED in index.html */
+const SB_URL='https://zzavasgpgprtkepiekda.supabase.co';
+const SB_KEY='sb_publishable_RVGU2biRWi6ioLoRtoN7Xg_Qjb5IOGl';
+
+const $=id=>document.getElementById(id);
+const client=createClient(SB_URL,SB_KEY,{auth:{
+  persistSession:false, detectSessionInUrl:false, autoRefreshToken:false,
+}});
+
+function say(text,soft){$('msg').textContent=text;$('msg').style.color=soft?'var(--ink-faint)':'';}
+function dead(text){say(text);$('form').hidden=true;$('back').hidden=false;}
+
+const hash=new URLSearchParams(location.hash.slice(1));
+const query=new URLSearchParams(location.search);
+
+(async function open(){
+  const failed=hash.get('error_description')||query.get('error_description');
+  if(failed){dead(/expired/i.test(failed)?'This link has expired. Ask for another one from the sign-in form.':failed);return;}
+  const token=hash.get('access_token'),refresh=hash.get('refresh_token'),code=query.get('code');
+  try{
+    if(token&&refresh){
+      const {error}=await client.auth.setSession({access_token:token,refresh_token:refresh});
+      if(error)throw error;
+    }else if(code){
+      const {error}=await client.auth.exchangeCodeForSession(code);
+      if(error)throw error;
+    }else{
+      dead('This link has expired. Ask for another one from the sign-in form.');return;
+    }
+  }catch(e){
+    dead('This link has expired. Ask for another one from the sign-in form.');return;
+  }
+  history.replaceState(null,'',location.pathname);   // the token leaves the address bar
+  say('',true);$('form').hidden=false;$('pass').focus();
+})();
+
+async function save(){
+  const pass=$('pass').value||'',again=$('pass2').value||'';
+  if(pass.length<8){say('Eight characters at least.');return;}
+  if(pass!==again){say('Those two do not match.');return;}
+  say('Saving.',true);
+  const {error}=await client.auth.updateUser({password:pass});
+  if(error){say(error.message);return;}
+  $('form').hidden=true;$('back').hidden=false;
+  say('Password changed. Sign in with it.',true);
+}
+$('go').addEventListener('click',save);
+$('pass2').addEventListener('keydown',e=>{if(e.key==='Enter')save();});
+</script>
+</body>
+</html>
