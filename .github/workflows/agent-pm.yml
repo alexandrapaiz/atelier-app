@@ -1,0 +1,73 @@
+name: pm-agent
+
+on:
+  # schedule:
+  #   - cron: "0 21 * * 0"   # 5 PM ET Sundays — uncomment only after a supervised smoke run
+  workflow_dispatch:
+    inputs:
+      owner_instructions:
+        description: "Owner instructions for this run (binding for this run)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are Atelier's pm seat, running in GitHub Actions with
+            this repository checked out. Read prompts/pm-agent.md; it is
+            your full charter. Within your first turns, create a branch
+            pm/YYYY-MM-DD-slug and open a DRAFT pull request with
+            `gh pr create --draft`, committing into it as you work — a died
+            run must still ship its partial work. Open exactly one PR. Never
+            merge your own PR, never push to main, never touch secrets,
+            never edit charters. If the charter file is missing, stop and
+            fail loudly instead of improvising.
+            Owner instructions for this dispatch, binding for this run
+            (empty on scheduled runs):
+            ${{ inputs.owner_instructions }}
+          claude_args: "--max-turns 120 --permission-mode bypassPermissions --model claude-sonnet-5"
+      # Incident 3 (docs/agents/incidents.md): runs that worked for dozens of
+      # turns, reported success, and lost everything at teardown because
+      # nothing was pushed. A green conclusion is not evidence of shipping.
+      - name: No-ship tripwire
+        if: always()
+        run: |
+          git fetch origin --quiet 2>/dev/null || true
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          dirty=$(git status --porcelain)
+          pushed=$(git branch -r --contains HEAD 2>/dev/null | tr -d ' ')
+          pr=$(gh pr list --head "$branch" --state all --json number --jq '.[0].number' 2>/dev/null || true)
+          {
+            echo "### Did this run ship anything?"
+            echo ""
+            echo "- branch: \`$branch\`"
+            echo "- pushed to a remote branch: ${pushed:-NO}"
+            echo "- pull request: ${pr:-none}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$dirty" ]; then
+            echo "::warning::Uncommitted changes were left in the sandbox and are lost at teardown."
+            printf '%s\n' "$dirty" | head -20
+          fi
+          if [ -z "$pushed" ]; then
+            echo "::error::This run made commits that were never pushed, so the work dies with the sandbox. See incident 3 in docs/agents/incidents.md and the 'Ship first, then work' rule in this seat's charter."
+            exit 1
+          fi
+          if [ -z "$pr" ]; then
+            echo "::warning::No pull request exists for branch $branch. A run with nothing to ship must say so in a draft PR and close it, rather than ending silently."
+          fi

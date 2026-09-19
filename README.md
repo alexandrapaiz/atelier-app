@@ -90,3 +90,13 @@ on every push.
 
 *Built by [Alexandra Paiz](https://github.com/alexandrapaiz), in collaboration
 with Claude.*
+
+## Operations
+
+Atelier is a portfolio product of Alexandra Systems Company. Three
+agent seats (`prompts/`: pm, engineer, exo) work through PRs under the
+company standard (`docs/standards/pm.md`, incl. autonomy tiers) and the
+company lessons register (`docs/standards/lessons.md`, synced
+autonomously from HQ). SPRINTS.md remains the sprint board of record
+and the Weekly compass the ceremony (deviations: `docs/decisions.md`).
+Seat crons are commented out until each passes a supervised smoke run.
