@@ -10,7 +10,7 @@ const www = path.join(root, "www");
 fs.rmSync(www, { recursive: true, force: true });
 fs.mkdirSync(path.join(www, "core"), { recursive: true });
 
-for (const f of ["index.html", "manifest.json", "icon-rounded.png", "icon-padded.png", "apple-touch-icon.png"])
+for (const f of ["index.html", "reset.html", "manifest.json", "icon-rounded.png", "icon-padded.png", "apple-touch-icon.png"])
   fs.copyFileSync(path.join(root, f), path.join(www, f));
 for (const f of fs.readdirSync(path.join(root, "core")))
   fs.copyFileSync(path.join(root, "core", f), path.join(www, "core", f));

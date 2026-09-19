@@ -960,6 +960,7 @@ main{padding:26px 40px 60px}
 .sb-row{display:flex; gap:8px; justify-content:flex-end; margin-top:4px}
 .sb-row .go{background:var(--ink); color:var(--paper); border-radius:999px; padding:7px 16px; font-size:13px}
 .sb-row .no{color:var(--ink-soft); padding:7px 10px; font-size:13px}
+.sb-row .forgot{margin-right:auto; color:var(--ink-faint); padding:7px 0; font-size:12.5px}
 #sbMsg{font-size:12px; color:var(--danger); min-height:0}
 [data-theme=dark] .sb-scrim{background:rgba(0,0,0,.5)}
 
@@ -5660,6 +5661,9 @@ const SB={cfg:null,client:null,user:null,timer:null,poll:null,busy:false,chan:nu
 /* the app's home database (project "alexandra-projects") — the publishable key is
    built to live in a public page; row-level security is what guards the data */
 const SB_FIXED={url:'https://zzavasgpgprtkepiekda.supabase.co',key:'sb_publishable_RVGU2biRWi6ioLoRtoN7Xg_Qjb5IOGl'};
+/* where a recovery email lands: the published page, never the current origin —
+   the shell runs at capacitor://localhost and a preview deploy is not allowlisted */
+const SB_RESET_URL='https://alexandrapaiz.github.io/atelier-app/reset.html';
 try{SB.cfg=JSON.parse(store.get('atelier.db'));}catch(e){}
 function sbStatus(s){
   const el=$('sbLink');if(!el)return;
@@ -5696,7 +5700,8 @@ function sbSignIn(){
     '<input id="sbPass" type="password" autocomplete="current-password" placeholder="password">'+
     '<p class="sb-hint">First time here? The same form creates your account.</p>'+
     '<p id="sbMsg"></p>'+
-    '<div class="sb-row"><button class="no" onclick="sbModalClose()">Cancel</button>'+
+    '<div class="sb-row"><button class="forgot" onclick="sbForgot()">forgot?</button>'+
+    '<button class="no" onclick="sbModalClose()">Cancel</button>'+
     '<button class="go" onclick="sbModalGo()">Sign in</button></div></div>';
   document.body.appendChild(d);
   d.querySelector('#sbPass').addEventListener('keydown',e=>{if(e.key==='Enter')sbModalGo();});
@@ -5720,6 +5725,16 @@ async function sbModalGo(){
   SB.cfg.email=email;store.set('atelier.db',JSON.stringify(SB.cfg));
   SB.user=r.data.user;
   sbModalClose();sbStart();
+}
+/* forgotten password: Supabase mails the recovery link, reset.html spends it */
+async function sbForgot(){
+  const email=(document.getElementById('sbEmail').value||'').trim();
+  const msg=document.getElementById('sbMsg');
+  if(!email){msg.style.color='';msg.textContent='Your email first.';return;}
+  msg.style.color='var(--ink-faint)';msg.textContent='Sending…';
+  const {error}=await SB.client.auth.resetPasswordForEmail(email,{redirectTo:SB_RESET_URL});
+  if(error){msg.style.color='';msg.textContent=error.message;return;}
+  msg.textContent='Check your email for the link.';
 }
 function sbStart(){
   sbStatus('✓');
