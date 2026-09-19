@@ -1,4 +1,4 @@
-<!-- Vendored from alexandrapaiz/alexandra-systems standards/lessons.md @ a76fc34 (2026-09-19). Kept current by the exo centralizer's autonomous sync PRs — never edit locally. -->
+<!-- Vendored from alexandrapaiz/alexandra-systems standards/lessons.md @ 08e67e4 (2026-09-19). Kept current by the exo centralizer's autonomous sync PRs — never edit locally. -->
 
 # Company Lessons Register
 
@@ -70,6 +70,25 @@ captured).
   repeat herself with "AGAIN". Companion to L-A4 and L-X1: L-A4 names
   the repeat as a register defect, L-X1 closes the loop in the tree,
   and this rule places the check before delivery.)
+- **L-A10 — One file, one owning charter.** Every file a seat writes
+  names exactly one owning charter. When two seats need the same file,
+  it is split by named section with an owner recorded in both charters.
+  A seat that finds itself in contested territory yields and files the
+  conflict rather than winning the race. (Atelier L3, 2026-09-19,
+  `portable: yes`: prompts/pm-agent.md and prompts/exo-agent.md both
+  told their seat to write docs/agents/pending.md and both seats did so
+  within the same hour of their first runs.)
+- **L-A11 — A defect that recurs across products belongs to HQ.**
+  L-A4 makes a repeated correction a register defect inside one
+  product. One level up: when the same defect appears in a second
+  product, the fix is owed to this register and to the standard it
+  governs, not to the second product's copy. Fixing it per product a
+  second time is the same failure L-A4 names. (epitome L5, 2026-09-19,
+  owner on a presentation carrying a defect already corrected in Ursa:
+  "i believe alexandra sys. company should be doing agent hqs because i
+  have the same dissatisfaction with this presenattion." This rule is
+  the centralizer's own reason for existing, and HQ incident 1 is the
+  case where its absence cost her the same correction twice.)
 
 ## engineer
 
@@ -149,6 +168,37 @@ captured).
 - **L-X2 — Secret first, schedules last.** No cron until the seat
   passes a supervised dispatch with a verified token. (Ursa incident 1:
   scheduled seats with an invalid token produced 0 successful runs.)
-- **L-X3 — Caps from evidence.** Turn caps at 2× highest observed
-  `num_turns`, floor 100; models asserted from run logs' `modelUsage`,
-  never from config intent. (alexandria incidents 9 and 10.)
+- **L-X3 — Caps from evidence, and only from representative
+  evidence.** Turn caps at 2× highest observed `num_turns`, floor 100;
+  models asserted from run logs' `modelUsage`, never from config
+  intent. The evidence only counts when the run executed the seat's
+  full duties. A smoke run's `num_turns` shows that the plumbing works
+  and nothing more, so it never lowers a cap; until a representative
+  run exists the cap stands untouched and the PR says plainly that it
+  rests on no evidence yet. (alexandria incidents 9 and 10 for the
+  rule; Atelier L2, 2026-09-19, `portable: yes`, for the
+  qualification: run 35463415653 was a pm smoke run reporting
+  `num_turns` 13, and applying the rule literally would have cut pm and
+  exo from 120 to the floor on the strength of a run that did no pm
+  work.)
+- **L-X4 — Reach is proven by a write, never by a read.** A credential
+  check that only reads proves nothing, because public repositories
+  read anonymously and a token with no grant at all returns the same
+  200. Reach is verified by a write the seat then undoes: create a
+  throwaway ref at the default branch head and delete it, never
+  touching a protected branch. A repository that reads but does not
+  write is recorded as unreachable. (HQ incident 2, 2026-09-19: the
+  first centralizer run read three portfolio repos successfully with a
+  token that had `pull: false, push: false` on all three, and the
+  supervised re-run reproduced it as a negative control, where
+  atelier-app returned `main` to a read and 403 to a write on the same
+  token in the same job.)
+- **L-X5 — Secrets: presence and length, never the value.** A seat
+  checks that a secret exists with `${VAR:+set}` and `${#VAR}` and
+  never prints, echoes, or pipes the value, including through a
+  redaction filter. Redaction is not a safety layer, it is a guess
+  about a format. (HQ incident 3, 2026-09-19: the centralizer printed
+  `EXO_TOKEN` into its own run log because its `sed` pattern covered
+  `ghp_` and the classic prefixes but not the fine-grained
+  `github_pat_` this PAT uses. The check it actually wanted never
+  needed the value.)
