@@ -1,4 +1,4 @@
-<!-- Vendored from alexandrapaiz/alexandra-systems standards/lessons.md @ 721127d (2026-09-19). Kept current by the exo centralizer's autonomous sync PRs — never edit locally. -->
+<!-- Vendored from alexandrapaiz/alexandra-systems standards/lessons.md @ a76fc34 (2026-09-19). Kept current by the exo centralizer's autonomous sync PRs — never edit locally. -->
 
 # Company Lessons Register
 
@@ -32,6 +32,44 @@ captured).
   flourish. (alexandria house rule; owner-set, portfolio-wide.)
 - **L-A6 — Judge a run by its artifacts, never its conclusion.**
   (alexandria incidents 8 and 11.)
+- **L-A7 — Exemplar first, feedback loop second.** When the owner has
+  approved an artifact of the same genre anywhere in the portfolio, a
+  new artifact starts from reading that exemplar in full, before the
+  first draft; iterating on described feedback converges on the
+  description, never on what she approved. The known exemplar for
+  plans and their decks: Ursa docs/design/product-plan.md and
+  docs/presentations/product-plan/. (epitome incident 1, 2026-09-19:
+  "highly dissatisfied with the presentation still we will abandon for
+  now. ursa did a much better job" — five revisions each fixed the
+  named gap and the artifact was abandoned anyway.)
+- **L-A8 — Presentations: seat-authored content, alexandria register,
+  direction at the end.** A presentation belongs to the seat whose
+  work it presents: that seat authors the content document in Copy /
+  Speaker notes / Visual direction form and the chair renders, never
+  authors. Copy is one declarative statement or one real quote per
+  slide, jargon-free (ADR numbers, tier names, protocol verbs live in
+  notes only), sources cited in notes by file-line or link,
+  confidence levels carried into the Copy; the deck ends with
+  recommendations the owner can accept or reject one by one. The
+  named portfolio exemplar for presentations is alexandria
+  docs/sales/pitch-deck.md — the durable rule is render the exemplar
+  the owner loves, because this is the fourth register correction and
+  each prior fix encoded the previous failure instead of that
+  exemplar. (epitome L8, 2026-09-19: "i am big fan of alexandria
+  presentations, i hate almost all presentations by epitome"; full
+  verbatim quote in epitome L8; codified in documents.md §2b and
+  checklist items 10-12.)
+- **L-A9 — Recording a rule is not enforcing it.** A ruling written to
+  a register changes nothing by itself. Whoever produces an artifact
+  checks it against the governing register line by line before the
+  artifact reaches the owner, and that check is the first gate in the
+  producing seat's own grading, never a later review step. (alexandria
+  incident 20, 2026-09-19: a heading ruling was recorded in
+  docs/voice/taste.md the same hour it was given, the next sample
+  still printed the banned framework labels, and the owner had to
+  repeat herself with "AGAIN". Companion to L-A4 and L-X1: L-A4 names
+  the repeat as a register defect, L-X1 closes the loop in the tree,
+  and this rule places the check before delivery.)
 
 ## engineer
 
@@ -44,9 +82,36 @@ captured).
 - **L-E3 — Ship first, then work.** Draft PR in the first turns, commit
   as you go; a died run must still ship its partial work. (alexandria
   incident 3; encoded in standards/workflow-template.yml.)
+- **L-E4 — Systems architecture covers the full stack, and the
+  connective stack is part of it.** A product's systems architecture
+  means "actually everything from infrastructure to data storage to
+  cloud to containers," with actual named tooling proposals, and it
+  includes distribution, because "distribution is a part of
+  engineering": the integrations (Vercel, Supabase, Clerk, Linear,
+  Claude, OpenAI, and the rest of the stack) are mapped as both system
+  components and distribution surfaces — the stack you build on is
+  the stack you distribute through. Full requirements:
+  standards/engineering-artifacts.md items 7 and 8. (Owner fine-tune,
+  taught once pre-HQ, re-taught 2026-09-19 on epitome; full verbatim
+  quote in engineering-artifacts.md provenance and epitome L6; HQ
+  incident 1.)
+- **L-E5 — A plan is grounded in one real case with real numbers.**
+  What separates the approved Ursa plan from the abandoned epito one,
+  beyond the standard's letter: a single real dogfood case threaded
+  through every section, actual payloads from a real run ("no
+  invented figure"), verbatim user quotes as evidence, a "Done when
+  <observable event>" condition on every milestone, and diagrams
+  specified node by node with typed edge labels. Schemas with no
+  filled example and phases with no done-condition read as marketing
+  no matter how many tables surround them. (Ursa
+  docs/design/product-plan.md §4/§5/§11 vs epitome
+  docs/architecture.md, 2026-09-19; the abandoned artifact literally
+  missed engineering-artifacts.md requirements 1 and 3 — the standard
+  needed adherence, not amendment.)
 - *Pending harvest: the owner reports substantial engineer corrections
-  in Ursa chair sessions not yet captured in any register. First
-  centralizer task: harvest them with the owner.*
+  in Ursa chair sessions not yet captured in any register (partially
+  harvested: Incident 3 → engineering-artifacts.md, L-E4, L-E5). First
+  centralizer task: finish the harvest with the owner.*
 
 ## pm
 
@@ -57,6 +122,24 @@ captured).
   working planning artifact (Atelier's SPRINTS.md), the seat adopts its
   format and voice; the standard bends, recorded as a deviation.
   (Atelier bootstrap, 2026-09-19.)
+
+- **L-P3 — The PM seat must relieve the owner, not just run
+  ceremonies.** Owner, 2026-09-19: "pm feels quite dormant across all
+  the projects. im basically doing its job in the creative direction
+  and synchronous agent guidance aspect." Rule: a PM seat's output is
+  measured by owner relief — it prepares direction as choices (decision
+  memos, options with a recommendation, briefs before she has to
+  think), and it carries synchronous-mode guidance of working agents
+  (orientation notes, mid-sprint steering) rather than leaving that to
+  the owner by default. Async ceremonies alone do not discharge the
+  seat. (Portfolio-wide observation; charters due for revision against
+  this rule.)
+
+- **L-P4 — Purchases wait on the worthiness gate.** Spending queues
+  behind the owner's judgment that the product has earned it, carried
+  as a dependency chain, never as a dated task. No seat schedules her
+  money. (Atelier L1, 2026-09-19: "the $99 waits for the product to
+  earn it".)
 
 ## exo
 
