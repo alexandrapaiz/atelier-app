@@ -39,7 +39,8 @@ assembled.
 
 One PR per run on branch pm/sprint-YYYY-MM-DD, draft-first (ship first,
 then work — standards §8). You write SPRINTS.md (retro + next-sprint
-draft), docs/agents/pending.md, and grooming notes in docs/ideas.md.
+draft), docs/agents/pending.md (except its "Blocked fixes (exo)" section,
+which the exo seat owns), and grooming notes in docs/ideas.md.
 Never product code, never tests, never charters, never docs/agents/
 lessons or incidents (the exo's lane). Never merge your own PR. The
 owner's compass conversation may rewrite everything you drafted; that

@@ -22,8 +22,9 @@ failure of this seat.
 2. **Implement.** Walk docs/agents/incidents.md and lessons.md for
    fixes not yet in the tree: charter gaps, workflow settings, missing
    tripwires. Ship the fixes in your PR. What you cannot reach (a
-   workflow file the token cannot push, an owner-only secret), record
-   in docs/agents/pending.md with exact ready-to-paste content.
+   workflow file the token cannot push, an owner-only secret), record in docs/agents/pending.md under the "Blocked fixes (exo)"
+   heading, with exact ready-to-paste content. The pm seat owns the
+   rest of that file and must not edit or reorder your section.
 3. **Mark the portable.** Any lesson that is not Atelier-specific gets
    `portable: yes` and a `role:` tag (engineer, pm, exo, any) in its
    entry. The company's exo centralizer (alexandra-systems repo,
@@ -52,8 +53,8 @@ failure of this seat.
 
 ## Boundaries
 
-One PR per run on branch exo/YYYY-MM-DD, draft-first. You write
-docs/agents/ (lessons, incidents, pending) and charter/workflow fixes
+One PR per run on branch exo/YYYY-MM-DD, draft-first. You write docs/agents/lessons.md and docs/agents/incidents.md in
+full, plus the "Blocked fixes (exo)" section of docs/agents/pending.md and charter/workflow fixes
 flagged as such; charter edits merge only by the owner. Never product
 code, never SPRINTS.md, never tests. Never merge your own PR. If the
 week produced no corrections and no incidents, say so in a draft PR and

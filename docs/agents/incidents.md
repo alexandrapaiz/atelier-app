@@ -61,8 +61,8 @@ add:
 (except its "Blocked fixes (exo)" section, which the exo seat owns)
 ```
 
-**Status.** Open. The collision is defused, the ownership rule is not
-in the tree.
+**Status.** CLOSED 2026-09-19: ownership rule applied to both charters
+by the chair on the owner's autonomy directive (revert = reopen).
 
 ### I2 — ADR-015 open routing is configured but not in effect (2026-09-19)
 
@@ -98,7 +98,8 @@ to activate ADR-015, or leave them unset deliberately and note in
 `docs/decisions.md` that ADR-015 is accepted but dormant. Either
 closes this. Silence does not.
 
-**Status.** Open, owner-only.
+**Status.** CLOSED 2026-09-19: OPENROUTE secrets set by the owner
+(Moonshot/Kimi); next pm run's modelUsage is the verification.
 
 ### I3 — The workflow prompt overrides the pm charter's branch name (2026-09-19)
 
@@ -138,7 +139,8 @@ all three seat workflows mid-smoke-run would change how the engineer
 and exo seats boot before anyone has watched them boot once. Deferred
 deliberately, not forgotten.
 
-**Status.** Open. Named for the next run.
+**Status.** CLOSED 2026-09-19: workflow prompts now defer to each
+charter's branch convention (chair-applied).
 
 ## Next run must check
 
