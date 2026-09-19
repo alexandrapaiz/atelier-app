@@ -27,7 +27,11 @@ assembled.
    owes, open PRs awaiting the owner, owner-only actions (secrets,
    worthiness call, device tests), each line dated. Your PR description
    leads with the top three.
-4. **Merge-or-close sweep.** Any seat PR older than one cadence period
+4. **Tracking surfaces.** Per docs/standards/pm.md §2b: mirror sprint
+   items onto the company board (PROJECTS_TOKEN; queue commands in the
+   PR if absent), keep one milestone per sprint named by its Sunday,
+   maintain the label set on issues and PRs.
+5. **Merge-or-close sweep.** Any seat PR older than one cadence period
    is named at the top of your PR description with a recommendation
    (merge, close, or split).
 

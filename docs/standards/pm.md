@@ -1,4 +1,4 @@
-<!-- Vendored from alexandrapaiz/alexandra-systems standards/pm.md @ 721127d (2026-09-19), incl. §10 Autonomy tiers (HQ ADR-011). Deviations: docs/decisions.md ADR-001. -->
+<!-- Vendored from alexandrapaiz/alexandra-systems standards/pm.md @ 48fa180 (2026-09-19), incl. §2b tracking surfaces + §10 autonomy tiers. Deviations: docs/decisions.md ADR-001. -->
 
 # Standard: Project Management
 
@@ -45,6 +45,25 @@ criteria, an assignment line per item naming the seat, and a notes
 section for anything orientation-critical. Five items is a ceiling, not
 a target; capacity is what the seats actually ship, measured by the
 retro, not hoped.
+
+## 2b. Board, milestones, labels (owner directive, 2026-09-19)
+
+The PM seat owns the tracking surfaces, so the owner never does:
+
+- **The company board** (GitHub Projects "Alexandra Systems",
+  users/alexandrapaiz/projects/5): every sprint item the PM plans gets
+  a board item with Product, Seat, and Horizon fields set; done items
+  get Status → Done in the retro. Board writes require the
+  PROJECTS_TOKEN secret (classic PAT, `project` scope — user-level
+  Projects v2 accepts neither GITHUB_TOKEN nor fine-grained PATs).
+  When the secret is absent, the PM lists the exact `gh project`
+  commands it would have run in its PR description instead of failing.
+- **Milestones**: one per sprint/cycle in the product repo, named by
+  the sprint date, sprint items attached, closed at the retro.
+- **Labels**: maintain a stable set — `seat:<name>` for ownership,
+  `horizon:now|next|later`, `blocked`, `owner-action` — and apply them
+  to issues and PRs the seats produce. Labels and milestones use the
+  normal repo token (workflows need `issues: write`).
 
 ## 3. The sprint file
 
