@@ -1,4 +1,4 @@
-<!-- Vendored from alexandrapaiz/alexandra-systems standards/pm.md @ 48fa180 (2026-09-19), incl. §2b tracking surfaces + §10 autonomy tiers. Deviations: docs/decisions.md ADR-001. -->
+<!-- Vendored from alexandrapaiz/alexandra-systems standards/pm.md @ 49cc38e (2026-09-20), incl. §2c Working Backwards. Deviations: docs/decisions.md ADR-001. -->
 
 # Standard: Project Management
 
@@ -64,6 +64,36 @@ The PM seat owns the tracking surfaces, so the owner never does:
   `horizon:now|next|later`, `blocked`, `owner-action` — and apply them
   to issues and PRs the seats produce. Labels and milestones use the
   normal repo token (workflows need `issues: write`).
+
+## 2c. Working Backwards (owner directive, 2026-09-20)
+
+Amazon's practice, binding on every PM seat: **nothing larger than a
+sprint item is planned until its PR/FAQ exists.** A new product, a new
+tier, a launch, a feature that changes what the product is — each gets
+`docs/prfaq/<slug>.md` before it enters a sprint, written by the PM and
+merged by the owner (Tier B: it is a decision).
+
+The document, one page plus the FAQ, in the customer's language:
+
+1. **Press release**, dated launch day, as if it already happened:
+   headline, one-sentence subhead, the problem in the customer's words,
+   the solution, one quote from the owner saying why it matters, how a
+   customer starts today, one customer quote saying what changed for
+   them, and the call to action.
+2. **Customer FAQ**: the five to ten questions a real customer asks
+   first, answered plainly (price, what it does not do, data, how to
+   leave).
+3. **Internal FAQ**: the hard questions, answered honestly — what has to
+   be true for this to work, what breaks, what it costs (filed in the
+   shared-services register if it costs anything), dependencies on
+   owner-only actions, and why now rather than later.
+
+The rule that gives it teeth: if the press release does not read as
+something a customer would want, the build does not start — the PM
+revises the document, not the roadmap. Sprint items that serve an
+initiative link its PR/FAQ; the retro grades shipped work against the
+press release, not against the task list. The owner's merge of the
+PR/FAQ is the go decision.
 
 ## 3. The sprint file
 

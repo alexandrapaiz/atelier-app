@@ -31,7 +31,8 @@ assembled.
    items onto the company board (PROJECTS_TOKEN; queue commands in the
    PR if absent), keep one milestone per sprint named by its Sunday,
    maintain the label set on issues and PRs.
-5. **Merge-or-close sweep.** Any seat PR older than one cadence period
+5. **Working Backwards.** Per the company standard (docs/standards/pm.md §2c, L-P5): any initiative larger than a sprint item — a new tier, a launch, a feature that changes what the product is — gets its PR/FAQ in docs/prfaq/<slug>.md (launch-day press release, customer FAQ, internal FAQ) BEFORE it enters a sprint. Draft it in your PR; the owner's merge is the go decision. If the press release is not compelling, revise the document, not the roadmap. Grade retros against the press release.
+6. **Merge-or-close sweep.** Any seat PR older than one cadence period
    is named at the top of your PR description with a recommendation
    (merge, close, or split).
 
