@@ -58,10 +58,24 @@ Goal: the account lifecycle is complete and the app is on Alexandra's phone.
 
 | Item | Owner | Due |
 |---|---|---|
-| Password reset flow ("forgot?" → Supabase reset email → reset page) | Claude | Sep 24 |
+| ~~Password reset flow ("forgot?" → Supabase reset email → reset page)~~ → shipped Sep 19 in PR #3; blocked on owner adding `reset.html` to Supabase redirect allowlist | Claude | Sep 24 |
 | In-app account deletion (guideline 5.1.1(v): auth user + state row + MCP tokens, typed confirmation) | Claude | Sep 25 |
 | First-run welcome + starter board (no more blank Studio) | Claude | Sep 27 |
 | **On-device test on the real iPhone** — free-Apple-ID cable install: safe areas, keyboard vs drawer, offline boot, cross-device sync (TestFlight proper comes after the worthiness call) | Claude builds · **Alexandra tests** | Sep 27 |
+
+### Sprint 2 status — Thu Sep 24
+
+Shipped this week: the password reset flow (PR #3), with a headless
+Chrome verification in `scripts/reset-page-test.mjs` and the new
+`reset.html` page. Tests are green; Pages deploys are current.
+
+In flight: account deletion is due tomorrow (Sep 25), first-run welcome
+and on-device QA are due Sep 27. The on-device test still needs
+Alexandra's iPhone and a cable install.
+
+New owner block: the Supabase Auth redirect allowlist must include
+`https://alexandrapaiz.github.io/atelier-app/reset.html` before the
+reset flow is end-to-end. Recorded in `docs/agents/pending.md`.
 
 ## Sprint 3 — *Review-proof* · Sep 28 → Sun Oct 4
 
