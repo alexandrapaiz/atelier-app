@@ -11,6 +11,15 @@ None as of 2026-09-24.
 
 ## Owner-only actions
 
+- **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
+  the secret now exists in the pm-agent workflow env (it did not on the last
+  ceremony), but `gh api user` and `gh project item-list 5 --owner
+  alexandrapaiz` both return `403 Resource not accessible by integration`
+  under it. Per docs/standards/pm.md §2b, user-level Projects v2 needs a
+  **classic** PAT with the `project` scope — a fine-grained PAT or an
+  installation token gives exactly this error. Board mirroring stays
+  deferred (commands queued in PR #8) until the secret is replaced with a
+  classic PAT.
 - **Supabase redirect allowlist** (2026-09-24): the password reset page
   shipped in PR #3, but the recovery link only works once Supabase Auth →
   URL Configuration → Redirect URLs includes
