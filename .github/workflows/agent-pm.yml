@@ -24,6 +24,8 @@ jobs:
       OPENROUTE: ${{ secrets.OPENROUTE_API_KEY }}
       PROJECTS_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
       GH_TOKEN: ${{ github.token }}
+      BOARD_API_URL: ${{ secrets.BOARD_API_URL }}
+      BOARD_RUNTIME_TOKEN: ${{ secrets.BOARD_RUNTIME_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
