@@ -1,0 +1,32 @@
+# company.yaml — Atelier's declaration to HQ (standards/company-interface.md §1)
+#
+# Derived by reading the repo on 2026-09-20. All three seats are smoke-proven
+# with their crons commented out, which is exactly the state HQ ADR-007
+# amendment 2 describes for a backlogged product: "seats stay installed and
+# smoke-proven but crons remain commented (dispatch-only) while it is
+# backlogged." Hence cadence dispatch-only, status backlogged.
+company: alexandra-systems
+product: atelier-app
+posture: product
+priority: backlog
+owner: alexandrapaiz
+surfaces:
+  lessons: docs/agents/lessons.md     # the only local lessons register in the portfolio today
+  incidents: docs/agents/incidents.md
+  pending: docs/agents/pending.md
+  decisions: docs/decisions.md
+  ideas: docs/ideas.md
+  prfaq: docs/prfaq/
+  sprints: SPRINTS.md                 # this repo plans at the root, not in docs/sprints/
+  # No `okrs:` surface exists in this repo. HQ reads a gap there, not a 404.
+standards:
+  lessons: 47779de
+  pm: 49cc38e
+seats:
+  - { name: pm,       workflow: .github/workflows/agent-pm.yml,       cadence: dispatch-only, model_class: structured, status: backlogged }
+  - { name: engineer, workflow: .github/workflows/agent-engineer.yml, cadence: dispatch-only, model_class: build,      status: backlogged }
+  - { name: exo,      workflow: .github/workflows/agent-exo.yml,      cadence: dispatch-only, model_class: judgment,   status: backlogged }
+deploy:
+  pages: alexandrapaiz.github.io/atelier-app
+  supabase: true
+  mcp: atelier-mcp.vercel.app
