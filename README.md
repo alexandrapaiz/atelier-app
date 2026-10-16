@@ -100,3 +100,11 @@ company lessons register (`docs/standards/lessons.md`, synced
 autonomously from HQ). SPRINTS.md remains the sprint board of record
 and the Weekly compass the ceremony (deviations: `docs/decisions.md`).
 Seat crons are commented out until each passes a supervised smoke run.
+
+## Part of Alexandra Systems Company
+
+atelier is a subcompany of [Alexandra Systems Company](https://github.com/alexandrapaiz/alexandra-systems), the holding company that runs every product in the portfolio as a company of agent seats.
+
+- HQ's standards are vendored at `docs/standards/` and bind every seat here; the PM seat merges every tier in this repository under section 21 of the PM standard, and HQ's PM holds the portfolio while the owner is away.
+- The company board is at https://alexandra-systems-company.com; a message addressed to a seat there wakes it through the event bus, and every run reports to the board.
+- `company.yaml` in this repository is what HQ reads to see this company: its seats, cadences and surfaces.
