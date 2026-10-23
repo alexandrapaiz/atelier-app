@@ -108,6 +108,22 @@ shipped.
 
 ---
 
+## Status note — Fri Oct 23
+
+Atelier is asleep by decision. `company.yaml` was rewritten by the HQ
+chair on Oct 16 with `posture: asleep`, and the company board carries a
+standing sprint named "Asleep by decision" with the goal written as
+"nothing ships until the owner wakes it, and its PM names the first
+real milestone then." Sprints 2–4 above are the state the product was
+in when it went to sleep, not a live plan. No retro is written here and
+no Sprint 5 is drafted, because closing a sprint or opening the next one
+is exactly the judgment the board reserves for the owner's wake-up call.
+This run was a message wake (a board note from HQ's chair, out of this
+product's lane — see `docs/agents/pending.md`), not the Sunday ceremony,
+and the asleep posture is the reason the ceremony did not run either.
+
+---
+
 *Risks watched:* Apple enrollment latency (mitigated: it's first, urgent);
 "Atelier" name collision (backup name decided at listing time, not submission
 time); review rejection (a buffer week exists for exactly this).
