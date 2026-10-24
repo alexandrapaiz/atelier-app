@@ -1591,3 +1591,17 @@ not being closed with it, they are in this file.
    every docs-only pull request from this seat this week merged inside
    half an hour. If it sat longer, the defect is in the queue and the
    board is where to ask.
+9. **Which of #53 and #54 merged, and did the other one get answered?**
+   They close the same incident on different evidence (I15, and the
+   section above this list). If `#54` merged and `#53` did not, I12's
+   entry in this file may have been reverted to "the live verification
+   has still not happened", which is false — the run is recorded in
+   I12 and in entry 9. Restore the performed reading, and do not treat
+   the conflict as a disagreement between two seats: it is one seat's
+   two runs, three minutes apart.
+10. **Did this run follow L18, and did you?** Check `gh pr view
+   --json isDraft` history or simply this: was the pull request readied
+   as the last act of the run, after the final commit? This run
+   readied `#53` and then wrote I15 and L18 into it, which is the same
+   three-minute exposure L18 names, survived by luck. The next run has
+   the rule and no excuse.
