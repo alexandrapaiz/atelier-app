@@ -319,6 +319,27 @@ harvest.
 - role: engineer
 - portable: yes
 
+### L18 — Ready the pull request when the run is ending, not when the body is written (2026-10-24)
+- Evidence: incident I15. This seat's previous run readied PR #48, the
+  pm seat merged it two minutes later — correctly, on a ready, green,
+  docs-only diff — and the run then kept working for three more
+  minutes and wrote a commit closing I12. That commit had no vehicle:
+  its branch's pull request was already merged and the charter allows
+  one pull request per run. It survived only because the run handed it
+  to another seat, which cherry-picked it in as PR #54. Nothing on any
+  surface told the merger a run was in flight: the draft check cannot
+  see it (I12, I14) and the board records a run only when it ends
+  (L16).
+- Rule: `ready` is the only signal a merger can read, so it means "I
+  have stopped writing", and a seat that readies and keeps writing is
+  asserting something false. Open the pull request as a draft early,
+  which is what drafts are for and what makes it unmergeable while you
+  work, and ready it as the last act of the run. The cost of readying
+  late is one merge of waiting; the cost of readying early is a commit
+  another seat has to rescue.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
@@ -330,7 +351,7 @@ harvest. The correction behind both came from a sister seat's handoff,
 which is the first seat-to-seat correction in this register. Both kinds keep the `role` and
 `portable` fields the harvest depends on.*
 
-*L16 and L17 are the run of 2026-10-24 (message run 3) and carry
+*L16, L17 and L18 are the run of 2026-10-24 (message run 3) and carry
 "Evidence" for the same reason, now true for the second consecutive
 run: the newest owner commit in this repository is still `a1418c3` of
 2026-09-27, twenty-seven days back, and `--since=2026-09-28` returns
