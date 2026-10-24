@@ -12,10 +12,12 @@
 #   tools/check-draft-prs.sh                 every seat named in company.yaml
 #   tools/check-draft-prs.sh --seat engineer one seat
 #   tools/check-draft-prs.sh --all           every open draft, seat or not
+#   tools/check-draft-prs.sh --fresh-under 0 judge every draft, however new
 #
 # One line per draft, fields stable enough to grep:
 #   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=none
-#   LIVE      #47 atelier-engineer/2026-10-24-message idle=0h commits=1 files=1 carries=work run=self
+#   LIVE      #47 atelier-engineer/2026-10-24-message idle=2m commits=1 files=1 carries=work run=self
+#   FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=4m commits=1 files=0 carries=nothing run=fresh
 #
 # carries=work   the branch changes files, so it is unfinished work: ready it
 #                (gh pr ready <n>), or write in it which clause keeps it a draft
@@ -27,16 +29,31 @@
 #                  actually run on, where there is no Actions run to find.
 #   run=live       a workflow run is queued or in progress for this branch, so a
 #                  seat is still standing in it. Not stranded, not counted.
+#   run=fresh      nothing vouches for this branch, and nothing had time to:
+#                  its newest commit is younger than --fresh-under minutes, so
+#                  the seat that opened it may still be standing in it right
+#                  now. Not counted, and counted out loud on the summary line,
+#                  because a draft left unjudged must not read as one examined
+#                  and cleared (L-A21). This is the reading that covers another
+#                  seat's pass running in the same minute as yours, which
+#                  run=self cannot see and run=live cannot see here.
+#   idle=Nm, idle=Nh
+#                  how long since the branch's newest commit — minutes under an
+#                  hour, whole hours above it. Minutes because the fresh verdict
+#                  turns on this field, and `idle=0h` cannot tell a reader
+#                  whether it covered four minutes or fifty-nine.
 #   carries=unreadable, run=unreadable, idle=unreadable
 #                  the field could not be read. The draft still counts as
 #                  stranded, because the cheap error here is one merge of
 #                  waiting and the expensive one is closing work that exists.
 #
 # Exit status:
-#   0  no stranded drafts in scope — every seat PR is reachable by a merger
+#   0  no stranded drafts in scope — every seat PR is reachable by a merger,
+#      or too new to be judged, which the summary line names separately
 #   1  at least one stranded draft — named on stdout, one per line
 #   2  the check could not run (no gh, no auth, not a repo, a seat name no
-#      company.yaml declares). Never read a 2 as a 0.
+#      company.yaml declares, a --fresh-under that is not a whole number of
+#      minutes). Never read a 2 as a 0.
 #
 # Read the status, never a pipe's: `npm run drafts | tail` reports the tail's 0
 # whatever the check found. Pipe and you want ${PIPESTATUS[0]}.
@@ -45,12 +62,48 @@
 
 set -euo pipefail
 
+# How new a draft has to be for this check to decline to judge it, in minutes.
+#
+# A draft is stranded when time has passed and no merger could reach it, so the
+# quantity being measured is time. `run=self` and `run=live` answer "is a seat
+# standing in this branch" and neither can see another seat's pass running in
+# the same minute as yours — the Actions API cannot see a host window at all,
+# and the board only learns of a run when it ends. So the only reading left for
+# that case is the age of the branch's newest commit, and this is the number it
+# is compared against.
+#
+# 60, measured rather than picked. `GET /api/board/atelier` on 2026-10-24 at
+# 22:09Z served 25 runs spanning 01:54Z to 22:07Z, and the longest seat run on
+# this product's whole record is 23m — the exo seat's own, 88 turns, 21:40:18Z
+# to 22:03:40Z. 60 is 2.6x that, and the headroom is the point rather than
+# slack: that page is capped at 25 rows and carries no field saying it
+# truncated, so every maximum read from it can only rise. It also bounds the
+# wrong quantity on purpose. A run's idle time is not its length, it is the gap
+# from its last commit to its end, and the practice every charter here mandates
+# — open the draft first, commit as you go — makes that gap as long as the run.
+#
+# In minutes, not in hours, so that the number is a number a reader can find
+# and change rather than an integer division to be reverse-engineered, and so
+# that it can be retuned from evidence without touching the arithmetic.
+# --fresh-under 0 turns the guard off and judges every draft, which is the
+# reading a merger sweeping the queue wants.
+fresh_under_min=60
+
 scope=seats
 seat=
 while [ $# -gt 0 ]; do
   case "$1" in
     --all)   scope=all; shift ;;
     --seat)  scope=one; seat="${2:-}"; shift 2 ;;
+    # A threshold that silently became 0 would turn the guard off and read as a
+    # clean sweep, so a value that is not a whole number of minutes is an
+    # unasked question (exit 2) rather than a default quietly restored.
+    --fresh-under)
+      fresh_under_min="${2:-}"
+      case "$fresh_under_min" in
+        ''|*[!0-9]*) echo "check-draft-prs: --fresh-under needs a whole number of minutes, got: ${2:-<nothing>}" >&2; exit 2 ;;
+      esac
+      shift 2 ;;
     # The whole leading comment block, however long it grows: a line range
     # here silently truncates the help the next time this header is edited.
     -h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"; exit 0 ;;
@@ -118,6 +171,7 @@ in_scope() { # branch
 
 now=$(date -u +%s)
 stranded=0
+fresh=0
 checked=0
 skipped=0
 
@@ -141,9 +195,11 @@ while IFS=$'\t' read -r number branch; do
   if last=$(gh api "repos/{owner}/{repo}/commits?sha=$branch&per_page=1" \
        --jq '.[0].commit.committer.date' 2>/dev/null) && [ -n "$last" ] \
      && last_epoch=$(date -u -d "$last" +%s 2>/dev/null); then
-    idle=$(( (now - last_epoch) / 3600 ))h
+    idle_s=$(( now - last_epoch ))
+    if [ "$idle_s" -lt 3600 ]; then idle="$(( idle_s / 60 ))m"; else idle="$(( idle_s / 3600 ))h"; fi
   else
     idle=unreadable
+    idle_s=
   fi
 
   if [ -n "$self" ] && [ "$branch" = "$self" ]; then
@@ -155,8 +211,23 @@ while IFS=$'\t' read -r number branch; do
     run=unreadable
   fi
 
+  # Nothing vouched for this branch. Before calling that stranded, ask whether
+  # anything could have: a draft minutes old has had no time to be abandoned,
+  # and the seat that opened it may be standing in it as this line prints.
+  # An unreadable idle field can never reach this test, so a failed read still
+  # counts as stranded — the cause rides with the value (L-A44), and the cheap
+  # error here is one merge of waiting.
+  if [ "$run" = none ] && [ "$fresh_under_min" -gt 0 ] && [ -n "$idle_s" ] \
+     && [ "$idle_s" -lt $(( fresh_under_min * 60 )) ]; then
+    run=fresh
+  fi
+
   if [ "$run" = live ] || [ "$run" = self ]; then
     printf 'LIVE      #%s %s idle=%s commits=%s files=%s carries=%s run=%s\n' \
+      "$number" "$branch" "$idle" "$commits" "$files" "$carries" "$run"
+  elif [ "$run" = fresh ]; then
+    fresh=$((fresh + 1))
+    printf 'FRESH     #%s %s idle=%s commits=%s files=%s carries=%s run=%s\n' \
       "$number" "$branch" "$idle" "$commits" "$files" "$carries" "$run"
   else
     stranded=$((stranded + 1))
@@ -171,6 +242,7 @@ done < <(gh pr list --state open --limit 100 --json number,headRefName,isDraft \
 # (L-A21). The out-of-scope count is the one that tells a reader their scope
 # missed the queue.
 read_note="$skipped out of scope"
+[ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge (under ${fresh_under_min}m)"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
 
 if [ "$stranded" -gt 0 ]; then
