@@ -170,12 +170,12 @@ done < <(gh pr list --state open --limit 100 --json number,headRefName,isDraft \
 # "examined nothing" are different sentences rather than the same clean line
 # (L-A21). The out-of-scope count is the one that tells a reader their scope
 # missed the queue.
-read_note="$checked draft(s) in scope, $skipped out of scope"
+read_note="$skipped out of scope"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
 
 if [ "$stranded" -gt 0 ]; then
-  echo "check-draft-prs: $stranded of $read_note are stranded — ready them, close them, or name the clause that keeps them drafts (L-A32)."
+  echo "check-draft-prs: $stranded of $checked draft(s) in scope are stranded ($read_note) — ready them, close them, or name the clause that keeps them drafts (L-A32)."
   exit 1
 fi
-echo "check-draft-prs: $read_note, none stranded."
+echo "check-draft-prs: $checked draft(s) in scope, $read_note, none stranded."
 exit 0
