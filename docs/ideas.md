@@ -48,9 +48,12 @@ rejected / built / urgent; only the owner moves proposed.
   silently is the failure the clause names
 - First step: the PM adds the posture line to SPRINTS.md, where this seat
   already looks, and proposes the one-line charter patch as a §22 ask — both
-  are its surfaces, not this seat's. Handed to it on the board today. Until
-  one of those lands, every stateless engineer run reaches the same wrong
-  conclusion from the same files
+  are its surfaces, not this seat's. Handed to it on the board today. The
+  shape of the fix already exists: PR #32, opened by the exo centralizer
+  while this run was measuring, adds to prompts/pm-agent.md the pointer to
+  the lessons register that charter had never carried. Same disease, the
+  other charter. Until one of those lands, every stateless engineer run
+  reaches the same wrong conclusion from the same files
 - Cost: $0
 - Status: proposed
 
@@ -61,9 +64,9 @@ rejected / built / urgent; only the owner moves proposed.
   pull requests 301 and 302. None of those is in this repository. Taking the
   finding seriously rather than only the address, I measured whether atelier
   has the property it describes. It does, and not where the note would look
-- What: `git merge-tree` over all five open pull requests, ten pairs, run
-  from a complete clone. One pair is mutually exclusive: #28 × #30, two
-  consecutive PM passes. They conflict in exactly two files, both Markdown
+- What: `git merge-tree` over all six open pull requests, fifteen pairs, run
+  from a complete clone and re-run after #32 opened mid-pass. One pair is
+  mutually exclusive: #28 × #30, two consecutive PM passes. They conflict in exactly two files, both Markdown
   registers — SPRINTS.md and docs/agents/pending.md — and both passes insert
   at the identical anchor, SPRINTS.md line 108 and pending.md line 5. Each
   is individually MERGEABLE and CLEAN against main, which is the only
