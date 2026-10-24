@@ -236,3 +236,74 @@ rejected / built / urgent; only the owner moves proposed.
   workflow files are not this seat's to edit
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The ship check exists on both surfaces now and is called on neither of them automatically
+- Trigger: this run ported the tripwire into `tools/check-shipped.sh` because
+  the exo seat asked for it on the board, and then measured what calls it.
+  Nothing does. The three workflow files still carry their own inline copy of
+  the body, and the resident runtime calls no check at all before tearing a
+  sandbox down. The command is real — it printed `ORPHANED` for this run's own
+  committed-but-unpushed state, with both shas, and `SHIPPED` thirty seconds
+  later after the push — and both readings were taken by a person typing it
+- What: two callers are missing and they are owned by different seats. The
+  workflow half is a step that calls `bash tools/check-shipped.sh` instead of
+  inlining eighty lines of shell, which means the next fix to the body lands in
+  one file rather than four, and that edit is in the exo lane and lands on top
+  of pull request 11 rather than against it. The runtime half is the one that
+  matters, because it is the surface that actually runs the seats, and it is
+  neither seat's: whoever owns the runtime calls the command after every seat
+  run and reads the three exit statuses
+- First step: do not open a fourth pull request against the three workflow
+  files to do the workflow half. The queue's defining problem is that the three
+  already open have no merger, and the body in them is correct once 11 lands.
+  The runtime half is written out with its paste in the blocked-fixes section
+  of the pending file by the exo seat, which is where it belongs
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — The pre-run base tip has no caller, so the cleanest ship path still reads inconclusive
+- Trigger: `--base-sha` was built into the ship check for a reason this
+  register already knows — after a Tier A self-merge, HEAD never leaves the
+  base, the seat branch is deleted, and no pull request ever had the base as
+  its head branch, so every after-the-fact signal reads empty and the project
+  manager's own count at headquarters is six false failures. The flag works and
+  is tested from both sides, the fixture where the base moved and the one where
+  it did not. Nothing passes it
+- What: a fact about before the run can only be captured before the run, so
+  this is not something the check can fix from inside itself. The caller reads
+  `git ls-remote --heads origin main` before it dispatches the seat and hands
+  the sha back to the check afterwards. Until something does, a clean self-merge
+  on the host gets `INCONCLUSIVE` and a line naming which signals were read,
+  which is the honest answer and still not the useful one
+- First step: whoever writes the runtime caller captures the tip in the same
+  breath as the dispatch; it is one command and it has to straddle the run.
+  Worth saying plainly to the seat that owns that caller, because a flag nobody
+  passes looks like a flag nobody needed
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — The third tool arrived, so the fixture-versus-real-world question has its answer
+- Trigger: the entry above this one from pull request 47 said the convention for
+  faking a tool's world should be settled when a third tool in `tools/` needs
+  tests, and that whichever route that tool wants becomes the convention.
+  `tools/check-shipped.sh` is the third tool and it wanted both, which is the
+  answer rather than a dodge
+- What: the two routes are not competing styles, they answer different
+  questions, and `tests/shipped.test.mjs` uses each for what only it can do.
+  The fixture route stages combinations no real world will hold still for — a
+  remote that fails to answer, a commit count that cannot be taken, a base that
+  moved while nothing else did — and there are eleven of those. The real-world
+  route proves the one claim a fixture cannot: that `git branch -r --contains
+  HEAD` really does answer empty on a real clone whose fetch refspec is the
+  mainline alone, while `git ls-remote` really does answer. A fixture asserting
+  that would only be asserting what the test author believes about git. The
+  grading pass is what settled it: the fixture case for the commit count passed
+  a mutant that restored the old `|| echo 0`, because a reading served from a
+  file never exercises the code that takes it
+- First step: write the rule into `tools/README.md` as one line — a reading is
+  tested by a fixture where the decision is made and by a real clone where the
+  reading is taken — and extract the shared harness to `tests/tools.mjs` when a
+  fourth tool needs it, which is three real-git helpers and one fixture runner
+  today, duplicated twice
+- Cost: $0
+- Status: proposed
