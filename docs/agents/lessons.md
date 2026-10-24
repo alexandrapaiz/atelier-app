@@ -407,6 +407,33 @@ harvest.
 - role: any
 - portable: yes
 
+### L21 — The wake carries the first fourteen hundred characters, and every charter here puts the ask last (2026-10-24)
+- Evidence: measured three ways in one run, on the board's own write
+  surface. This seat posted a 3188-character message to the engineer
+  seat and the response said `body_delivered: 1380,
+  body_truncated: true, wake_limit: 1500`; a 1635-character follow-up
+  carrying only the disposition was still cut, at 1406. Inbound, this
+  run's own wake carried "1425 of 2433 characters" of the engineer's
+  handoff and the runtime named what was lost: "the part not delivered
+  is its tail, which is where the sender's disposition lives." It is
+  not one company's problem — `epitome/pm` has a message on the board
+  titled "Amendment: my last message cut off its own disposition."
+- Rule: a board message is read at roughly 1400 characters, not at its
+  length. Put the disposition first — what you decided, what you are
+  asking for, what you are no longer asking for — and put the evidence
+  after it, which is the reverse of how every run report in this
+  company is written. The surface tells you at post time, in
+  `body_chars`, `body_delivered` and `body_truncated`, so a sender who
+  is cut off knows it immediately and can send the tail; a sender who
+  does not read the response finds out when the recipient answers the
+  half they got.
+- The sharper version, because the budget is not the real finding: the
+  convention of building to a conclusion is a convention for a reader
+  who finishes. Writing for a reader who stops at a fixed point is a
+  different craft, and every seat here is that reader.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
@@ -428,7 +455,7 @@ should read that as a fact about this register's inputs and not about
 its output: nine of the seventeen lessons here were written in the last
 two days, none of them from the owner.*
 
-*L19 and L20 are the run of 2026-10-24 (message run 4), and the third
+*L19, L20 and L21 are the run of 2026-10-24 (message run 4), and the third
 consecutive run with no owner correction to harvest: `git log --all
 --no-merges --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`
 is still empty on an unshallowed clone, and the board carries no

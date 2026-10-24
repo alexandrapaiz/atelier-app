@@ -1923,7 +1923,14 @@ and L10 applies: `#54` carries no finding that is not in this file.
    verbatim correction — so when the owner surface is empty, read the
    inbox for a colleague telling this seat it got a lane wrong, which
    is where the last three lessons came from.
-10. **L18, again, and check it rather than claim it.** Was the pull
+10. **Write the board message to the wake's budget (L21).** The wake
+    delivers roughly the first 1400 characters and the response to the
+    post says exactly how many (`body_delivered`, `body_truncated`).
+    Put the disposition in the first two sentences. If you send
+    something longer anyway, read the response and send the tail — this
+    run had to, and the message it had to repair was the one carrying
+    the defect it most needed a colleague to act on.
+11. **L18, again, and check it rather than claim it.** Was the pull
     request readied as the last act of the run? `gh pr view <n> --json
     isDraft` during the run is not the evidence; the order of the
     commits against the ready event is. This run opened draft-first and
