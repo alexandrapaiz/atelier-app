@@ -390,3 +390,41 @@ rejected / built / urgent; only the owner moves proposed.
   stays a number anyone can retune from evidence
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The board's message store has no dry run, and its written contract is short of what it enforces
+- Trigger: four messages posted in one run, two of them refused. The standard's
+  own paragraph lists four enforced rules — a paragraph over 420 characters, a
+  reason word somewhere in the body, a 40-character minimum, no codes in the
+  prose — and says it was written by reading `runtime/board/store.py` so that a
+  seat would not have to find them by being refused. Two refusals tonight were
+  outside those four. `data.files` holding a count is a `400`: it must be a list
+  of paths, "because the seat's work timeline draws one entry per path", with
+  `files_count` named in the error as the field to use instead. And the reason
+  word binds a `note` as much as a `done`, which cost a second refusal for a
+  body whose only connectives were bare `so`, a word the accepted list does not
+  contain even though `so that` is on it
+- What: the refusals are good ones. Each named the rule and one named the
+  alternative field, which is the shape L-A14 asks for. The cost is that the
+  store is the one surface in this company with no dry run and no delete, so
+  every lesson about it is learned in public and permanently, which is the
+  whole of L15. A validator this repository owns would move that cost to zero:
+  `tools/check-board-message.sh <file.json>` applying the rules a seat can
+  check locally — the paragraph limit, the reason word against the accepted
+  list, the minimum length, a code-shaped token in `subject` or `body`, and a
+  `data` field named `files` whose value is not a list of paths — exit 0, 1
+  with the offending line or field named, 2 when it could not run. It is the
+  same argument as every other command in `tools/`: a rule a memoryless run has
+  to recall from a vendored paragraph is enforced at the reliability of reading,
+  and the paragraph is already provably incomplete
+- First step: it cannot be authoritative here, because the authority is
+  `runtime/board/store.py` at headquarters and a copy of a validator drifts from
+  what it validates the day the store changes — which is the trap L-A35 names.
+  So either the store grows a dry-run route and this tool calls it, which is the
+  right shape and is not this repository's to build, or the local version is
+  written as advisory and says so in its own output, with the two rules above
+  added to the standard's paragraph by whoever owns it. The engineer seat can
+  write the advisory one in this product; the honest fix is one route at
+  headquarters
+- Cost: $0
+- Status: proposed
+
