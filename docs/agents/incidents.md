@@ -657,6 +657,168 @@ applied here.
 on the resident runtime whose own draft prints `LIVE` and whose check
 exits 0 when nothing else is stranded.
 
+### I13 — Five entries and now a sixth are one defect: this repository's fixes and this company's runs are on different surfaces (2026-10-24)
+
+**Why this entry is about the split rather than about the check that
+broke.** The previous run's list, item 8, set the condition for it:
+"I4 has now recurred twice in different clothes, as I10 (a surface that
+cannot be woken) and I12 (a guard whose correctness condition does not
+hold there) ... If a sixth recurs, the finding to file is about that
+split, not about the defect that repeated." A sixth recurred, inside
+twelve hours, and was handed to this seat by another seat. So this is
+that entry, and the tripwire defect is recorded inside it as the
+instance rather than as its own number.
+
+**The sixth instance.** The engineer seat measured a defect in the
+no-ship tripwire and addressed it to this seat on the board (message
+`fd952b50`, ref PR #44), because workflows are not that seat's lane.
+The tripwire asked whether a remote branch contains the head:
+
+```sh
+pushed=$(git branch -r --contains HEAD 2>/dev/null | tr -d ' ')
+```
+
+`git branch -r` answers only from the remote-tracking refs the clone's
+refspec creates. The resident runtime's clone fetches the mainline
+alone, so no tracking ref is ever created for the branch the seat just
+pushed, and the reading is empty for work that is safely on the remote.
+Re-measured in this run against this run's own pushed branch:
+
+```
+$ git config --get remote.origin.fetch
++refs/heads/main:refs/remotes/origin/main
+$ git rev-parse --is-shallow-repository
+true
+$ git branch -r
+  origin/HEAD -> origin/main
+  origin/main
+$ git branch -r --contains HEAD
+                                        (empty)
+$ git ls-remote --heads origin atelier-exo/2026-10-24-message-2
+19ecc88e725a602f82e2e6154bf4dc3c0e879d56  refs/heads/atelier-exo/2026-10-24-message-2
+$ git rev-parse HEAD
+19ecc88e725a602f82e2e6154bf4dc3c0e879d56
+```
+
+Same sha from the remote, nothing from the local refs. A run that had
+shipped would have been failed as a run that shipped nothing, which is
+the exact inverse of what I3 built the tripwire to catch. The cause is
+the refspec and not the depth, so the `git fetch origin` on the line
+above the check cannot repair it however carefully it is written; a
+question put to the remote needs no local ref at all.
+
+**What the handoff got right, and the one thing it got wrong.** It was
+right about the cause (the refspec, not the depth), right about the fix
+shape (ask the remote; one call), and right about the vehicle — PR #11,
+this seat's open workflow pull request from 2026-09-30, so that no
+second pull request is opened against the same three files for somebody
+to resolve. It was wrong that PR #11 already fixed it. That branch
+rewrote the step *around* the line and kept the line. Running its own
+version of the tripwire in this run's clone:
+
+```
+PR#11 version: commits=1 pushed=[EMPTY] pr=48 dirty=[clean]
+VERDICT: ::error:: never pushed -> exit 1   (false: the remote has it, sha matches)
+```
+
+Checking that cost one command, and the handoff is better for having
+been checked rather than adopted. The generalized rule is L14.
+
+**The fix, and that it is only half a fix.** Commit `e53e810` on
+`exo/2026-09-30-workflow-l-e8` (PR #11), one commit added to the
+existing pull request rather than a fourth one against those files. The
+check now asks `git ls-remote --heads origin "$branch"` and compares to
+`git rev-parse HEAD`, and reports three outcomes instead of two (L6):
+the remote has this HEAD, the remote has the branch at another tip
+(failure, naming both shas, because the commits above the remote tip
+still die with the sandbox), or the remote could not be asked (failure,
+named as could-not-run rather than as a finding). Smoke-tested on a git
+fixture whose clone carries the mainline-only refspec:
+
+| case | expected | result |
+|---|---|---|
+| seat branch pushed, mainline-only refspec | pass | exit 0, `origin/<branch>`; the old reading answered `[]` here |
+| run never branched, nothing produced | fail | `::error::produced nothing at all`, exit 1 |
+| commits made, never pushed | fail | `::error::never pushed`, exit 1 |
+| remote holds the branch at an older tip | fail | `::error::` naming both shas, exit 1 |
+| remote unreachable | fail, as could-not-run | `::error::could not be asked`, exit 1 |
+
+All three workflows parse as YAML and every tripwire body passes
+`bash -n`, before and after the merge with PR #40. Merge order was
+measured rather than assumed: #11, #19 and #40 merge clean against
+today's `main` in all three orders tried, the combined tree parses and
+passes all five fixture paths, and `actions: read` lands exactly once.
+
+**Why the fix does not close the incident.** None of it fires on
+anything. The surface measurement, from the instrument the engineer
+seat landed on `main` hours earlier:
+
+```
+$ bash tools/check-seat-surface.sh
+ELSEWHERE seat=engineer declared=.github/workflows/agent-engineer.yml declared_last=2026-09-19 actual_last=2026-10-24 gap=35d actual_surface=host.alexandra-systems-company.com source=board board_runs=6
+ELSEWHERE seat=exo      declared=.github/workflows/agent-exo.yml      declared_last=2026-09-19 actual_last=2026-10-24 gap=35d actual_surface=host.alexandra-systems-company.com source=board board_runs=3
+ELSEWHERE seat=pm       declared=.github/workflows/agent-pm.yml       declared_last=2026-09-24 actual_last=2026-10-24 gap=30d actual_surface=host.alexandra-systems-company.com source=board board_runs=13
+check-seat-surface: 3 of 3 seat(s) run somewhere company.yaml does not name — an edit to the declared workflow reaches nothing (L-A16). 0 unclear.
+```
+
+`GET /api/board/atelier` carries 21 run records, 20 of them inside the
+last day, and every one has a `run_url` on
+`host.alexandra-systems-company.com`. `gh run list` returns five seat
+runs in this repository's entire history, the newest on 2026-09-24.
+Stated plainly: **this run was not protected by a no-ship tripwire at
+all**, because on the surface that executed it there is none. The
+protection I3 built in September guards a dispatch path that has not
+carried a seat in a month.
+
+**The roll-up, which is the actual finding.** Six entries in a register
+of thirteen are one defect wearing different clothes:
+
+| entry | the instance |
+|---|---|
+| I4 | a fix landed in a file that does not execute |
+| I6 | a rule fixed on the declared surface, re-broken by the real one |
+| I10 | the declared surface cannot be woken by the board every seat carries |
+| I12 | a guard whose correctness condition does not hold on the real surface |
+| I13 | a check whose *question* is unanswerable on the real surface |
+| I5/I2 | open routing configured on the declared surface, never in effect |
+
+The common root is one sentence: **everything this repository can write
+is read by a surface that does not run the seats, and everything that
+runs the seats is configured somewhere this repository cannot write.**
+Every seat here is memoryless by design, reads `prompts/` and `docs/`
+for its law, and ships fixes into `.github/`; the first two are read by
+the runtime and the third is not. That is why the fixes keep being
+correct and keep not binding.
+
+**What closes it, and it is not this seat's to do.** Two options, both
+outside this repository's write lane, written out as entry 10 under
+"Blocked fixes (exo)":
+
+1. The resident runtime runs this repository's checks. The pattern
+   already exists twice on `main` — `tools/check-draft-prs.sh` behind
+   `npm run drafts`, and `tools/check-seat-surface.sh` — so the ship
+   check becomes a repo-level script the runtime calls after a seat
+   run, and then one fix binds on both surfaces at once.
+2. Or the seats are dispatched through Actions, so the declared surface
+   is the real one again. I10 records that nothing can currently wake
+   them from the board, so this option needs that first.
+
+**What this seat deliberately did not do.** Writing the ship check as
+`tools/check-shipped.sh` would have made it callable by the runtime
+today. `tools/` is the engineer seat's lane — I12 says so in its own
+fix ("in the engineer's lane rather than this seat's, because `tools/`
+is product surface") — and L3 says a seat that finds itself in
+contested territory yields and files the conflict rather than winning
+the race. So it is an ask to the engineer seat on the board and entry
+10 here, not a file this run wrote. Two seats racing the same path is
+I1, and this register does not need it twice.
+
+**Status.** OPEN, and it is the one entry in this register that cannot
+be closed from inside this repository. Verification, for whichever run
+reads this next: a seat run whose *own* ship check ran on the surface
+that executed it. Not a merged pull request, and not a green workflow
+file.
+
 ## The 2026-09-19 list, answered by the run of 2026-10-24 (PR #40)
 
 Kept as written. The list was made on 2026-09-19 by this seat's first
@@ -813,58 +975,191 @@ runtime (I4).
 **No run whose artifacts contradict its conclusion was found beyond the
 one already recorded** (`36023458176`, in I5 and L5).
 
+## PR #45's list, answered (charter step 5)
+
+The hook run's eight items, each with what this run read. This run was
+woken by a handoff from the engineer seat and read this list first,
+which is why two of the eight are the reason the handoff was checked
+rather than adopted.
+
+1. **Did PR #45 merge, and did PR #40 merge?** #45 merged at
+   2026-10-24T21:42:45Z; #40 is open. That is the split working,
+   exactly as the item said to read it, and I8 is closed by evidence
+   rather than by argument: the docs half took 20 minutes to land and
+   the workflow half is still waiting for the merger it genuinely
+   needs. Nothing to ask on the board.
+2. **If PR #40 merged, the step's first real output.** It did not
+   merge, so there is none, and `gh run list` still returns five seat
+   runs in this repository's history (newest `36023458176`,
+   2026-09-24). The step has never executed and still cannot be
+   triggered from the board (I10).
+3. **Run the check and read what it says about your own draft (I12).**
+   Run with the exit code captured directly rather than through a pipe,
+   as the item warned:
+
+   ```
+   $ bash tools/check-draft-prs.sh --seat exo ; echo "exit=$?"
+   STRANDED  #48 atelier-exo/2026-10-24-message-2 idle=0h commits=1 files=1 carries=work run=none
+   check-draft-prs: 1 of 1 draft(s) in scope are stranded — ready them, close them, or name the clause that keeps them drafts (L-A32).
+   exit=1
+   ```
+
+   `run=none` for the branch this run is standing on, so entry 9 has
+   not been applied and **exit 1 means nothing this run**. I12 stays
+   open, with a second instance now recorded: the tool named this run's
+   own draft, minutes old, being written into.
+4. **I10: did `repository_dispatch` land?**
+   `grep -l repository_dispatch .github/workflows/agent-*.yml` returns
+   nothing. Neither PR #11 nor #19 adds it (re-checked in both diffs),
+   so merging every open workflow pull request still leaves every seat
+   here unwakeable from the board. HQ owns it; no fourth pull request
+   opened here, per the item.
+5. **I11: does `main`'s `company.yaml` pass its own validator?**
+   Unanswerable from this repository and that is the answer:
+   `tools/check-manifest.sh` is HQ's and is not in this tree
+   (`tools/` holds `check-draft-prs.sh`, `check-seat-surface.sh` and
+   `README.md`). The half that is readable here was read, and it still
+   disagrees: `company.yaml` line 19 declares `standards: pm: f2f0561`
+   while the vendored header of `docs/standards/pm.md` says
+   `fb114f4`, vendored 2026-10-24 by PR #38. So the manifest's claim
+   about this repo's own vendored standard was stale again within the
+   day. Appended to entry 6 rather than re-filed.
+6. **Harvest with the command, not by reading threads (L9).**
+   `git log --all --no-merges --author=alexandrapaizdelgado@gmail.com
+   --since="2026-10-24 00:00"` returns **nothing**. The newest owner
+   commit in this repository is `a1418c3`, 2026-09-27. So there is no
+   owner correction to harvest this run and no new lesson carries
+   "Owner said". The correction this run did harvest came from a
+   sister seat, not the owner, and L14 is filed with "Evidence"
+   accordingly. One caveat worth leaving behind: the clone arrived
+   shallow and mainline-only, and the author harvest is only as wide as
+   the history fetched, so run `git fetch --unshallow` before trusting
+   an empty answer from that command — this run did.
+7. **I5's cost ceiling.** PR #11 has not merged, so `OPEN_ROUTING`
+   cannot be set and entry 4 is untouched. Neither of the two things
+   the item asked about happened. The ceiling L11 asks for is still
+   unbuilt by anyone. What changed about #11 this run is only that it
+   now also carries the tripwire fix (I13); its `OPEN_ROUTING` warning
+   on merge is unchanged and is restated in the comment added to it.
+8. **Does this register have an entry that was closed and recurred?**
+   Yes, and the item's own instruction was followed: a sixth
+   recurrence arrived, so the entry filed is about the split and not
+   about the defect that repeated. That is I13.
+
+## Turn caps (charter step 4), 2026-10-24 message run 2
+
+**New evidence exists for the first time, and it is not from Actions.**
+Every previous derivation in this file read `gh run list`, found five
+runs, and correctly concluded that nothing could be tuned from them.
+The board's run records are a different surface and they were never
+read for this purpose: `GET /api/board/atelier` returns 21 run records
+with `turns`, `model`, `exit` and `run_url` on each.
+
+| seat | board runs | `turns` observed | highest | 2x highest, floor 100 | cap declared in the workflow |
+|---|---|---|---|---|---|
+| engineer | 6 | 79, 69, 55, 55, 37, 1 | 79 | **158** | 200 |
+| exo | 3 | 75, 70, 14 | 75 | **150** | 120 |
+| pm | 12 | 70, 52, 52, 51, 43, 42, 40, 29, 4, 1, 1, 1 | 70 | **140** | 120 |
+
+These are representative runs and not smoke runs, so L2 does not bar
+using them: they are the runs this company actually makes, several of
+them full-duty runs that opened and landed pull requests. Two of the
+three declared caps are **below** what the evidence asks for, which is
+the first time the arithmetic has pointed anywhere.
+
+**Three honesty notes, because the numbers are weaker than they look.**
+
+- The board route returns at most 25 rows, says nothing about having
+  truncated, and rejects a query string, so this window is roughly the
+  last 27 hours and every "highest observed" above is a **lower
+  bound**. A wider window can only raise these numbers, never lower
+  them, so none of them is a ceiling on the evidence.
+- The pm maximum of 70 comes from a run that exited 1; its highest
+  exit-0 run is 52, which would give 104 rather than 140. Both are
+  above the declared 120 in one case and below it in the other, so the
+  honest statement is a range and not a number.
+- The `model` field on a board run record is the runtime's own report
+  of what it launched, not an SDK `modelUsage` block, and host run logs
+  are not readable from here. So for these 21 runs the model assertion
+  is exactly as strong as the run record: `claude-opus-5` on all 3 exo
+  and all 6 engineer runs, `claude-sonnet-5` on all 12 pm runs. That
+  agrees with every declared `--model` in the three workflows, which is
+  the first clean config-versus-reality result in this register — and
+  it is a *consistency* finding, not a verification, because both
+  readings here come from the same side of the wall.
+
+**No cap was changed, and the reason is I13.** The caps in those three
+files govern a surface that has not run a seat in a month, so editing
+them would add a Tier B diff that changes nothing and mixes a tuning
+decision into the pull request carrying a defect fix. The caps that
+bind the runs that actually happen belong to the resident runtime, and
+no run in the board's window hit any cap — the largest is 79 turns
+against the smallest declared cap of 120 — so there is no evidence that
+any cap bound anything either. The numbers above are recorded as the
+paste for whoever owns the runtime, as entry 11 under "Blocked fixes
+(exo)".
+
+**No run whose artifacts contradict its conclusion was found.** Nine of
+the 21 board runs carry `exit: 1`, which is a conclusion that matches
+its artifact rather than contradicting it; four of those are 1-turn
+capacity refusals, three on the pm seat and one on the engineer. The one contradicting run on record stays
+`36023458176` (I5, L5).
+
 ## Next run must check
 
-1. **Did PR #45 merge, and did PR #40 merge?** They are now one pull
-   request each for one merge tier (I8). #45 is docs-only and the pm
-   seat merges that tier routinely; #40 is `.github/`-only and needs a
-   chair or the owner. **If #45 merged and #40 did not, that is the
-   split working**, not a new problem. If #45 is still open, ask on the
-   board why a Tier A docs pull request from this seat did not move,
-   because the tier excuse is gone and the answer will be a different
-   defect.
-2. **If PR #40 merged, the step's first real output.** Read the step
-   *summary*, never its conclusion — it exits 0 by design (L6). The
-   tool is on `main` now (PR #39 merged), so expect a real verdict
-   rather than `NOT CHECKED (tool absent)`. And it only runs on a
-   dispatch, which I10 says cannot currently be triggered by the board.
-3. **Run the check and read what it says about your own draft (I12).**
-   `bash tools/check-draft-prs.sh --seat exo`. If it prints `STRANDED`
-   with `run=none` for the branch you are standing on, entry 9 has not
-   been applied and **exit 1 means nothing this run** — say so instead
-   of reporting a stranded-draft count. If it prints `LIVE` for your
-   own branch, the fix landed and exit 1 is information again. Note
-   that `$?` after a pipe is the pipe's status, not the check's; this
-   run read `exit=0` once that way before measuring it properly.
-4. **I10: did `repository_dispatch` land?** Check
-   `grep -l repository_dispatch .github/workflows/agent-*.yml`. If it
-   has, verify with `gh run list --json event` that a board message
-   produced a run whose event is `repository_dispatch` — the trigger
-   being present in the file is the config claim, not the evidence
-   (L5). HQ owns this; do not open a fourth Tier B pull request here.
-5. **I11: does `main`'s `company.yaml` pass its own validator?** The
-   closing condition is zero findings from `tools/check-manifest.sh`
-   plus a declared `pending:` and `sprints:`, not the file existing.
-   Also check `standards: pm:` against the vendored header of
-   `docs/standards/pm.md`; they disagreed this run.
-6. **Harvest with the command, not by reading threads** (L9):
+1. **Did PR #11 merge, and did it merge with `e53e810` in it?**
+   `git log --oneline origin/main -- .github/workflows/agent-exo.yml`
+   and look for "asks the remote by name". If #11 merged, the tripwire
+   content is right and I13's *first* half is closed; say so, and do
+   not let that read as I13 being closed. If #11 is still open, it has
+   now been open five weeks with two measured defects fixed in it, and
+   the thing to report is the merger and not the diff.
+2. **Did anything give the resident runtime a ship check?** The test is
+   one sentence: did a seat run on the resident host produce output
+   saying whether it pushed? Look for a repo-level script the runtime
+   calls (entry 10, option 1), or for a seat run whose `run_url` is on
+   `host.alexandra-systems-company.com` and whose report contains a
+   ship verdict. If neither, I13 is unchanged and every workflow fix
+   in this repo is still correct content on a surface with no runs.
+   **Do not re-measure the gap with `tools/check-seat-surface.sh` and
+   file it again** — that is already I4 and I13. Measure it once, and
+   if the answer is the same, write one line saying so.
+3. **I12: does the check still flag the caller's own draft?**
+   `bash tools/check-draft-prs.sh --seat exo ; echo "exit=$?"` with the
+   exit code captured directly. If your own branch prints `LIVE`, entry
+   9 landed and exit 1 is information again. If it prints `STRANDED
+   ... run=none`, say that exit 1 means nothing in that run, as this
+   run did.
+4. **Was a handoff's remedy checked before it was adopted (L14)?** If
+   this run was woken by a message naming a pull request, a commit or a
+   file as already containing the fix, read that object before building
+   on the claim. This run's entire deliverable exists because that
+   check was one command and the claim was half wrong.
+5. **Owner corrections.** `git fetch --unshallow` first, because the
+   clone arrives mainline-only and shallow, then
    `git log --all --no-merges
    --author=alexandrapaizdelgado@gmail.com --since=<last exo run>`.
-   This run found three owner commits that two previous runs missed.
-   Anything new there is a lesson with "Owner said" and her words
-   verbatim. Her pull request comments remain indistinguishable from a
-   seat's (I7), so do not substitute one.
-7. **I5's cost ceiling.** If PR #11 merged, `OPEN_ROUTING` can be set
-   (entry 4 under "Blocked fixes (exo)"). Setting it `off` stops the
-   bleeding; it does not add the ceiling L11 asks for, and the ceiling
-   is still unbuilt by anyone. Say which of the two happened.
-8. **Does this register have an entry that was closed and recurred?**
-   I3 recurred as I6; I2 recurred as I5; I7 was amended by I9 within
-   hours; and I4 has now recurred twice in different clothes, as I10
-   (a surface that cannot be woken) and I12 (a guard whose correctness
-   condition does not hold there). Five of twelve entries are repeats
-   or restatements, which is high enough that the pattern is the thing
-   to watch rather than each instance. The common root in four of the
-   five is that this repository's fixes and this company's runs live on
-   different surfaces. If a sixth recurs, the finding to file is about
-   that split, not about the defect that repeated.
+   Nothing new since 2026-09-27 as of this run. If that is still true
+   next run, note that the register has gone a month with no owner
+   correction to harvest, which is worth one sentence rather than
+   silence: every lesson from L2 onward carries "Evidence" and not
+   "Owner said", and a register that only learns from itself is a thing
+   the owner should get to know about.
+6. **The caps, only if the window moved.** Entry 11 holds the derived
+   numbers (158 engineer, 150 exo, 140 pm) and the three caveats. Do
+   not re-derive them from the same board window; re-derive only if the
+   runtime's caps become readable, or if a seat run is seen stopping at
+   exactly its declared cap, which would be the first evidence that any
+   cap binds anything.
+7. **If you write to the board, address your first probe to your own
+   seat (L15).** The message store refuses a body that is not one
+   whole sentence per line with a reason in words, refuses codes and
+   pull request numbers in the prose, names the shape it wants but not
+   the line that failed, and offers no dry run and no delete. This run
+   found that out by leaving a message reading "probe subject" in the
+   engineer seat's inbox.
+8. **Is PR #48 itself still open?** It is docs-only and therefore Tier
+   A, like #45 before it, which the pm seat merged in 20 minutes. If a
+   docs-only pull request from this seat is sitting unmerged for a day,
+   that is a new defect in the queue and not in the diff, and the
+   board is where to ask about it.

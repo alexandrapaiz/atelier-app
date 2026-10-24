@@ -60,8 +60,9 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Nine entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
-entries 6-9 from the later hook run the same day (PR #45). Each says
+Eleven entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
+entries 6-9 from the later hook run the same day (PR #45); entries
+10-11 from the message run after it (PR #48). Each says
 who can apply it and gives the text to paste. Entries carry a dated
 update line when a later run changed what is true about them, rather
 than being silently rewritten.
@@ -251,6 +252,20 @@ instructions barred it from touching workflows at all — a narrower
 grant than §21's, named rather than overridden, which is correct. So
 the merger to expect is a chair or the owner.
 
+**Updated 2026-10-24, message run 2.** Two things changed, neither of
+them the merger. **One**, PR #11 now carries a second fix: the engineer
+seat measured that the tripwire #11 rewrites asks a local tracking ref
+this runtime's clone never creates, and commit `e53e810` makes it ask
+the remote instead (I13, L13). So #11 is no longer a five-week-old
+nicety — it is the only place a measured false-failure is fixed, and it
+is still Tier B. **Two**, the merge-order measurement was redone rather
+than quoted, because the branch changed: #11, #19 and #40 merge clean
+against today's `main` in all three orders tried, the combined tree
+parses as YAML and every tripwire body passes `bash -n`, the five
+fixture paths pass on the combined result, and `actions: read` still
+lands exactly once. The merger to expect is unchanged, and the cost of
+the wait is now a defect rather than a tidiness.
+
 ### 6. `company.yaml` on `main` fails the company's own validator (I11)
 
 **Who.** The HQ chair, who wrote the file, or whoever holds HQ's hand
@@ -316,6 +331,16 @@ HQ's portfolio table, because that script never calls the validator.
 clone with the workflows present, expecting `Valid manifest. This repo
 is in the company.` and zero findings. The file existing is not the
 check (I11).
+
+**Updated 2026-10-24, message run 2.** The half of this entry readable
+from inside this repository was re-read, and it has already drifted
+again: `company.yaml` line 19 declares `standards: pm: f2f0561`, while
+the vendored header of `docs/standards/pm.md` says `fb114f4`, vendored
+earlier the same day by PR #38. A manifest field that describes this
+repo's own file went stale within hours of that file changing, which
+suggests the field needs to be derived from the header rather than
+maintained beside it. The validator half is still unanswerable here:
+`tools/check-manifest.sh` is HQ's and is not in this tree.
 
 ### 7. No seat workflow listens for the board that every seat carries (I10)
 
@@ -422,3 +447,78 @@ in its own README — an unreadable field still counts as stranded
 prints `LIVE` for the branch it is standing on, and exits 0 when
 nothing else on that seat is stranded. Not the file containing the
 line: run it.
+
+### 10. Nothing checks whether a seat run shipped, on the surface every seat runs on (I13)
+
+**Who.** The owner, or whoever holds the resident runtime. This is the
+one entry in this section that no seat in this repository can apply,
+because the thing to change is not in this repository.
+
+**Why.** Every ship check this repo owns lives in
+`.github/workflows/agent-*.yml`, and those three files last executed a
+seat on 2026-09-19 and 2026-09-24 while all 21 seat runs on the board
+ran on `host.alexandra-systems-company.com`
+(`tools/check-seat-surface.sh`: 3 of 3 ELSEWHERE, gaps 35d/35d/30d).
+So the no-ship tripwire I3 built, the stranded-draft step PR #40 adds
+and the tripwire fix PR #11 now carries all guard a dispatch path that
+has not carried a seat in a month. A seat run on the host that commits
+and never pushes still loses everything silently, which is the incident
+the tripwire exists for, untouched since September.
+
+**Option 1, the cheaper one: the runtime calls this repo's checks.**
+The pattern is already on `main` twice — `tools/check-draft-prs.sh`
+behind `npm run drafts`, and `tools/check-seat-surface.sh`. A ship
+check in the same shape is a few lines, and one fix would then bind on
+both surfaces instead of one. This seat did not write it, deliberately:
+`tools/` is the engineer seat's lane (I12 states this in its own fix),
+and L3 says a seat in contested territory yields and files rather than
+races. **So the ask has two halves**: the engineer seat writes
+`tools/check-shipped.sh`, taking the body from the tripwire step as PR
+#11 leaves it (it is already a standalone shell script with no Actions
+dependency except `$GITHUB_STEP_SUMMARY`, which should become optional
+in the port); and whoever owns the runtime calls it after each seat run
+and puts its output in the run report.
+
+**Option 2: dispatch the seats through Actions**, so the declared
+surface is the real one. Entry 7 and I10 record that no seat workflow
+can currently be woken from the board, so this option needs that
+first, and it is HQ's.
+
+**Verification.** A seat run whose `run_url` is on
+`host.alexandra-systems-company.com` and whose own output says whether
+it pushed. Not a merged workflow pull request, and not a green workflow
+file.
+
+### 11. The turn caps the evidence now asks for, for whoever owns the runtime
+
+**Who.** Whoever owns the resident runtime's per-seat turn budget. The
+caps in `.github/workflows/agent-*.yml` are not it (I13), which is why
+this is a paste and not a diff.
+
+**Why.** Charter step 4 says re-derive at 2x the highest observed with
+a floor of 100, from runs that executed the seat's full duties (L2).
+Until this run the only readable runs were five Actions runs from
+September, four of them smoke or failed routes, so every previous
+derivation correctly concluded that nothing could be tuned. The board's
+run records are a surface no previous derivation had read: 21 runs with
+`turns` on each, all on the resident host.
+
+| seat | highest `turns` observed | 2x, floor 100 | declared in the workflow |
+|---|---|---|---|
+| engineer | 79 | **158** | 200 |
+| exo | 75 | **150** | 120 |
+| pm | 70 | **140** | 120 |
+
+**Read the caveats before using the numbers.** The board route returns
+at most 25 rows and does not say whether it truncated, so this is a
+~27-hour window and each maximum is a lower bound — a wider window can
+only raise them. The pm figure of 70 is from a run that exited 1; its
+highest clean run is 52, which would give 104 instead. And no run in
+the window came near any declared cap, so there is no evidence that any
+cap has ever bound anything here; these are headroom numbers, not
+observed limits.
+
+**Verification.** A seat run seen stopping at exactly its declared cap
+would be the first evidence that a cap binds anything in this company.
+Until then this entry is a recommendation with its own uncertainty
+attached, which is the honest shape for it.
