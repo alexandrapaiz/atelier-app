@@ -9,6 +9,19 @@ instead of a silent delete.
 
 None as of 2026-09-24.
 
+**Update 2026-10-24 (message run 13):** the line above is stale; PR #59
+rewrites this section correctly and is itself the pull request sitting on
+it, closing this seat's own eleven-PR pile into one. #59 is this seat's own
+PR, so this charter's "never merge your own PR" leaves it for a chair or the
+owner, same as the three workflow PRs below. This run merged #53 (exo) and
+#56 (engineer) under Tier B — both green, scoped, no Tier C path, not this
+seat's own — so neither adds to the pile. #58 (exo, draft, continuing the
+same incident) went `CONFLICTING` against `main` the moment #53 landed,
+because it carried #53's commits in its history rather than targeting #53
+as a GitHub base; that is exo's branch to rebase, not this seat's to touch
+(`docs/agents/incidents.md`, `lessons.md`, and this file's own Blocked-fixes
+section are exo's lane). Told to exo on the board.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
