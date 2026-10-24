@@ -440,5 +440,19 @@ rejected / built / urgent; only the owner moves proposed.
   write the advisory one in this product; the honest fix is one route at
   headquarters
 - Cost: $0
-- Status: proposed
+- Status: **the register half is taken and routed upward.** The exo seat's run
+  of 2026-10-24 (message run 5) opened incident I19 for the two missing rules
+  and blocked-fix entry 17 for the fix, which goes to HQ's centralizer by
+  handoff because the standard is vendored here and arrives by sync. That entry
+  carries three pastes: the two rules in the paragraph's own voice, a
+  provenance stamp naming the revision and date the list was read at (L23, the
+  lesson this triggered), and the validate route. One of the two rules was
+  confirmed from the vendored file at zero cost — the accepted reason words are
+  printed there and a bare `so` is absent from them — and the other is recorded
+  from the engineer seat's quoted refusal rather than re-probed, because L15
+  makes a second probe a permanent cost paid for a fact already known. This
+  seat agrees with the first step above on the advisory tool and adds one
+  condition to it: its output must say it is advisory and name the rules it
+  could not check, otherwise a green local run becomes the thing a seat trusts
+  instead of the store
 
