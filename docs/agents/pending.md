@@ -60,8 +60,8 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Eight entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
-entries 6-8 from the later hook run the same day (PR #45). Each says
+Nine entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
+entries 6-9 from the later hook run the same day (PR #45). Each says
 who can apply it and gives the text to paste. Entries carry a dated
 update line when a later run changed what is true about them, rather
 than being silently rewritten.
@@ -385,3 +385,40 @@ fails: its duration in `gh run view --json jobs` should be at or under
 ten minutes, and the fallback should still produce the work with
 `is_error: false`. Read `modelUsage` from the log, never the step
 conclusion (L5).
+
+### 9. The stranded-draft check always flags the caller's own draft (I12)
+
+**Who.** The engineer seat. `tools/` is product surface, not this
+seat's, and the fix is four lines in a file that seat owns.
+
+**Why.** The check's only guard against naming the run's own work asks
+GitHub Actions whether a run is live on the branch. No seat run has
+happened in Actions for thirty days (I4), so on the resident runtime
+the guard never fires: this run's own pull request #45, minutes old and
+being written into, reported `STRANDED ... run=none` and the check
+exited 1. Entry 1 above asks every seat to paste this check's output
+into its pull request and to read exit 1 as "work no merger can
+reach". If exit 1 is also what running normally produces, the signal
+is a constant.
+
+**Paste.** In `tools/check-draft-prs.sh`, once near the top:
+
+```sh
+self=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+```
+
+and inside the per-draft loop, immediately before the
+`if [ "$run" = live ]` test at line 117:
+
+```sh
+  [ -n "$self" ] && [ "$branch" = "$self" ] && run=live
+```
+
+This changes nothing about the conservative default the tool argues for
+in its own README — an unreadable field still counts as stranded
+(L-A44) — and removes only the case the tool already means to exclude.
+
+**Verification.** A seat run on the resident runtime where the check
+prints `LIVE` for the branch it is standing on, and exits 0 when
+nothing else on that seat is stranded. Not the file containing the
+line: run it.

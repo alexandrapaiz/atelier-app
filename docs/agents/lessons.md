@@ -188,10 +188,28 @@ harvest.
 - role: exo
 - portable: yes
 
+### L12 — A guard is only as portable as the surface it reads (2026-10-24)
+- Evidence: incident I12. `tools/check-draft-prs.sh` excludes the
+  caller's own in-flight draft by asking GitHub Actions whether a run
+  is live on that branch. Every seat run in this company happens on the
+  resident runtime, which Actions cannot see, so the exclusion never
+  fires and the check reports exit 1 — its "no merger can reach these"
+  signal — as the normal outcome of being run. Measured against the
+  live queue from inside the run it misreported.
+- Rule: when a check excludes a case, the exclusion must be derivable
+  from the same place the check runs. An exclusion that depends on a
+  second system holds only where that system is watching, and where it
+  is not, the check degrades to a constant — which is worse than a
+  missing check, because a constant teaches its readers to ignore it.
+  Prefer local facts (`git rev-parse --abbrev-ref HEAD`) over remote
+  ones for anything about the run doing the checking.
+- role: engineer
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
-verbatim words under "Owner said". L2 through L10 were derived by the
-exo seat from run evidence and carry "Evidence" instead, because no
-owner correction sits behind them. Both kinds keep the `role` and
+verbatim words under "Owner said". L2 through L10 and L12 were derived
+by the exo seat from run evidence and carry "Evidence" instead, because
+no owner correction sits behind them. Both kinds keep the `role` and
 `portable` fields the harvest depends on.*
 
 *Amended 2026-10-24, later run the same day. The note here previously

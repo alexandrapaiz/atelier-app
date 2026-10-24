@@ -595,6 +595,68 @@ is now its home regardless of what happens to PR #13.
 and `sprints:`. The verification is the validator's output, not the
 file's existence.
 
+### I12 — The stranded-draft check's one false-positive guard cannot fire on the surface that runs the seats (2026-10-24)
+
+**What happened.** `tools/check-draft-prs.sh` landed on `main` in PR
+#39, and PR #40 wired it into all three seat workflows. Its one guard
+against naming the caller's own work is `run=live`. The guard reads
+GitHub Actions runs. Every seat run in this company for thirty days has
+happened on the resident runtime, which Actions cannot see, so the
+guard never fires there and a run's own in-flight draft is always
+reported `STRANDED`.
+
+**Evidence.** Run from inside this run, against the live queue:
+
+```
+$ bash tools/check-draft-prs.sh --seat exo ; echo "exit=$?"
+STRANDED  #45 atelier-exo/2026-10-24-hook idle=0h commits=4 files=3 carries=work run=none
+check-draft-prs: 1 of 1 draft(s) in scope are stranded — ...
+exit=1
+```
+
+`#45` is this run's own pull request, open minutes earlier, being
+written into at the moment the check ran. The mechanism is at
+`tools/check-draft-prs.sh:112`, `[ "$live" -gt 0 ] && run=live ||
+run=none`, where `$live` comes from `gh run list` filtered to the
+branch. The tool's own header comment makes the point without meaning
+to: its worked example of a stranded draft, at line 17, is
+`STRANDED #31 atelier-engineer/2026-10-24-message ... run=none` — the
+engineer seat's own draft, in flight on the runtime when that example
+was written.
+
+**Assessment.** The check is correct and the documentation describing
+it is correct — "a draft whose branch is carrying a run right now
+prints `LIVE` and is not counted: that is the run you are standing in"
+— on the surface it was designed against. This is I4 again, one layer
+down: not a fix that does not reach the running surface, but a fix
+whose *correctness condition* does not hold there. Its cost is
+specific. Entry 1 under "Blocked fixes (exo)" asks every seat to put
+this check's output in its pull request and reads exit 1 as "pull
+requests on your seat that no merger can reach". If exit 1 is also the
+normal result of running at all, the number stops carrying information
+and a reader learns to skip it — which is the failure the whole check
+exists to prevent, relocated into the check.
+
+**The fix.** Cheap, and in the engineer's lane rather than this seat's,
+because `tools/` is product surface. Treat the branch the check is
+standing on as live regardless of what Actions knows:
+
+```sh
+self=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+# ... in the loop, before the run=live test:
+[ -n "$self" ] && [ "$branch" = "$self" ] && run=live
+```
+
+That keeps the conservative default everywhere else — an unreadable
+field still counts as stranded (L-A44) — and removes the one case the
+tool already intends to exclude. Recorded as entry 9 under "Blocked
+fixes (exo)" with the paste, and routed to the engineer rather than
+applied here.
+
+**Status.** OPEN, routed to the engineer seat. Verification: a seat run
+on the resident runtime whose own draft prints `LIVE` and whose check
+exits 0 when nothing else is stranded.
+
 ## The 2026-09-19 list, answered by the run of 2026-10-24 (PR #40)
 
 Kept as written. The list was made on 2026-09-19 by this seat's first
@@ -755,31 +817,43 @@ one already recorded** (`36023458176`, in I5 and L5).
    tool is on `main` now (PR #39 merged), so expect a real verdict
    rather than `NOT CHECKED (tool absent)`. And it only runs on a
    dispatch, which I10 says cannot currently be triggered by the board.
-3. **I10: did `repository_dispatch` land?** Check
+3. **Run the check and read what it says about your own draft (I12).**
+   `bash tools/check-draft-prs.sh --seat exo`. If it prints `STRANDED`
+   with `run=none` for the branch you are standing on, entry 9 has not
+   been applied and **exit 1 means nothing this run** — say so instead
+   of reporting a stranded-draft count. If it prints `LIVE` for your
+   own branch, the fix landed and exit 1 is information again. Note
+   that `$?` after a pipe is the pipe's status, not the check's; this
+   run read `exit=0` once that way before measuring it properly.
+4. **I10: did `repository_dispatch` land?** Check
    `grep -l repository_dispatch .github/workflows/agent-*.yml`. If it
    has, verify with `gh run list --json event` that a board message
    produced a run whose event is `repository_dispatch` — the trigger
    being present in the file is the config claim, not the evidence
    (L5). HQ owns this; do not open a fourth Tier B pull request here.
-4. **I11: does `main`'s `company.yaml` pass its own validator?** The
+5. **I11: does `main`'s `company.yaml` pass its own validator?** The
    closing condition is zero findings from `tools/check-manifest.sh`
    plus a declared `pending:` and `sprints:`, not the file existing.
    Also check `standards: pm:` against the vendored header of
    `docs/standards/pm.md`; they disagreed this run.
-5. **Harvest with the command, not by reading threads** (L9):
+6. **Harvest with the command, not by reading threads** (L9):
    `git log --all --no-merges
    --author=alexandrapaizdelgado@gmail.com --since=<last exo run>`.
    This run found three owner commits that two previous runs missed.
    Anything new there is a lesson with "Owner said" and her words
    verbatim. Her pull request comments remain indistinguishable from a
    seat's (I7), so do not substitute one.
-6. **I5's cost ceiling.** If PR #11 merged, `OPEN_ROUTING` can be set
+7. **I5's cost ceiling.** If PR #11 merged, `OPEN_ROUTING` can be set
    (entry 4 under "Blocked fixes (exo)"). Setting it `off` stops the
    bleeding; it does not add the ceiling L11 asks for, and the ceiling
    is still unbuilt by anyone. Say which of the two happened.
-7. **Does this register have an entry that was closed and recurred?**
+8. **Does this register have an entry that was closed and recurred?**
    I3 recurred as I6; I2 recurred as I5; I7 was amended by I9 within
-   hours. Three of eleven entries are repeats, which is high enough
-   that the pattern is now the thing to watch rather than each
-   instance. If a fourth recurs, the finding is about how this register
-   binds, not about the defect that repeated.
+   hours; and I4 has now recurred twice in different clothes, as I10
+   (a surface that cannot be woken) and I12 (a guard whose correctness
+   condition does not hold there). Five of twelve entries are repeats
+   or restatements, which is high enough that the pattern is the thing
+   to watch rather than each instance. The common root in four of the
+   five is that this repository's fixes and this company's runs live on
+   different surfaces. If a sixth recurs, the finding to file is about
+   that split, not about the defect that repeated.
