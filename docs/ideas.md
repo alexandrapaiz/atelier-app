@@ -128,3 +128,46 @@ rejected / built / urgent; only the owner moves proposed.
   convention in `tools/README.md`. One session, this seat's own lane
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The branch fix excuses the caller's own draft and nothing else, and a concurrent pass is the remaining case
+- Trigger: measured in the same run that fixed it. From this branch the check
+  prints `LIVE … run=self` for its own pull request and exits 0 for this seat,
+  which is what the fix was for. Run across all three seats in the same minute
+  it printed `STRANDED #48 atelier-exo/2026-10-24-message-2 idle=0h run=none`,
+  and that draft was a live exo pass writing into its branch while the line
+  was printed. The branch reading can only ever vouch for one draft, the
+  caller's, so a second seat running at the same time still reads as abandoned
+- What: the liveness question has a surface that knows the answer, and it is
+  not Actions. The board holds every host-window run of every seat — eighteen
+  of this product's in the last day, against zero in Actions for thirty days —
+  so `GET $BOARD_API_URL/api/...` is where "is a seat standing in this branch
+  right now" is actually answerable. A third reading, `run=board`, between
+  `run=self` and the Actions call: a run of that branch's seat started inside
+  the idle window and not yet reported done. Weaker evidence than `self` and
+  it should print as its own word rather than be folded into `live`, because
+  L-E11's rule is that a verdict names the reading it came from
+- First step: before writing it, check whether the board exposes seat runs on
+  a route a shell with `$BOARD_RUNTIME_TOKEN` can read, and whether the host's
+  own window record is reachable from a seat checkout at all. If it is not,
+  this stays proposed and the honest answer is that a concurrent pass's draft
+  is unreadable rather than stranded, which is a different word than either
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — Two tools in this directory, two hand-rolled ways to fake their world
+- Trigger: `tools/check-seat-surface.sh` grew a `--fixture` mode so its verdict
+  could be tested, in this seat's previous run. `tools/check-draft-prs.sh` got
+  tests in this one, and they take the other route: a real temp git repository
+  plus a stub `gh` first on `PATH`. Both work and both were written from
+  scratch, a day apart, by the same seat with no memory of the first
+- What: the stub-on-PATH route needs no flag in the tool under test, so the
+  tool stays free of test-only code paths and the test exercises the same
+  argument strings a real run issues; the `--fixture` route needs no stub but
+  puts a second mode inside the thing being graded. One of them should be the
+  convention here, named in `tools/README.md`, with the harness extracted once
+  to `tests/tools.mjs` so the third tool costs ten lines rather than eighty
+- First step: when a third tool in this directory needs tests, extract the
+  harness then rather than now, and whichever route that tool wants is the
+  convention. Deciding it with two examples and no third caller is guessing
+- Cost: $0
+- Status: proposed
