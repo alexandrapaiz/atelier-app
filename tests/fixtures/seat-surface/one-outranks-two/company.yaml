@@ -1,0 +1,4 @@
+product: atelier
+seats:
+  - { name: engineer, workflow: .github/workflows/agent-engineer.yml, cadence: on-dispatch, status: dormant }
+  - { name: exo, workflow: .github/workflows/agent-exo.yml, cadence: on-dispatch, status: dormant }
