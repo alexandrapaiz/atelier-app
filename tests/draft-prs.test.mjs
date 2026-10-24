@@ -36,6 +36,14 @@ case "$all" in
 esac
 `;
 
+/* An ISO timestamp this many minutes before now. The idle field is computed
+   against the real clock, so a fixture that encodes "old" as a literal date
+   stops meaning "old" the moment the clock passes it — and since 2026-10-24
+   the check has a verdict that turns on that number, which makes the literal a
+   test that quietly changes what it asserts. Every age below is a distance
+   from now instead. */
+const minutesAgo = n => new Date(Date.now() - n * 60_000).toISOString();
+
 /* One run of the check. `files` are the fixture's contents; `branch` is the
    branch the repository is standing on; `args` go to the script. */
 function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args = [], seats = ["engineer", "exo", "pm"], detach = false } = {}) {
@@ -50,7 +58,7 @@ function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args 
   writeFileSync(join(bin, "gh"), STUB);
   chmodSync(join(bin, "gh"), 0o755);
 
-  const defaults = { base: "main", "prs.tsv": "", runs: "0", compare: "4\t1", commitdate: "2026-10-24T00:00:00Z" };
+  const defaults = { base: "main", "prs.tsv": "", runs: "0", compare: "4\t1", commitdate: minutesAgo(25 * 60) };
   for (const [name, body] of Object.entries({ ...defaults, ...files })) {
     writeFileSync(join(fixture, name), body);
   }
@@ -164,9 +172,112 @@ test("a company.yaml naming no seats cannot be answered", () => {
   assert.match(r.stderr, /named no seats/);
 });
 
+/* The freshness guard. Before it, the only readings that could keep a draft off
+   the stranded list were run=self (the caller's own branch) and run=live (an
+   Actions run). Neither can see another seat's host window running in the same
+   minute, so a colleague's four-minute-old draft — opened empty and draft-first,
+   which is what every charter here mandates — printed
+   `STRANDED ... carries=nothing`, and carries=nothing is by this tool's own
+   README the one reading that tells a reader to close a pull request. */
+
+test("a draft minutes old is too fresh to judge, not stranded", () => {
+  const r = run({
+    files: {
+      "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]),
+      commitdate: minutesAgo(4),
+      compare: "1\t0",
+    },
+  });
+  assert.match(r.stdout, /^FRESH +#52 atelier-pm\/2026-10-24-message-2 idle=4m .*carries=nothing run=fresh$/m);
+  assert.equal(r.status, 0, "a draft nothing has had time to abandon is not a finding");
+  assert.match(r.stdout, /1 too fresh to judge \(under 60m\)/,
+    "a draft left unjudged must not read as one examined and cleared");
+});
+
+test("a draft one minute past the threshold is stranded, so the boundary is graded", () => {
+  const r = run({ files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(61) } });
+  assert.match(r.stdout, /^STRANDED +#52 .*idle=1h .*run=none$/m);
+  assert.equal(r.status, 1);
+});
+
+test("a draft at exactly the threshold is stranded: the window is open at its far end", () => {
+  const r = run({ files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(60) } });
+  assert.match(r.stdout, /^STRANDED +#52 .*run=none$/m);
+  assert.equal(r.status, 1, "60 minutes is not under 60 minutes");
+});
+
+test("an unreadable idle field cannot reach the fresh test, so it is still stranded", () => {
+  const r = run({ files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: "fail" } });
+  assert.match(r.stdout, /^STRANDED +#52 .*idle=unreadable .*run=none$/m);
+  assert.doesNotMatch(r.stdout, /run=fresh/, "a failed read must never buy a draft an excuse");
+  assert.equal(r.status, 1);
+});
+
+test("--fresh-under 0 judges every draft, which is the sweep a merger wants", () => {
+  const r = run({
+    args: ["--fresh-under", "0"],
+    files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(4) },
+  });
+  assert.match(r.stdout, /^STRANDED +#52 .*idle=4m .*run=none$/m);
+  assert.equal(r.status, 1);
+  assert.doesNotMatch(r.stdout, /too fresh to judge/);
+});
+
+test("--fresh-under is only honoured as whole minutes, never silently defaulted", () => {
+  for (const bad of ["an-hour", "1.5", "-5", ""]) {
+    const r = run({ args: ["--fresh-under", bad], files: { "prs.tsv": prs([[52, "atelier-pm/x"]]) } });
+    assert.equal(r.status, 2, `--fresh-under ${JSON.stringify(bad)} must be an unasked question`);
+    assert.match(r.stderr, /whole number of minutes/);
+  }
+});
+
+test("--fresh-under widens the window, and the summary names the number it used", () => {
+  const r = run({
+    args: ["--fresh-under", "180"],
+    files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(90) },
+  });
+  assert.match(r.stdout, /^FRESH +#52 .*idle=1h .*run=fresh$/m);
+  assert.match(r.stdout, /1 too fresh to judge \(under 180m\)/);
+  assert.equal(r.status, 0);
+});
+
+test("a fresh draft beside a stranded one: both readings print, exit is 1", () => {
+  const r = run({
+    files: {
+      "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"], [28, "atelier-pm/2026-10-21-message"]]),
+      commitdate: minutesAgo(4),
+    },
+    args: ["--all"],
+  });
+  /* Both drafts share one commitdate fixture, so the stranded one is reached by
+     the flag rather than by age: the point of the case is that a fresh reading
+     never suppresses a stranded one in the same output. */
+  const strict = run({
+    args: ["--fresh-under", "0", "--all"],
+    files: {
+      "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"], [28, "atelier-pm/2026-10-21-message"]]),
+      commitdate: minutesAgo(4),
+    },
+  });
+  assert.equal(r.status, 0, "two fresh drafts are two unjudged readings, not two findings");
+  assert.match(r.stdout, /2 too fresh to judge/);
+  assert.equal(strict.status, 1);
+  assert.match(strict.stdout, /^STRANDED +#52/m);
+  assert.match(strict.stdout, /^STRANDED +#28/m);
+});
+
+test("idle prints minutes under an hour and whole hours above it", () => {
+  const m = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), commitdate: minutesAgo(47) } });
+  assert.match(m.stdout, /idle=47m/, "idle=0h cannot tell four minutes from fifty-nine");
+  const h = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), commitdate: minutesAgo(71 * 60) } });
+  assert.match(h.stdout, /idle=71h/);
+});
+
 test("--help prints the whole header, including the fields a reader greps", () => {
   const r = run({ args: ["--help"] });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /run=self/, "the help truncated before the field list");
+  assert.match(r.stdout, /run=fresh/, "the help does not document the third verdict");
+  assert.match(r.stdout, /--fresh-under/, "the help does not document the threshold flag");
   assert.match(r.stdout, /Requires: git, gh/, "the help truncated before its last line");
 });
