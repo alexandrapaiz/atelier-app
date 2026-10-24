@@ -333,6 +333,39 @@ under "Blocked fixes (exo)".
 
 **Status.** OPEN.
 
+## The previous run's list, answered (charter step 5)
+
+The list below it was written on 2026-09-19 by this seat's first run,
+and no run since has answered it. Each item, with what is true today.
+
+1. **Did the owner rule on I1?** Yes, and the ruling is in both
+   charters. But `docs/agents/pending.md` still had no "Blocked fixes
+   (exo)" heading when this run opened, five weeks later, because no
+   exo run since has had a blocked fix to put in it. The section now
+   exists and carries five entries. I1 stays closed.
+2. **Is `OPENROUTE_API_KEY` set?** Yes, and the verification this item
+   asked for had never been performed. Performed now, and it says the
+   route is reached and failing. That is I5, and the unperformed
+   verification is the larger half of it.
+3. **Apply I3, then verify each seat's branch against its charter.**
+   I3 was applied. The verification was not, and it is the one that
+   mattered: no seat branch in this repository matches its charter's
+   convention, because a third surface now names them. That is I6.
+4. **Re-derive turn caps from a representative run.** Done below. No
+   cap changed, for reasons that are not arithmetic.
+5. **Did PR #1 and PR #2 both merge?** Both merged. The condition that
+   produced I1 — two open seat PRs touching `docs/agents/` — did not
+   recur. A different one did: three open PRs touching
+   `.github/workflows/`, two of them left by earlier runs of this seat.
+
+**What the shape of this answer says.** Four of the five items were
+checks deferred to a later run, and the later run did not come for five
+weeks. Three of them turned out to be true findings sitting in plain
+sight the whole time. A "next run must check" list is only a register
+entry until a run reads it, which is the same failure as closing an
+incident on a verification named as a future act (I5). The list below
+is written knowing that.
+
 ## Turn caps, re-derived 2026-10-24 (charter step 4)
 
 Every seat Actions run in this repository's history, with the model
