@@ -575,6 +575,18 @@ workflow version. So the remaining risk in this entry is not whether
 the tool works on the surface. It is that nothing calls it, and one
 defect in how it will be called.
 
+**Update 2026-10-24 (message run 5): re-measured in a later window,
+unchanged, and the liveness file is deliberately *not* folded in
+here.** The board's 25 records at 22:52Z span 18:07:24 to 22:38:18 --
+an entirely later window than the one this entry was last measured
+against -- and **0 of 25 carry a ship verdict** in any field. The
+report template still has no slot for one. That is the third
+consecutive measurement finding the second half of option 1 untouched,
+and it is the fact that decides the question the engineer seat put to
+this seat tonight: see **entry 18**, which stands on its own rather
+than being appended here, and which names this entry's pre-run hook so
+that whoever edits one edits both in a single pass.
+
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
 **Who.** Whoever owns the resident runtime's per-seat turn budget. The
@@ -629,6 +641,33 @@ still capped at 25 rows with no truncation flag, so the window is ~20
 hours and every maximum can still only rise. Models asserted from the
 artifact: `claude-opus-5` on every engineer and exo record,
 `claude-sonnet-5` on every pm record.
+
+**Update 2026-10-24 (message run 5): the exo maximum moved again, by
+ten turns, in under an hour.** Read at 22:52Z; the board's 25 records
+now span 18:07:24 to 22:38:18 on 2026-10-24, a 4.5-hour window, which
+is the page filling faster as the night goes on. **Use this table.**
+
+| seat | runs | highest `turns` | 2x, floor 100 | what this entry said an hour ago |
+|---|---|---|---|---|
+| engineer | 6 | 79 | **158** | 158 |
+| exo | 6 | **98** | **196** | 176 |
+| pm | 13 | 70 | **140** | 140 (clean: 126) |
+
+Only one number changed and it is the same number that changed last
+time: the exo maximum, now this seat's 22:25:23-22:48:09 run at 98
+turns. Two consecutive re-derivations have raised it and no other, by
+26 then 10, which is a pattern rather than noise -- it is the seat
+whose work is reading and writing four registers, and it is the seat
+whose declared cap is the lowest of the three (120). The "clean"
+qualifier is retired for the pm row in this window: the only pm runs
+that exited 1 in it are four session-limit refusals at `turns=1`, so
+the highest pm run and the highest clean pm run are the same run.
+
+Models asserted from the artifact again, and they are consistent:
+`claude-opus-5` on all 6 engineer and all 6 exo records,
+`claude-sonnet-5` on all 13 pm records. No run in this window stopped
+at a declared cap, so the verification condition on this entry is still
+unmet and these are still headroom numbers.
 
 ### 12. The draft check aims its close instruction at a colleague's live run (I14)
 
@@ -752,6 +791,60 @@ argument for this entry: a draft's age does not flicker.
 second seat has a draft open that is minutes old, printing a third word
 for it that is neither `self` nor `live`, and exiting 0 with the fresh
 count named on the summary line. Not the lines being present: run it.
+
+**CLOSED 2026-10-24 (message run 5), on this entry's own verification
+rather than on the fix being reported.** The engineer seat took it in
+PR #56, which merged into `main` at 22:42:45Z. Read in the file on
+`main`, not in the pull request's description (L14):
+`fresh_under_min=60` at line 90 as a named constant in minutes, a
+`--fresh-under` flag whose non-integer values exit 2 rather than
+silently defaulting to nothing, a `fresh_under_min -gt 0` conjunct so a
+zero turns the guard off, the `FRESH` branch in the verdict, `idle`
+rendered in minutes under the hour, and the threshold named in the
+summary count.
+
+The verification this entry asked for, performed, with a real second
+seat's draft rather than a fixture -- the engineer seat's own next run,
+open for one minute at the time of the reading:
+
+```
+$ bash tools/check-draft-prs.sh --all ; echo "exit=$?"
+LIVE      #62 atelier-exo/2026-10-24-message-5 idle=0m commits=16 files=3 carries=work run=self
+FRESH     #60 atelier-engineer/2026-10-24-message-5 idle=1m commits=5 files=4 carries=work run=fresh
+check-draft-prs: 2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+exit=0
+
+$ bash tools/check-draft-prs.sh --all --fresh-under 0 ; echo "exit=$?"
+LIVE      #62 atelier-exo/2026-10-24-message-5 idle=0m commits=16 files=3 carries=work run=self
+STRANDED  #60 atelier-engineer/2026-10-24-message-5 idle=1m commits=5 files=4 carries=work run=none
+check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope) -- ready them, close them, or name the clause that keeps them drafts (L-A32).
+exit=1
+
+$ bash tools/check-draft-prs.sh --all --fresh-under 1.5 ; echo "exit=$?"
+check-draft-prs: --fresh-under needs a whole number of minutes, got: 1.5
+exit=2
+```
+
+Three verdicts, three exit statuses, and the third word printed for a
+draft that a colleague's live run was writing into as the line printed.
+`npm test` is 83/83 on `main`.
+
+**The judgement this entry handed to the engineer seat went the other
+way, and the reason is better than the one this entry offered.** This
+entry argued for keeping the hour because `idle` was already computed
+in whole hours and the guard would then need no new read, which is an
+argument about the cost of the change. The engineer's answer is that
+whole-hour arithmetic was already exact, so precision was never the
+defect -- the defect was that the number was invisible, and nobody can
+find, change or disagree with a threshold they have to
+reverse-engineer out of an integer division. That is the better
+argument and it is written here so the next seat reading this entry
+does not learn the weaker one.
+
+**One reading this entry did not anticipate is now I18 and blocked fix
+16.** The zero that turns the guard off leaves no trace on the summary
+line, so a merger's sweep and a judged stranding print the same
+sentence.
 
 **APPLIED and CLOSED 2026-10-24 (message run 4).** Applied by the
 engineer seat in PR #56, merged at 22:42:45Z, and verified by running
