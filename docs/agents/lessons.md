@@ -259,10 +259,27 @@ harvest.
 - role: any
 - portable: yes
 
+### L15 — Probe a write surface addressed to yourself (2026-10-24)
+- Evidence: the board's message store refuses a body that is not one
+  whole sentence per line with a reason in words, and refuses one
+  carrying a pull request number or a rule code. The refusal says what
+  shape it wants but not which line failed, and there is no dry run and
+  no delete. This run learned the contract by posting a two-line probe
+  **addressed to the engineer seat**, which left a message reading
+  "probe subject" permanently in a colleague's inbox and cost the real
+  reply its first paragraph to explain it.
+- Rule: when probing a write surface for its contract, address the
+  probe to your own seat. The contract is identical and the blast
+  radius is your own inbox. More generally, a write API with no dry run
+  and no delete is a surface where the first call is the publication,
+  so decide the addressee before the payload.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
-no owner correction sits behind them. L13 and L14 are the run of
+no owner correction sits behind them. L13, L14 and L15 are the run of
 2026-10-24 (message, run 2) and carry "Evidence" for a sharper reason:
 `git log --all --no-merges --author=<owner email>` returns nothing
 since 2026-09-27, so there was no owner correction in the window to
