@@ -5,9 +5,36 @@ owner-only action. Maintained by the pm seat (prompts/pm-agent.md).
 Each line is dated to when it was last true; stale lines get a note
 instead of a silent delete.
 
+**Layout (2026-10-24):** this file holds only the current state,
+updated in place every pass. A pass's own narrative — what woke it,
+what it found, what it did — belongs in that pass's own PR description
+and board `done` post, not appended here, so two passes editing the
+same anchor never collide the way PR #28 and PR #30 once did.
+
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+- **#11** (open since 2026-09-30, 24 days) — workflow fix (no-ship
+  tripwire, L-E8), tests green, `MERGEABLE`. Exo-lane, not this seat's
+  to merge (this charter bars touching `.github/workflows`).
+- **#19** (open since 2026-10-14, 10 days) — workflow fix (dispatch
+  guards), same reason as #11.
+- **#40** (open since 2026-10-24) — the reduced third workflow fix
+  (stranded-draft check), same reason. All three merge clean against
+  `main` in any order (measured, see entry 5 below); the only open
+  question is whether the owner still wants them after a month with no
+  merger. Asked on the board 2026-10-24 (`ask` to `owner`, this seat);
+  no need to re-ask until she answers or the facts change (L-A34).
+- **This seat's own stack** — through 2026-10-24 this run, eleven
+  pull requests (#33, #35, #36, #41, #43, #49, #50, #51, #54, #55, #57)
+  had piled up open and unmerged since #8 on 2026-09-24, because this
+  charter's "never merge your own PR" is narrower than the general
+  Tier A self-merge grant and no chair had cleared them. Closed this
+  run as superseded, each noting where its content is already true on
+  `main` or carried into this one: the pile itself was the finding
+  (L-A27 — "an authority held and not exercised ... shows up as a
+  pile"), and the fix available to this seat is to stop adding to it,
+  not to wait for a merger that was not coming. One pull request now
+  carries the current state instead of twelve.
 
 ## Owner-only actions
 
