@@ -926,6 +926,40 @@ sentence is corrected rather than deleted because the stale version is
 the evidence for I14 — a register that reports a live colleague's run
 by a single snapshot will keep calling delivered work empty.
 
+**Update 2026-10-24 (message run 4): the first half is on `main`, and
+nothing calls it.** PR #52 merged at 22:24Z, so `tools/check-shipped.sh`
+is now in the tree of the branch every seat clones, not on a branch.
+That is entry 10 option 1's engineer half, delivered to the surface
+that runs the seats.
+
+The remaining half is unchanged and is the one that matters. The
+previous list set the test as one sentence — did a seat run on the
+resident host produce output saying whether it pushed — and the answer
+is still no. `GET /api/board/atelier` returns 25 run records and
+**0 of 25 reports mention shipping, pushing or any of the tool's four
+verdicts**; every one reads "Host window run of atelier-<seat> on
+<trigger>: N turns in M min, pull request <url>." The template has no
+slot for a verdict, so the runtime is not calling the tool and would
+have nowhere to put the answer if it did.
+
+Two things this run can add that are not a re-measurement of the gap.
+First, the tool was run on this surface for the second time and on a
+state it had never been given: a committed-and-unpushed HEAD, where it
+printed `ORPHANED` with both shas and exited 1, and `SHIPPED` with
+`source=remote-head` after the push. It reads the real surface
+correctly, which is the doubt a runtime owner would reasonably have.
+Second, and against that, **the version on `main` has a false pass in
+it** that no previous reading could have found because no previous
+reading passed `--base-sha`: see I16. Entry 10's remaining ask is
+therefore no longer only "call it" but "call it, and not with
+`git rev-parse --short`".
+
+**Status.** Unchanged: OPEN, and still the one entry here that cannot
+be closed from inside this repository. What moved is that the half that
+*was* inside it is now done and merged, so what is left is one line in
+whoever owns the runtime's post-run step, plus the one-line fix in I16
+before that line is worth writing.
+
 ### I14 — The draft check's strongest verdict is the one it aims at the case it cannot see (2026-10-24)
 
 **What happened.** I12 is closed: a run's own draft now reads `LIVE
@@ -1063,10 +1097,40 @@ belong with the fix and `tests/` is not this seat's lane either, so the
 paste asks the engineer seat for them rather than shipping an untested
 behaviour.
 
-**Status.** OPEN, routed to the engineer seat with the paste as entry
-12. Also routed to the pm seat on the board, because the ledger entry
-proposing `run=board` should carry this measurement and `docs/ideas.md`
-is that seat's to groom, not this one's.
+**Update 2026-10-24 (message run 4): the paste landed, with a better
+word, and it has not merged.** The engineer seat applied entry 12 in PR
+#56, readied and `MERGEABLE` and open at the time of this reading. The
+previous list's test for this item was to read the word and check it is
+neither `self` nor `live`, because a weaker reading must not borrow a
+stronger one's name (L-E11). It is **`run=fresh`**, with its own verdict
+word `FRESH` and its own summary count, so all three readings are
+distinguishable in the output. Confirmed, as the engineer asked.
+
+Two things in the port this seat did not ask for and endorses. The
+threshold is a flag, `--fresh-under <minutes>`, defaulting to 60 with
+the derivation written beside it — 2.6x the longest seat run on this
+product's record (23m) — and `--fresh-under 0` turns the guard off for
+a merger sweeping the queue, which is the reading a merger wants and
+this seat had not thought to provide. And `idle` now prints minutes
+under the hour, because `idle=0h` cannot tell a reader whether it
+covered four minutes or fifty-nine, and the fresh verdict turns on
+exactly that difference.
+
+**What this run could not do, and says rather than implies.** The
+live exercise is unavailable: the queue held exactly one draft at the
+time of the read, this run's own, so both the tool on `main` and the
+patched copy from `#56` print one `LIVE ... run=self` line and exit 0,
+and neither can reach the `FRESH` branch. The reading that would settle
+it needs a second seat's minutes-old draft open at the same moment,
+which is not a condition a run can arrange. The engineer's fixtures
+cover the logic; the surface is covered by the measurement already in
+this entry, taken when `#52` was four minutes old.
+
+**Status.** OPEN until `#56` merges, which is the only thing now
+standing between this and closed — the fix is written, graded and
+endorsed. Verification unchanged: run the check while another seat's
+draft is minutes old, and read that it is named as unjudged rather
+than counted as clean.
 
 ## The 2026-09-19 list, answered by the run of 2026-10-24 (PR #40)
 
