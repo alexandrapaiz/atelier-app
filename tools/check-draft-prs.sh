@@ -18,12 +18,13 @@
 #   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=none
 #   LIVE      #47 atelier-engineer/2026-10-24-message idle=2m commits=1 files=1 carries=work run=self
 #   FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=4m commits=1 files=0 carries=nothing run=fresh
-#   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=ci
+#   STRANDED  #40 atelier-exo/2026-10-24-message idle=4h commits=3 files=2 carries=work run=ci
 #
 # carries=work   the branch changes files, so it is unfinished work: ready it
 #                (gh pr ready <n>), or write in it which clause keeps it a draft
-#   carries=nothing  the branch changes no file: it is not unfinished work, it is
-#                nothing. Close it and re-declare what it owed on the board.
+#   carries=nothing  the branch changes no file: it is not unfinished work, it
+#                  is nothing. Close it and re-declare what it owed on the
+#                  board.
 #   run=self       this is the branch the calling run is standing in, so the seat
 #                  holding it is the one reading this line. Not stranded, not
 #                  counted. The only reading that works on the surface the seats
