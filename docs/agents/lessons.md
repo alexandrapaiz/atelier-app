@@ -110,18 +110,99 @@ harvest.
 - role: any
 - portable: yes
 
-*Provenance note for the centralizer: L1 carries the owner's verbatim
-words under "Owner said". L2 through L7 were derived by the exo seat
-from run evidence and carry "Evidence" instead, because no owner
-correction sits behind them. No entry from the week of 2026-10-24 carries
-"Owner said", and the reason is worth the sentence: this run could not
-find an owner correction it could identify as hers. Every seat pushes
-and comments under the `alexandrapaiz` GitHub account, so authorship
-does not separate her words from a seat's; no board message among the
-hundred most recent to this company is owner-authored; and this run's
-own dispatch came from a seat. That is a gap in step 1 of
-prompts/exo-agent.md, which assumes her corrections are findable, and
-it is recorded under "Blocked fixes (exo)" in
-docs/agents/pending.md rather than resolved by guessing which comments
-were hers. Both kinds keep the `role` and `portable` fields the
-harvest depends on.*
+### L8 — One pull request, one merge tier (2026-10-24)
+- Evidence: incident I8. PR #40 carried four `docs/agents/*` commits
+  and one `.github/workflows/*` commit. The workflow commit made the
+  whole pull request Tier B, so the pm seat declined it (PR #43) in the
+  same sweep in which it merged three others and self-described the
+  rule it was applying — "every changed file is a knowledge surface,
+  which §10 Tier A would let this seat self-merge". The register half
+  qualified for that sentence and was unreachable, and the sweep
+  recorded #40 as "workflow-only", which it was not.
+- Rule: split a change by the authority needed to merge it, not by the
+  run that produced it. A pull request is read and merged at its
+  highest tier, so bundling a lower tier into it hands the cheap half
+  the expensive half's merger and hides it from the reader deciding.
+  One run may open one pull request and still owe the queue a split;
+  when a run finds a bundle it left earlier, reducing it by `git
+  revert` is reversible and rewriting its history is not.
+- role: any
+- portable: yes
+
+### L9 — Name the surface before claiming something cannot be known (2026-10-24)
+- Evidence: incident I9. I7 filed "the seat cannot tell the owner's
+  corrections from its own" after testing pull request comments, where
+  it is true, and generalized it to every surface. Commits carry the
+  distinction plainly: the owner authors as
+  `alexandrapaizdelgado@gmail.com`, seats as `<seat>@agents.epito.me`,
+  and the account's `users.noreply.github.com` address appears only on
+  merges. The proof was already inside this register — L1's verbatim,
+  "the $99 waits for the product to earn it", is a commit subject under
+  that address. Two runs had read that lesson without reading where it
+  came from.
+- Rule: an impossibility claim is scoped to the surface that was
+  tested, and the entry must name that surface. Filed unscoped it is
+  worse than no entry, because it tells every later run not to look.
+  Where a discriminator does exist, the register owes the command
+  rather than the conclusion:
+  `git log --all --no-merges --author=<owner email> --since=<last run>`.
+- role: exo
+- portable: yes
+
+### L10 — Closing a pull request does not answer the findings posted on it (2026-10-24)
+- Evidence: incident I11. HQ's YC seat posted four measured defects in
+  `company.yaml` *as it stands on `main`* onto PR #13's thread, with
+  validator output, and named the act it wanted: "the act is a
+  reconciliation onto main, not a merge and not a close." Six days
+  later a seat closed #13 as superseded — true of the branch, silent on
+  all four findings — and the thread stopped being anywhere anyone
+  looks. One of the four is still removing eight owner-only rows from
+  HQ's company-wide page.
+- Rule: a finding about the tree is not the property of the pull
+  request whose thread carried it. Before closing a thread, move every
+  finding on it that is about something other than that branch into a
+  register, or answer it in the closing comment with evidence. A review
+  comment is a delivery mechanism and not a store.
+- role: any
+- portable: yes
+
+### L11 — A best-effort route needs a ceiling, not only a fallback (2026-10-24)
+- Owner said: "Open routing is best-effort: fall back to the Claude
+  step when the Kimi step fails (HQ Incident 4: Moonshot concurrency)"
+- Evidence: her commit `257e92e`, 2026-09-23, touching only
+  `.github/workflows/agent-pm.yml`. It settles that the
+  `continue-on-error: true` on that step is deliberate, so L5 is a rule
+  about reading such a step and never a complaint about its presence.
+  What her instruction did not get is a bound: on 2026-09-24 the
+  open-routed attempt ran **21m 30s, 50 turns and $0.78** on
+  `kimi-k2.7-code`, ended `is_error: true`, and only then did the
+  fallback do the work (I5). The attempt is bounded by the seat's own
+  turn cap, which is the budget for doing the duties, not for probing a
+  route.
+- Rule: when the owner makes a route best-effort, give it its own
+  ceiling — turns, time or cost — separate from the cap on the work.
+  A fallback protects the outcome and spends the whole budget doing so;
+  an off switch protects the budget only once someone has decided to
+  stop. Neither is a ceiling, and the ceiling is the thing that makes
+  "best-effort" cost what the word implies.
+- role: exo
+- portable: yes
+
+*Provenance note for the centralizer. L1 and L11 carry the owner's
+verbatim words under "Owner said". L2 through L10 were derived by the
+exo seat from run evidence and carry "Evidence" instead, because no
+owner correction sits behind them. Both kinds keep the `role` and
+`portable` fields the harvest depends on.*
+
+*Amended 2026-10-24, later run the same day. The note here previously
+read "No entry from the week of 2026-10-24 carries 'Owner said', and
+the reason is worth the sentence: this run could not find an owner
+correction it could identify as hers", on the grounds that every seat
+pushes and comments under the `alexandrapaiz` account. That was tested
+on pull request comments only, where it holds, and it is false of
+commits: the owner authors as `alexandrapaizdelgado@gmail.com` and
+seats as `<seat>@agents.epito.me`. Three owner commits sat in the
+harvest window the whole time, and L11 is the lesson from one of them.
+The claim is corrected here rather than deleted, because a centralizer
+reading this file needs to know that the earlier sentence was wrong and
+why — see I9 and L9.*
