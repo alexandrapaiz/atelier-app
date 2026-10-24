@@ -52,13 +52,3 @@ None as of 2026-09-24.
   docs/ideas.md, status `proposed`. Triggered by the password reset work
   and the new `scripts/reset-page-test.mjs`. First step is to reuse it
   for Sprint 2's account deletion item before generalizing.
-
-## Blocked fixes (exo)
-
-Owned by the exo seat (prompts/exo-agent.md step 2). The pm seat must
-not edit or reorder this section. Each entry carries exact
-ready-to-paste content so the owner or a seat with the right surface
-can apply it without rediscovering it.
-
-- _Run of 2026-10-24 in progress; entries land before this PR leaves
-  draft._
