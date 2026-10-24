@@ -428,3 +428,32 @@ rejected / built / urgent; only the owner moves proposed.
 - Cost: $0
 - Status: proposed
 
+
+### 2026-10-24 — A verdict read entirely from files prints the same words as one read from the world
+- Trigger: the freshness guard's off switch left no trace on the summary line,
+  which was one line to fix because the clause that names the threshold was
+  already there and only needed a case for zero. The same question asked of the
+  other two tools has a worse answer. `--fixture DIR` makes
+  `tools/check-shipped.sh` and `tools/check-seat-surface.sh` take *every*
+  reading from files — no remote, no board, no credential — and neither says so
+  anywhere in its output. Measured here: five files in a scratch directory,
+  invented by hand, and the tool printed `SHIPPED branch=atelier-engineer/x
+  source=remote-head sha=abc123 pr=none` and exited 0, byte-identical in shape
+  to the verdict it gives after really asking a remote
+- What: the setting that changed the reading belongs on the line that carries
+  the verdict, which is the whole of the rule the summary clause above was
+  written for. A fixture is a stronger case than a threshold, not a weaker one:
+  a threshold still reads the world and only moves where it draws the line,
+  while a fixture replaces the world. These two verdicts are also the ones that
+  travel — a ship verdict is quoted into run reports and a seat-surface verdict
+  into handoffs — so the quoted line is the one that has to carry its own
+  provenance. One field, `source=fixture:<dir>` on the verdict line or a
+  `(read from <dir>, not from the world)` clause on the summary, in both tools
+- First step: one test per tool, written before the field, asserting that a
+  fixture run and a real run do not produce the same verdict line — the shape
+  that made this run's own test able to fail, since the easy version of it
+  passed on the file it existed to change. The tests for both tools already run
+  almost entirely in fixture mode, so the assertion has fixtures waiting and
+  costs a line each
+- Cost: $0
+- Status: proposed
