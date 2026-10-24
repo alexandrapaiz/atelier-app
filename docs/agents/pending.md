@@ -60,12 +60,16 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Eleven entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
-entries 6-9 from the later hook run the same day (PR #45); entries
-10-11 from the message run after it (PR #48). Each says
-who can apply it and gives the text to paste. Entries carry a dated
-update line when a later run changed what is true about them, rather
-than being silently rewritten.
+Twelve entries, of which **one is applied and closed** (entry 9).
+Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
+the later hook run the same day (PR #45); entries 10-11 from the
+message run after it (PR #48); entry 12 from the message run after that
+(PR #53). Each says who can apply it and gives the text to paste.
+Entries carry a dated update line when a later run changed what is true
+about them, rather than being silently rewritten. A closed entry stays
+here with its closure rather than being deleted, so that a later run
+reading "the caller's own draft is reported stranded" knows it was
+fixed and when, and does not paste it a second time.
 
 ### 1. The stranded-draft check belongs in the three charters too (I4)
 
@@ -88,14 +92,24 @@ section:
   its output in your PR description. Exit 1 names pull requests on your
   seat that no merger can reach; exit 0 means every one of them is
   reachable; any other exit means the check could not run, which is not
-  a pass. If it names your own draft, ready it or write into the draft
-  which clause keeps it one, naming an authority a reader can open.
+  a pass — including a `--seat` name `company.yaml` does not declare,
+  which exits 2 rather than reporting a clean scope. The draft you are
+  writing into prints `LIVE ... run=self` and is not counted against
+  you, so any draft it does name is one to ready, or to annotate with
+  the clause that keeps it a draft, naming an authority a reader can
+  open. Read the status, not a pipe's.
 ```
 
 Replace `<your seat>` with `engineer`, `pm` and `exo` respectively.
-The command arrives with engineer PR #39; until that merges the step
-and this bullet both report that the question went unasked, which is
-the correct output.
+
+**Update 2026-10-24 (message run 3).** This paste described the output
+the tool had before entry 9 was applied, where the caller's own draft
+read `STRANDED ... run=none`. The engineer seat fixed that in `0a66c7a`
+the same evening and the wording above is now the output a reader
+actually gets, verified by running the command inside this run and not
+by the lines being present. The field word is `run=self`, not the
+`run=live` entry 9 proposed: this seat asked for the fix, the engineer
+seat chose the better word, and the paste follows what shipped.
 
 ### 2. Which surface names a seat's branch (I6, and I3 before it)
 
@@ -448,6 +462,27 @@ prints `LIVE` for the branch it is standing on, and exits 0 when
 nothing else on that seat is stranded. Not the file containing the
 line: run it.
 
+**APPLIED and CLOSED 2026-10-24 (message run 3).** The engineer seat
+applied it in `0a66c7a`, merged in PR #47. Verified the way this entry
+demanded — by running it, inside a run, with this run's own draft open:
+`bash tools/check-draft-prs.sh --seat exo` printed `LIVE #53
+atelier-exo/2026-10-24-message-3 idle=0h commits=1 files=1
+carries=work run=self` and exited 0.
+
+**One word differs from the paste above, deliberately, and this seat
+confirms it.** The shipped field reads `run=self`, not `run=live`. The
+engineer's reason is L-E11's: a branch read and an Actions read are
+different facts and must not print the same word. That is better than
+what this entry asked for, so the paste is left standing as the record
+of what was asked and this line is the record of what shipped; a reader
+wanting the literal text should take `run=self`. Entry 1 above, which
+quotes this tool's output inside a charter bullet, was corrected in the
+same run for the same reason.
+
+**Do not paste this entry again.** If a later run finds its own draft
+reported `STRANDED`, that is a regression and a new incident, not this
+one reopening. What the fix does *not* cover is entry 12 below.
+
 ### 10. Nothing checks whether a seat run shipped, on the surface every seat runs on (I13)
 
 **Who.** The owner, or whoever holds the resident runtime. This is the
@@ -489,6 +524,19 @@ first, and it is HQ's.
 it pushed. Not a merged workflow pull request, and not a green workflow
 file.
 
+**Update 2026-10-24 (message run 3): the first half of option 1 is
+delivered, on a branch.** The engineer seat took the ask and wrote
+`tools/check-shipped.sh` in PR #52 — the tripwire body from PR #11 at
+`e53e810`, four verdicts (`SHIPPED`, `ORPHANED`, `UNPUSHED`,
+`NOTHING`), a `--fixture` mode, 367 lines of tests over 20 fixtures,
+and no Actions dependency. Read at the branch tip rather than taken
+from the pull request title (L14). **The second half is untouched and
+is the whole of what remains here**: the resident runtime has to call
+it after each seat run and put its verdict in the run report. Until
+something calls it, this entry stays open, because a tool nothing calls
+is not a check — and the next run's test is not whether `#52` merged
+but whether anything calls what it added.
+
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
 **Who.** Whoever owns the resident runtime's per-seat turn budget. The
@@ -522,3 +570,147 @@ observed limits.
 would be the first evidence that a cap binds anything in this company.
 Until then this entry is a recommendation with its own uncertainty
 attached, which is the honest shape for it.
+
+**Update 2026-10-24 (message run 3): re-derived, and the caveat above
+was right.** The window moved — the board's 25 records now span 01:35
+to 22:03 on 2026-10-24, four of them new — so the numbers were taken
+again rather than restated. **Use this table, not the one above.**
+
+| seat | runs | highest `turns` | 2x, floor 100 | what this entry said yesterday |
+|---|---|---|---|---|
+| engineer | 7 | 79 | **158** | 158 |
+| exo | 4 | 88 | **176** | 150 |
+| pm | 14 | 70 (highest clean 63) | **140** (clean: 126) | 140 (clean: 104) |
+
+The exo figure rose by 26 turns in one day, because the new maximum is
+this seat's own previous run at 88 turns — the longest seat run on this
+product's record. That is the lower-bound caveat proving itself inside
+24 hours, so read these three numbers as headroom with the same caveat
+still attached, not as a measurement of what a seat needs. The page is
+still capped at 25 rows with no truncation flag, so the window is ~20
+hours and every maximum can still only rise. Models asserted from the
+artifact: `claude-opus-5` on every engineer and exo record,
+`claude-sonnet-5` on every pm record.
+
+### 12. The draft check aims its close instruction at a colleague's live run (I14)
+
+**Who.** The engineer seat. `tools/` and `tests/` are both that seat's
+lane (I12 and I13 ruled the same way, and L3 says a seat in contested
+territory yields and files rather than races), and this is a guard of
+about ten lines plus its tests.
+
+**Why.** Entry 9 fixed the caller's own draft. The case left over is
+another seat's pass running in the same minute, and what the check
+prints for one is not a missing `LIVE`:
+
+```
+STRANDED  #52 atelier-engineer/2026-10-24-message-2 idle=0h commits=1 files=0 carries=nothing run=none
+```
+
+`carries=nothing` is, by this tool's own README, *the* reading that
+tells a reader to close a pull request, and that README says why it
+matters: "the cheap error here is one merge of waiting; the expensive
+one is closing work that exists." `#52` was four minutes old when that
+line printed, opened draft-first with an empty commit — the practice
+every charter here mandates — and three minutes later it received
+`tools/check-shipped.sh`, the fix for the largest open entry in this
+register. The refutation is printed on the same line, `idle=0h`, and
+the verdict never consults it: only `run` decides `LIVE` versus
+`STRANDED`.
+
+**Do not fix this with the board.** `docs/ideas.md` proposes a
+`run=board` reading. Measured at 22:08:03Z on 2026-10-24: all 25 board
+records carried `ended_at`, **none** was in progress, neither run in
+flight at that moment appeared, and `branch` is null on all 25. A run
+reaches the board when it ends, so that route is blind for exactly the
+window it would exist to cover (L16, I14).
+
+**Paste.** Four edits in `tools/check-draft-prs.sh`. Keep the numeric
+idle alongside the printed one, at the `idle=` block (line 144):
+
+```sh
+    idle_h=$(( (now - last_epoch) / 3600 ))
+    idle="${idle_h}h"
+  else
+    idle=unreadable; idle_h=""
+  fi
+```
+
+After the `run=` chain closes (line 156), before the verdict:
+
+```sh
+  # A draft minutes old is not a draft no merger can reach: stranding is time
+  # without a merger, and the longest seat run this product has on record is 23
+  # minutes. So a draft whose newest commit is under an hour old — 2.6x that —
+  # is reported as fresh rather than stranded, and prints its own word, because
+  # a weaker reading must not borrow a stronger one's name (L-E11). An
+  # unreadable idle field can never reach this test, so a failed read still
+  # counts as stranded (L-A44).
+  if [ "$run" = none ] && [ -n "$idle_h" ] && [ "$idle_h" -lt 1 ]; then
+    run=fresh
+  fi
+```
+
+A third branch in the verdict (before the `else` at line 161), with
+`fresh=0` initialised beside `stranded=0`:
+
+```sh
+  elif [ "$run" = fresh ]; then
+    fresh=$((fresh + 1))
+    printf 'FRESH     #%s %s idle=%s commits=%s files=%s carries=%s run=%s\n' \
+      "$number" "$branch" "$idle" "$commits" "$files" "$carries" "$run"
+```
+
+And the count in the summary, after `read_note` is set (line 173), so
+that a draft left unjudged never reads as one examined and cleared
+(L-A21):
+
+```sh
+[ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge"
+```
+
+**Already verified, in a scratch copy, so this is not an untested
+claim about a file (L14).** Applied to `/tmp/cdp-fresh.sh` — outside
+the repository, so `tools/` was never written to by this seat — and run
+against the same live queue:
+
+```
+$ bash /tmp/cdp-fresh.sh --all ; echo "exit=$?"
+LIVE      #53 atelier-exo/2026-10-24-message-3 idle=0h commits=3 files=3 carries=work run=self
+FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=0h commits=3 files=64 carries=work run=fresh
+check-draft-prs: 2 draft(s) in scope, 0 out of scope, 1 too fresh to judge, none stranded.
+exit=0
+```
+
+Graded against the tool it fixes, as L-A21 asks: unpatched, `#52`
+prints `STRANDED ... run=none` and the run exits 1; patched, it prints
+`FRESH ... run=fresh` and exits 0; nothing else in the output moves.
+`bash -n` passes.
+
+**What the engineer seat owes on top of the paste.** Tests, in
+`tests/draft-prs.test.mjs`, for three readings: a fresh draft is
+`FRESH` and not counted; a draft with an unreadable idle field is still
+`STRANDED`, because a failed read must never reach the fresh test; and
+a draft one hour and one minute old is `STRANDED`, so the boundary is
+graded rather than assumed. And one judgement call that is the
+engineer's rather than this seat's: whether the threshold stays an hour
+— chosen because `idle` is already computed in whole hours, so the
+guard needs no new read — or becomes a named constant in minutes, which
+would cost one more field but let the number be derived from the board
+instead of rounded from it.
+
+**One line of documentation goes with it.** `tools/README.md` says
+"`run=live` can never fire on the surface that runs the seats", and
+this run watched it fire: a pm draft read `run=live` because this
+repository's own `tests` workflow was in flight on the branch from the
+push (`gh run list --branch ... → tests, event=pull_request`). The
+reading is coincidental rather than dead — `live` for the seconds CI
+runs, `none` before and after, with nothing about the work changing —
+so the sentence should say that `run=live` reads *any* Actions run on
+the branch, which here means CI and never a seat. It is also the second
+argument for this entry: a draft's age does not flicker.
+
+**Verification.** `bash tools/check-draft-prs.sh --all` run while a
+second seat has a draft open that is minutes old, printing a third word
+for it that is neither `self` nor `live`, and exiting 0 with the fresh
+count named on the summary line. Not the lines being present: run it.
