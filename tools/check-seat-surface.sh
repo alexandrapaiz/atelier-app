@@ -17,7 +17,13 @@
 #   declared — the newest GitHub Actions run of the workflow file company.yaml
 #              names, read with `gh run list --workflow=<file>`
 #   actual   — the newest run the board recorded for that seat, with the host
-#              that served it, read from GET /api/board/<company>
+#              that served it, read from GET /api/board/<company>. That route
+#              returns at most 25 runs, says nothing about having truncated,
+#              and 404s on any query string, so there is no way to ask it for a
+#              wider window. A seat missing from the page therefore proves only
+#              that it did not run inside the page, and every line that had no
+#              board run for its seat prints board_window_from= so a reader can
+#              see which question was actually answered (L-A87).
 #   forge    — the newest pull request opened from a branch carrying the seat's
 #              name, which is the weakest of the three and the only one left
 #              when the board recorded nothing. Every line names the reading it
@@ -34,6 +40,23 @@
 #             declared_last=2026-09-19 actual_last=2026-10-24 gap=34d
 #             actual_surface=host.alexandra-systems-company.com trigger=window:message
 #             source=board board_runs=3
+#
+# A seat's run reaches the board when it ENDS, not when it starts, so a seat
+# absent from the board is the normal state for the whole duration of its own
+# run. Measured here the hard way: this tool read board_runs=0 for the exo seat
+# at 18:20 and called it a missed run, and the run had started at 18:07 and
+# ended at 18:24. A fresh absence and a lost run look identical from the page
+# alone, so the absence is resolved against the forge rather than guessed:
+#
+# board=pending        a workflow run is queued or in progress for this seat's
+#                      newest branch, so the board has nothing yet and should
+#                      not. Not a finding.
+# board=silent-in-window  nothing is running, and the forge shows a finished run
+#                      inside the window the board page covers, which the board
+#                      does not have. A finding in its own right — the board is
+#                      the instrument every other instrument is built on.
+# board=out-of-window  the forge evidence predates the page, so the board's
+#                      silence about this seat proves nothing either way.
 #
 # AGREE      the seat's newest evidence of running is its declared workflow, so
 #            an edit to that file reaches the next run.
@@ -70,7 +93,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --seat)    scope=one; seat="${2:-}"; shift 2 ;;
     --company) company="${2:-}"; shift 2 ;;
-    -h|--help) sed -n '2,62p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,76p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "check-seat-surface: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -123,7 +146,10 @@ declared_workflow() { # seat
   sed -n "s/^  - *{ *name: *$1 *,.*workflow: *\([^ ,}]*\).*/\1/p" "$manifest" | head -1
 }
 
-# The newest board run for a seat, as started_at|run_url|trigger|count. The
+# The newest board run for a seat, as
+# started_at|run_url|trigger|count|page_total|page_oldest. The page's oldest row
+# is the only honest statement of what window the board actually answered for,
+# because the route carries no limit or saturated field of its own. The
 # separator is not a tab on purpose: tab is IFS whitespace, so `read` collapses
 # leading empty fields and a seat with no board run read its run count as its
 # own timestamp. Measured in this tool before it shipped. And
@@ -136,8 +162,14 @@ board_last() { # seat
       const runs = (JSON.parse(s).runs || [])
         .filter(r => r.seat === seat)
         .sort((a,b) => String(b.started_at).localeCompare(String(a.started_at)));
+      const all = (JSON.parse(s).runs || [])
+        .map(r => String(r.started_at || ""))
+        .sort();
       const r = runs[0] || {};
-      process.stdout.write([r.started_at || "", r.run_url || "", r.trigger || "", runs.length].join("|"));
+      process.stdout.write([
+        r.started_at || "", r.run_url || "", r.trigger || "", runs.length,
+        all.length, all[0] || "",
+      ].join("|"));
     });' "$1"
 }
 
@@ -150,7 +182,7 @@ else
   prs_read=no; prs='[]'
 fi
 
-forge_last() { # seat -> createdAt<TAB>number
+forge_last() { # seat -> createdAt|number|headRefName
   echo "$prs" | node -e '
     let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{
       const seat = process.argv[1];
@@ -160,7 +192,7 @@ forge_last() { # seat -> createdAt<TAB>number
           return b.startsWith(seat + "/") || b.includes("-" + seat + "/");
         })
         .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
-      if (hit) process.stdout.write([hit.createdAt, hit.number].join("|"));
+      if (hit) process.stdout.write([hit.createdAt, hit.number, hit.headRefName].join("|"));
     });' "$1"
 }
 
@@ -213,10 +245,10 @@ for s in "${seats[@]}"; do
   fi
 
   if bl=$(board_last "$s"); then
-    IFS='|' read -r b_at b_url b_trigger b_count <<<"${bl:-}"
+    IFS='|' read -r b_at b_url b_trigger b_count b_page b_oldest <<<"${bl:-}"
     b_read=yes
   else
-    b_at=; b_url=; b_trigger=; b_count=; b_read=no
+    b_at=; b_url=; b_trigger=; b_count=; b_page=; b_oldest=; b_read=no
   fi
 
   if [ "$d_read" = no ] || [ "$b_read" = no ]; then
@@ -249,30 +281,52 @@ for s in "${seats[@]}"; do
 
   # No board run for this seat. That is not agreement, it is the absence of the
   # instrument the org reads, so the verdict falls to the forge and says so.
-  IFS='|' read -r f_at f_num <<<"$(forge_last "$s")"
+  IFS='|' read -r f_at f_num f_branch <<<"$(forge_last "$s")"
   f_e=$(epoch_of "${f_at:-}"); d_e=$(epoch_of "${d_at:-}")
 
   if [ "$prs_read" = no ]; then
-    printf 'unreadable seat=%s declared=%s declared_last=%s board_runs=0 (board holds no run for this seat and the pull request list could not be read)\n' \
-      "$s" "$wf" "$(day_of "${d_at:-}")"
+    printf 'unreadable seat=%s declared=%s declared_last=%s board_runs=0 board_window_from=%s (board holds no run for this seat in its page and the pull request list could not be read)\n' \
+      "$s" "$wf" "$(day_of "${d_at:-}")" "$(day_of "${b_oldest:-}")"
     unclear=$((unclear + 1))
     continue
   fi
 
+  # The board's silence about a seat is only evidence inside the window its page
+  # covers. Inside it, the board had the chance and missed the run; before it,
+  # the silence says nothing. Two different answers, so they print differently.
+  o_e=$(epoch_of "${b_oldest:-}")
+  board_note=board=out-of-window
+  if [ -n "$f_e" ] && [ -n "$o_e" ] && [ "$f_e" -ge "$o_e" ]; then
+    board_note=board=silent-in-window
+  fi
+  # A run that has not ended cannot be on the board yet, and that is the common
+  # case rather than the rare one: this check is itself usually run from inside
+  # one. Ask the forge whether anything is still executing on that branch.
+  if [ -n "${f_branch:-}" ]; then
+    if live=$(gh run list --branch "$f_branch" --limit 20 --json status \
+         --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null); then
+      [ "${live:-0}" -gt 0 ] && board_note=board=pending
+    else
+      board_note=board=unreadable
+    fi
+  fi
+
   if [ -n "$f_e" ] && { [ -z "$d_e" ] || [ "$f_e" -gt "$d_e" ]; }; then
-    printf 'ELSEWHERE seat=%s declared=%s declared_last=%s actual_last=%s gap=%s actual_surface=unrecorded trigger=unrecorded source=forge(pr#%s) board_runs=0\n' \
-      "$s" "$wf" "$(day_of "${d_at:-}")" "$(day_of "$f_at")" "$(days_between "${d_at:-}" "$f_at")" "$f_num"
+    printf 'ELSEWHERE seat=%s declared=%s declared_last=%s actual_last=%s gap=%s actual_surface=unrecorded trigger=unrecorded source=forge(pr#%s) board_runs=0 board_page=%s board_window_from=%s %s\n' \
+      "$s" "$wf" "$(day_of "${d_at:-}")" "$(day_of "$f_at")" "$(days_between "${d_at:-}" "$f_at")" "$f_num" \
+      "${b_page:-0}" "$(day_of "${b_oldest:-}")" "$board_note"
     elsewhere=$((elsewhere + 1))
     continue
   fi
 
   if [ -n "${d_at:-}" ]; then
-    printf 'AGREE     seat=%s declared=%s declared_last=%s actual_last=%s event=%s source=actions board_runs=0\n' \
-      "$s" "$wf" "$(day_of "$d_at")" "$(day_of "$d_at")" "${d_event:-none}"
+    printf 'AGREE     seat=%s declared=%s declared_last=%s actual_last=%s event=%s source=actions board_runs=0 board_window_from=%s %s\n' \
+      "$s" "$wf" "$(day_of "$d_at")" "$(day_of "$d_at")" "${d_event:-none}" "$(day_of "${b_oldest:-}")" "$board_note"
     continue
   fi
 
-  printf 'QUIET     seat=%s declared=%s declared_last=none actual_last=none board_runs=0\n' "$s" "$wf"
+  printf 'QUIET     seat=%s declared=%s declared_last=none actual_last=none board_runs=0 board_window_from=%s\n' \
+    "$s" "$wf" "$(day_of "${b_oldest:-}")"
   unclear=$((unclear + 1))
 done
 
