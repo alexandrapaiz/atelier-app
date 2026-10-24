@@ -60,8 +60,11 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Five entries, all from the run of 2026-10-24 (PR #40), newest first.
-Each says who can apply it and gives the text to paste.
+Eight entries. Entries 1-5 are from the run of 2026-10-24 (PR #40);
+entries 6-8 from the later hook run the same day (PR #45). Each says
+who can apply it and gives the text to paste. Entries carry a dated
+update line when a later run changed what is true about them, rather
+than being silently rewritten.
 
 ### 1. The stranded-draft check belongs in the three charters too (I4)
 
@@ -174,6 +177,23 @@ meta-failure is itself an incident.":
    yours to make.
 ```
 
+**Updated 2026-10-24, hook run.** Still worth pasting, and its
+premise is now half wrong. The paste above says "every seat in this
+company writes under her account", which is true of comments and false
+of commits: the owner authors as `alexandrapaizdelgado@gmail.com` and
+seats as `<seat>@agents.epito.me`, so a harvest can find her words
+with one command (I9, L9). Three owner commits were sitting in this
+run's harvest window, and L11 came out of one of them. If the charter
+text above is pasted, paste this sentence with it, as the line before
+the one quoted:
+
+```
+   Harvest her commits first, which do carry her authorship:
+   `git log --all --no-merges --author=alexandrapaizdelgado@gmail.com
+   --since=<the last exo run>`. The sentence below applies to pull
+   request and board comments, where no discriminator exists yet.
+```
+
 ### 4. `OPEN_ROUTING` is a variable, not a secret (I5)
 
 **Who.** Anyone with write access, after PR #11 merges — including the
@@ -217,3 +237,151 @@ orders with real `git merge`, and the `actions: read` line that #19 and
 merge-order problem here. There is only the question of who merges
 them.
 
+**Updated 2026-10-24, hook run.** Entry 5's premise changed and the
+three pull requests are no longer the same shape. PR #40 was carrying
+four `docs/agents/*` commits as well, which made the register half of
+the previous run wait on a Tier B merger that could never come (I8).
+Those four commits are now PR #45, docs-only, which the pm seat merges
+routinely under §10 Tier A, and PR #40's net diff is now exactly
+`+108/-0` across the three workflow files and nothing else. **What is
+left here is genuinely only #11, #19 and the reduced #40**, all three
+Tier B, all three still needing a chair or the owner. The pm seat
+declined all three on 2026-10-24 (PR #43) because that run's own
+instructions barred it from touching workflows at all — a narrower
+grant than §21's, named rather than overridden, which is correct. So
+the merger to expect is a chair or the owner.
+
+### 6. `company.yaml` on `main` fails the company's own validator (I11)
+
+**Who.** The HQ chair, who wrote the file, or whoever holds HQ's hand
+for this repository. `company.yaml` is not in this seat's write lane.
+
+**Why.** HQ's YC seat measured four findings on 2026-10-18 and posted
+them on PR #13's thread; PR #13 was closed as superseded on 2026-10-24
+without answering any of them, so this entry is now their only home
+(L10). One has a live consequence today: `main` declares no `pending:`
+surface, HQ's sync resolves that surface only from the manifest with no
+default, and the first green sync therefore renders **eight fewer
+owner-only rows** — the worthiness gate among them — with no line
+saying why.
+
+**Paste.** Replace `main`'s `company.yaml` body below the comment
+header with:
+
+```yaml
+company: alexandra-systems
+product: atelier-app
+posture: legacy
+priority: 5
+owner: alexandrapaiz
+surfaces:
+  incidents: docs/agents/incidents.md
+  decisions: docs/decisions.md
+  ideas: docs/ideas.md
+  prfaq: docs/prfaq/
+  lessons: docs/agents/lessons.md
+  pending: docs/agents/pending.md
+  sprints: SPRINTS.md
+  # no okrs surface exists in this repo, so HQ reads a gap here, not a 404
+standards:
+  pm: fb114f4
+seats:
+  - { name: engineer, workflow: .github/workflows/agent-engineer.yml, cadence: dispatch-only, status: backlogged }
+  - { name: exo, workflow: .github/workflows/agent-exo.yml, cadence: dispatch-only, status: backlogged }
+  - { name: pm, workflow: .github/workflows/agent-pm.yml, cadence: dispatch-only, status: backlogged }
+```
+
+**Four of the changes are the YC seat's findings and two are this
+seat's, so the applier can weigh them separately.** Theirs:
+`product: atelier-app` (the schema asks for the repository name as
+GitHub spells it), `cadence: dispatch-only` on all three (`on-dispatch`
+is not this company's token), and the added `pending:` and `sprints:`
+surfaces. Ours: `standards: pm: fb114f4`, because the file on `main`
+says `f2f0561` while `docs/standards/pm.md`'s own vendored header reads
+`fb114f4` after PR #38 — the manifest's pointer to the standard it has
+adopted is stale. And `status: backlogged`, which ADR-007 amendment 2
+prescribes and which the YC seat argued for at length.
+
+**The one word this seat will not choose.** `posture: asleep` is not in
+`standards/company.schema.json`'s enum, which is `flagship, product,
+internal, private-rd, legacy, infrastructure, holding`. `legacy` is
+written above as the nearest valid word, and it is a guess about the
+owner's intent, not a reading of it — "asleep" may well mean a product
+she intends to wake, which `legacy` does not say. **Pick the word
+before pasting.** The validator's complaint is real either way: an
+undefined posture passes straight through `tools/sync-company.sh` into
+HQ's portfolio table, because that script never calls the validator.
+
+**Verification.** `bash tools/check-manifest.sh company.yaml` from a
+clone with the workflows present, expecting `Valid manifest. This repo
+is in the company.` and zero findings. The file existing is not the
+check (I11).
+
+### 7. No seat workflow listens for the board that every seat carries (I10)
+
+**Who.** HQ, under docs/standards/pm.md §15. Already routed: the YC
+seat handed it to the exo centralizer on 2026-10-18 with an idempotent
+tool, `tools/event-bus-workflows.py`, and all three files here carry
+the `workflow_dispatch:` anchor it needs.
+
+**Why.** The owner put `BOARD_API_URL` and `BOARD_RUNTIME_TOKEN` into
+all three seat workflows on 2026-09-27, commit `a1418c3`, subject
+"Every seat run gets the board ... the board is a tool every seat
+uses". No workflow here declares `repository_dispatch`, so a board
+message addressed to a seat in this repository wakes nothing and
+records no error. Neither PR #11 nor PR #19 adds it, checked with `git
+diff` rather than assumed.
+
+**Why it is not fixed here even though this seat can reach workflows.**
+It would be a fourth Tier B pull request in a queue whose defining
+problem is that the three already open have no merger (entry 5). The
+tool at HQ does all four of the portfolio's deaf repositories at once
+and this one is three of the four.
+
+**Paste**, if whoever reads this would rather do it by hand — in each
+of `.github/workflows/agent-{engineer,exo,pm}.yml`, immediately after
+the `on:` key and before `workflow_dispatch:`:
+
+```yaml
+  repository_dispatch:
+    types: [seat-message]
+```
+
+**Verification.** Not the trigger's presence in the file, which is the
+config claim (L5). Send a board message to a seat here and read
+`gh run list --json event,name` for a run whose event is
+`repository_dispatch`.
+
+### 8. The open route has no ceiling, only a fallback (L11, I5)
+
+**Who.** Anyone with write access to `.github/`, so a chair, the pm
+under §21, or the owner. One line.
+
+**Why.** The owner made open routing best-effort in commit `257e92e`:
+"fall back to the Claude step when the Kimi step fails". The fallback
+works. What it costs is unbounded — on 2026-09-24 the open-routed
+attempt ran 21m 30s and 50 turns and $0.78 before failing, and
+`.github/workflows/agent-pm.yml:60` gives that step
+`--max-turns 120`, the identical budget the fallback gets at line 79.
+The probe is funded like the work. PR #11's `OPEN_ROUTING` switch does
+not fix this: a switch decides whether to try, and says nothing about
+what a try may spend.
+
+**Paste.** In `.github/workflows/agent-pm.yml`, in the
+`Seat run (open-routed)` step, after `continue-on-error: true`:
+
+```yaml
+        timeout-minutes: 10
+```
+
+The job's own `timeout-minutes: 60` is the only bound on it today, so
+this is the difference between a failed probe costing ten minutes and
+costing most of the run's wall clock. Ten is chosen as under half the
+21m 30s actually observed; if a later run has evidence of a successful
+open-routed run, re-derive it from that instead.
+
+**Verification.** The next pm dispatch where the open-routed step
+fails: its duration in `gh run view --json jobs` should be at or under
+ten minutes, and the fallback should still produce the work with
+`is_error: false`. Read `modelUsage` from the log, never the step
+conclusion (L5).
