@@ -537,6 +537,43 @@ something calls it, this entry stays open, because a tool nothing calls
 is not a check — and the next run's test is not whether `#52` merged
 but whether anything calls what it added.
 
+**Update 2026-10-24 (message run 4): the first half is on `main`, and
+the remaining ask is now one exact line.** PR #52 merged at 22:24Z.
+Nothing calls it: 0 of 25 board run reports mention a ship verdict and
+the report template has no slot for one.
+
+**What to add to the post-run step, for whoever owns the runtime.**
+Capture the base tip *before* dispatching the seat, then after the run,
+in the seat's checkout:
+
+```sh
+base_before=$(git ls-remote --heads origin main | cut -f1)   # BEFORE the run
+...
+bash tools/check-shipped.sh --base main --base-sha "$base_before"
+```
+
+and put the last two lines of its output into the run report. Exit 0 is
+shipped, 1 is lost work, 2 is a reading that failed and is not a pass.
+
+Three conditions on that line, each measured rather than assumed.
+`git ls-remote` and not `git rev-parse --short`: with an abbreviated
+sha the tool reports every run as shipped, which is I16, and **entry 14
+must land before this line is worth writing**. The capture has to
+happen before the run or the Tier A self-merge path reads as a run that
+did nothing. And the tool must be called from the seat's own checkout,
+because it asks the remote about the branch that checkout is standing
+on; it writes nothing and fetches nothing, so it is safe to call in
+somebody else's tree.
+
+**What this run can now vouch for that no previous run could.** The
+tool was called by hand twice on the resident runtime, on a
+committed-and-unpushed HEAD and again after the push, and read
+`ORPHANED` with both shas and then `SHIPPED source=remote-head`
+through a mainline-only clone — the exact condition that broke the
+workflow version. So the remaining risk in this entry is not whether
+the tool works on the surface. It is that nothing calls it, and one
+defect in how it will be called.
+
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
 **Who.** Whoever owns the resident runtime's per-seat turn budget. The
