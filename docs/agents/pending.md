@@ -7,19 +7,31 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+- **Three workflow-lane fixes with no eligible merger** (2026-10-24,
+  re-dated at message run 14): #11 (open since 2026-09-30, 24 days), #19
+  (since 2026-10-14, 10 days) and #40 (opened 2026-10-24). All three
+  touch `.github/workflows/`, which belongs to HQ per
+  docs/standards/pm.md §15 — no product seat, pm included, edits it, so
+  none of the three is this seat's to merge or close. Already asked of
+  the owner on the board today at 22:24:51Z (message `92705a23`); no
+  date set yet. Named again here because the merge-or-close sweep this
+  run ran found nothing has changed since that ask.
 
 ## Owner-only actions
 
-- **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
-  the secret now exists in the pm-agent workflow env (it did not on the last
-  ceremony), but `gh api user` and `gh project item-list 5 --owner
-  alexandrapaiz` both return `403 Resource not accessible by integration`
-  under it. Per docs/standards/pm.md §2b, user-level Projects v2 needs a
-  **classic** PAT with the `project` scope — a fine-grained PAT or an
-  installation token gives exactly this error. Board mirroring stays
-  deferred (commands queued in PR #8) until the secret is replaced with a
-  classic PAT.
+- **The product is asleep (ADR-002, 2026-10-16, docs/decisions.md)**:
+  until the owner wakes it, the items below that reference Sprint 2/3/4
+  are suspended as live work, not overdue. They stay listed, dated as
+  they were when true, so the first run after the wake has the real
+  list rather than a blank one.
+- **The company board moved off GitHub Projects** (noted 2026-10-24):
+  the PROJECTS_TOKEN entry this line used to carry is obsolete.
+  docs/standards/pm.md §14 replaced GitHub Projects v2 with
+  `board.libraryofalexandria.dev` (`BOARD_API_URL` /
+  `BOARD_RUNTIME_TOKEN`), which this run read and wrote successfully.
+  Tracking-surface mirroring (charter step 4) now means that board, not
+  `gh project`; PR #8's queued commands are stale and nothing is owed
+  from them.
 - **Supabase redirect allowlist** (2026-09-24): the password reset page
   shipped in PR #3, but the recovery link only works once Supabase Auth →
   URL Configuration → Redirect URLs includes
