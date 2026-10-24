@@ -34,6 +34,29 @@
 #   tools/check-seat-surface.sh                  every seat named in company.yaml
 #   tools/check-seat-surface.sh --seat engineer  one seat
 #   tools/check-seat-surface.sh --company atelier  override the board company name
+#   tools/check-seat-surface.sh --fixture DIR    read every input from files
+#
+# --fixture is how the decision table is tested, and it exists because of a rule
+# this tool tripped over itself. Against the live portfolio every seat in every
+# company runs on the resident host, so AGREE is reachable by no reading anyone
+# can take today, and a check whose clean verdict nothing can produce is
+# measuring its own assumption rather than the company (L-A101: a finding that is
+# 100% of its population is nearly always the instrument; L-A95: where a branch
+# cannot be reached today, pin it with a test that constructs it rather than a
+# sentence predicting it will not happen). DIR may hold any of:
+#
+#   company.yaml  the manifest to read seats from; falls back to the repo's
+#   board.json    the body GET /api/board/<company> would have returned
+#   declared.tsv  seat <tab> iso <tab> run_url <tab> event, one line per seat;
+#                 a line reading `seat <tab> unreadable` is a failed read, and a
+#                 seat with no line at all is a workflow that has never run
+#   prs.json      the body gh pr list --json headRefName,createdAt,number gives
+#   live.tsv      branch <tab> count of queued-or-running runs on that branch
+#
+# A file absent from DIR is the reading failing, not the reading coming back
+# empty, which is the distinction the whole tool is about: board.json missing
+# makes the board unreadable, prs.json missing makes the forge unreadable.
+# In fixture mode nothing is called over the network and no credential is read.
 #
 # One line per seat, fields stable enough to grep:
 #   ELSEWHERE seat=engineer declared=.github/workflows/agent-engineer.yml
@@ -89,23 +112,32 @@ set -euo pipefail
 scope=seats
 seat=
 company=
+fixture=
 while [ $# -gt 0 ]; do
   case "$1" in
     --seat)    scope=one; seat="${2:-}"; shift 2 ;;
     --company) company="${2:-}"; shift 2 ;;
-    -h|--help) sed -n '2,76p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --fixture) fixture="${2:-}"; shift 2 ;;
+    -h|--help) sed -n '2,99p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "check-seat-surface: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 [ "$scope" = one ] && [ -z "$seat" ] && { echo "check-seat-surface: --seat needs a name" >&2; exit 2; }
 
-command -v gh >/dev/null 2>&1 || { echo "check-seat-surface: gh is not installed" >&2; exit 2; }
-command -v curl >/dev/null 2>&1 || { echo "check-seat-surface: curl is not installed" >&2; exit 2; }
+if [ -n "$fixture" ]; then
+  [ -d "$fixture" ] || { echo "check-seat-surface: --fixture $fixture is not a directory" >&2; exit 2; }
+else
+  command -v gh >/dev/null 2>&1 || { echo "check-seat-surface: gh is not installed" >&2; exit 2; }
+  command -v curl >/dev/null 2>&1 || { echo "check-seat-surface: curl is not installed" >&2; exit 2; }
+  gh auth status >/dev/null 2>&1 || { echo "check-seat-surface: gh is not authenticated" >&2; exit 2; }
+fi
 git rev-parse --git-dir >/dev/null 2>&1 || { echo "check-seat-surface: not a git repository" >&2; exit 2; }
-gh auth status >/dev/null 2>&1 || { echo "check-seat-surface: gh is not authenticated" >&2; exit 2; }
 
 root=$(git rev-parse --show-toplevel)
 manifest="$root/company.yaml"
+# A fixture may bring its own manifest. It falls back to the repository's so that
+# a case which only varies the readings does not have to restate the seats.
+[ -n "$fixture" ] && [ -f "$fixture/company.yaml" ] && manifest="$fixture/company.yaml"
 [ -f "$manifest" ] || { echo "check-seat-surface: no company.yaml, so this product declares no seats" >&2; exit 2; }
 
 # The board's company name is the product name, not the repository name: this
@@ -115,22 +147,35 @@ manifest="$root/company.yaml"
 [ -n "$company" ] || company=$(sed -n 's/^product: *\([a-z0-9-]*\).*/\1/p' "$manifest")
 [ -n "$company" ] || { echo "check-seat-surface: company.yaml names no product; pass --company" >&2; exit 2; }
 
-# Names only. Neither value is ever printed, and the absence of one is reported
-# as an inability to look rather than as a clean run (L-X5, L-A80).
-[ -n "${BOARD_API_URL:-}" ] || { echo "check-seat-surface: BOARD_API_URL is not set, so the actual surface cannot be read" >&2; exit 2; }
-[ -n "${BOARD_RUNTIME_TOKEN:-}" ] || { echo "check-seat-surface: BOARD_RUNTIME_TOKEN is not set, so the actual surface cannot be read" >&2; exit 2; }
+board_read=yes
+if [ -n "$fixture" ]; then
+  # A missing board.json is the board being unreadable, which is a case worth
+  # testing and not the same as a board that answered with no runs.
+  if [ -f "$fixture/board.json" ]; then
+    board=$(cat "$fixture/board.json")
+  else
+    board='{}'; board_read=no
+  fi
+else
+  # Names only. Neither value is ever printed, and the absence of one is reported
+  # as an inability to look rather than as a clean run (L-X5, L-A80).
+  [ -n "${BOARD_API_URL:-}" ] || { echo "check-seat-surface: BOARD_API_URL is not set, so the actual surface cannot be read" >&2; exit 2; }
+  [ -n "${BOARD_RUNTIME_TOKEN:-}" ] || { echo "check-seat-surface: BOARD_RUNTIME_TOKEN is not set, so the actual surface cannot be read" >&2; exit 2; }
 
-# One board read for every seat, because the endpoint returns the whole roster of
-# recent runs and a read per seat would just page the same rows again.
-if ! board=$(curl -sS --fail-with-body -m 30 \
-      -H "Authorization: Bearer $BOARD_RUNTIME_TOKEN" \
-      "$BOARD_API_URL/api/board/$company" 2>&1); then
-  echo "check-seat-surface: could not read the board for '$company'" >&2
-  exit 2
+  # One board read for every seat, because the endpoint returns the whole roster
+  # of recent runs and a read per seat would just page the same rows again.
+  if ! board=$(curl -sS --fail-with-body -m 30 \
+        -H "Authorization: Bearer $BOARD_RUNTIME_TOKEN" \
+        "$BOARD_API_URL/api/board/$company" 2>&1); then
+    echo "check-seat-surface: could not read the board for '$company'" >&2
+    exit 2
+  fi
 fi
 # An empty runs array is a reading; a body that is not the board at all is not.
-echo "$board" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const b=JSON.parse(s);if(!Array.isArray(b.runs))process.exit(1)})' 2>/dev/null || {
-  echo "check-seat-surface: the board answered for '$company' without a runs array" >&2; exit 2; }
+if [ "$board_read" = yes ]; then
+  echo "$board" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const b=JSON.parse(s);if(!Array.isArray(b.runs))process.exit(1)})' 2>/dev/null || {
+    echo "check-seat-surface: the board answered for '$company' without a runs array" >&2; exit 2; }
+fi
 
 seats=()
 case "$scope" in
@@ -156,6 +201,7 @@ declared_workflow() { # seat
 # the count, because "the board has no record of this seat" is itself a finding
 # and must not read the same as "the board has records and they agree".
 board_last() { # seat
+  [ "$board_read" = yes ] || return 1
   echo "$board" | node -e '
     let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{
       const seat = process.argv[1];
@@ -173,10 +219,50 @@ board_last() { # seat
     });' "$1"
 }
 
+# The newest GitHub Actions run of the workflow the manifest names, as
+# iso|run_url|event. `gh run list --workflow=` takes the file's basename. A
+# workflow that has never run answers with an empty list, which is a reading; a
+# failed call is not, and the two must not print the same thing, so this returns
+# non-zero only when the read itself failed.
+declared_last() { # workflow-path seat
+  if [ -n "$fixture" ]; then
+    [ -f "$fixture/declared.tsv" ] || return 0
+    local line
+    line=$(awk -F'\t' -v s="$2" '$1 == s { print; exit }' "$fixture/declared.tsv")
+    [ -n "$line" ] || return 0
+    case "$line" in
+      *$'\t'unreadable*) return 1 ;;
+    esac
+    echo "$line" | awk -F'\t' '{ printf "%s|%s|%s", $2, $3, $4 }'
+    return 0
+  fi
+  gh run list --workflow="$(basename "$1")" --limit 1 \
+    --json createdAt,url,event \
+    --jq '.[0] | [(.createdAt // ""), (.url // ""), (.event // "")] | join("|")' 2>/dev/null
+}
+
+# Queued-or-running runs on a branch, which is how a fresh absence from the board
+# is told apart from a lost run. Returns non-zero when the read failed.
+live_runs_on() { # branch
+  if [ -n "$fixture" ]; then
+    [ -f "$fixture/live.tsv" ] || return 1
+    awk -F'\t' -v b="$1" 'BEGIN { n = 0 } $1 == b { n = $2 } END { print n + 0 }' "$fixture/live.tsv"
+    return 0
+  fi
+  gh run list --branch "$1" --limit 20 --json status \
+    --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null
+}
+
 # The weakest reading, and the only one left when the board recorded nothing: the
 # newest pull request opened from a branch carrying this seat's name. One call
 # serves every seat.
-if prs=$(gh pr list --state all --limit 100 --json headRefName,createdAt,number 2>/dev/null); then
+if [ -n "$fixture" ]; then
+  if [ -f "$fixture/prs.json" ]; then
+    prs=$(cat "$fixture/prs.json"); prs_read=yes
+  else
+    prs_read=no; prs='[]'
+  fi
+elif prs=$(gh pr list --state all --limit 100 --json headRefName,createdAt,number 2>/dev/null); then
   prs_read=yes
 else
   prs_read=no; prs='[]'
@@ -232,12 +318,7 @@ for s in "${seats[@]}"; do
     continue
   fi
 
-  # `gh run list --workflow=` takes the file's basename. A workflow that has
-  # never run answers with an empty list, which is a reading; a failed call is
-  # not, and the two must not print the same thing.
-  if dl=$(gh run list --workflow="$(basename "$wf")" --limit 1 \
-            --json createdAt,url,event \
-            --jq '.[0] | [(.createdAt // ""), (.url // ""), (.event // "")] | join("|")' 2>/dev/null); then
+  if dl=$(declared_last "$wf" "$s"); then
     IFS='|' read -r d_at d_url d_event <<<"${dl:-}"
     d_read=yes
   else
@@ -303,8 +384,7 @@ for s in "${seats[@]}"; do
   # case rather than the rare one: this check is itself usually run from inside
   # one. Ask the forge whether anything is still executing on that branch.
   if [ -n "${f_branch:-}" ]; then
-    if live=$(gh run list --branch "$f_branch" --limit 20 --json status \
-         --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null); then
+    if live=$(live_runs_on "$f_branch"); then
       [ "${live:-0}" -gt 0 ] && board_note=board=pending
     else
       board_note=board=unreadable
