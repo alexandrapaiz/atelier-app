@@ -10,7 +10,7 @@ zero-framework ethos.
 |---|---|---|---|---|
 | `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope — any that were too new to judge are counted on the summary line | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare, a `--fresh-under` that is not whole minutes) |
 | `tools/check-seat-surface.sh` | Does the surface `company.yaml` declares for a seat still execute that seat? | Every seat in scope last ran on its declared workflow | A seat ran more recently somewhere the declaration does not name, so an edit to that file reaches nothing | No seat is `ELSEWHERE`, and at least one could not be read or has never run anywhere |
-| `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published |
+| `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published; or the call itself was wrong (a `--base-sha` that is not a commit sha) |
 
 `npm run drafts` is the same check, this seat's and every other seat's, from the
 repo root. Scope it with `--seat engineer`, widen it with `--all`, judge even
@@ -180,6 +180,29 @@ measured against state captured before it ran, so a caller that has that tip
 passes it, and a caller that does not gets `INCONCLUSIVE` and a line naming
 which signals were read, rather than the worst available verdict.
 
+**Pass that tip in any spelling git produces, and nothing else.** `git
+rev-parse HEAD` and `git rev-parse --short HEAD` name one commit, and the check
+reads them as one: both sides go into one normal form — lowercase, then
+equality or prefix — before they are compared. Until 2026-10-24 they were
+compared as plain strings, so an abbreviation read as the base having *moved*,
+and that reading is `SHIPPED source=base-advanced`, tested above `ORPHANED`,
+`UNPUSHED` and `NOTHING`. One short sha therefore masked every failing verdict
+the tool has, on the exact argument the first real caller would capture, and it
+was measured twice on one unchanged tree seconds apart: the full sha
+`ORPHANED` exit 1, its own abbreviation `SHIPPED` exit 0. An argument that is
+not 4 to 40 hex characters — `--base-sha main`, a typo — is a caller error and
+exits 2 naming it, rather than being compared as a string and passing.
+
+The comparison is lexical on purpose and resolves neither side against the
+object store. Resolution decides nothing the prefix test does not, and it fails
+exactly where this flag is needed: on a shallow clone the pre-run tip of a base
+that really did advance is not an object the checkout holds, which is the
+self-merge case `--base-sha` exists for, and a first draft of this fix that
+resolved both sides reported it `INCONCLUSIVE`. What remains is that two hex
+strings which are neither equal nor one another's prefix read as movement, so a
+caller that passes a *wrong* sha still gets a pass — unchanged by this fix, and
+the reason the verdict line calls itself weak.
+
 Nothing in it fetches, and that is pinned by a test rather than by the absence
 of a fetch in the source: the caller's refs, `HEAD`, `.git/shallow` and
 `.git/FETCH_HEAD` are all asserted unchanged after a run (L-E12). The reading
@@ -195,7 +218,7 @@ verdict set and the field meanings.
 `base`, `head`, `commits`, `lsremote`, `base_now`, `dirty`, `pr` — with a file
 absent meaning the reading came back *empty* and a file whose first line is
 `FAIL` meaning the reading *failed*. A fixture may also carry an `args` file
-with the flags its case needs. `tests/shipped.test.mjs` runs eleven fixtures
+with the flags its case needs. `tests/shipped.test.mjs` runs twelve fixtures
 and then does the thing a fixture cannot do: it builds a real bare remote and a
 real clone whose fetch refspec is `+refs/heads/main:refs/remotes/origin/main`,
 which is the shape that caused the defect, and asserts that `git branch -r
@@ -204,8 +227,19 @@ HEAD while the command answers `SHIPPED`.
 
 The suite was graded by mutation, not by being green: restoring the old
 local-ref reading turns two tests red, dropping the pre-run-state guard turns
-one red, and putting the `git fetch` back turns two red. The first attempt at
+one red, putting the `git fetch` back turns two red, restoring the plain-string
+comparison of the two base tips turns three red, dropping only its prefix
+clause turns two red, and dropping the parse check on `--base-sha` turns one
+red. The first attempt at
 the commit-count test passed a mutant that restored `|| echo 0`, because the
 fixture serves that count from a file and never exercises the counting, so a
 live-clone case was added for it — a reading served by a fixture is tested
 where it is read and not where it is taken.
+
+The base-tip comparison needed the same treatment for a different reason. All
+eleven fixtures set `--base-sha` and `base_now` to *different* commits, so
+every one of them exercised `advanced` being right and none of them could reach
+the case where it is wrong; the twelfth fixture is one commit spelled two ways,
+and the live case beside it is the one the resident runtime will actually hit —
+commit without pushing, pass `--base-sha "$(git rev-parse --short HEAD)"` of a
+base that has not moved, and the two calls that disagreed must agree.
