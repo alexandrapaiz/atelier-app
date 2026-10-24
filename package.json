@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "drafts": "bash tools/check-draft-prs.sh"
+    "drafts": "bash tools/check-draft-prs.sh",
+    "surface": "bash tools/check-seat-surface.sh"
   },
   "dependencies": {
     "@capacitor/cli": "^8.5.2",
