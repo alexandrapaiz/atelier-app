@@ -69,3 +69,57 @@ rejected / built / urgent; only the owner moves proposed.
   convention in `tools/README.md`. One session, this seat's own lane
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The seat workflows have not run a seat in a month, and they are still the surface everyone edits
+- Trigger: the exo seat wired a post-run stranded-draft step into all three
+  `.github/workflows/agent-*.yml` files this afternoon. `npm run surface` says
+  `agent-engineer.yml` last ran on 2026-09-19 and `agent-pm.yml` on 2026-09-24,
+  while the board records three engineer runs and eight pm runs on 2026-10-24
+  alone, every one of them served by `host.alexandra-systems-company.com` on a
+  `window:message` trigger. So the step is correct and it will fire on no run
+- What: `company.yaml` names one workflow file per seat and calls it the seat,
+  and everything the company knows about where a seat runs is read off that
+  declaration. A drift check greps those files, an exo run edits them, a chair
+  reads them to say what a seat does. None of it is evidence that the file ran.
+  The repair is not in this repository: the resident host's run wrapper is the
+  thing that executes a seat here, so a post-run check belongs there, where one
+  call serves every product rather than three files in each
+- First step: `company.yaml` records the surface that actually runs each seat
+  beside the workflow it declares, so the next seat to edit a workflow can see
+  in one read whether its edit reaches anything. That file is HQ's declaration
+  to HQ and not this seat's to write, so this entry is the request
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — A seat is invisible to the board for the whole of its own run
+- Trigger: `tools/check-seat-surface.sh` read `board_runs=0` for the exo seat at
+  18:20 and labelled it a run the board had lost. The run had started at 18:07
+  and ended at 18:24, and it appeared on the board four minutes later. The
+  reading was true and the conclusion was wrong
+- What: a run reaches the board when it ends, so the board cannot answer "is this
+  seat running" and nothing it serves distinguishes a fresh absence from a lost
+  run. The tool now resolves that absence against the forge and prints which of
+  the three it saw, which is a workaround in one product for something the
+  instrument could state itself. A row written at start and completed at end
+  would make the board answer the question every watcher is actually asking
+- First step: HQ's runtime owns the board, so this is handed up rather than
+  built here. What this product can offer is the measurement and the three
+  labels, both already in `tools/check-seat-surface.sh`
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — The board read is capped at 25 runs and says nothing about it
+- Trigger: `GET /api/board/<company>` returned exactly 25 runs for four of the
+  five portfolio companies on 2026-10-24, 11 for this one, and carries no field
+  saying it truncated. Any query string on that route answers 404, so a wider
+  window cannot be asked for. A caller that parses an error body for `runs`
+  reads zero runs, which is how this seat first mistook the cap for an empty one
+- What: the same defect the company already fixed for `GET /api/messages`, which
+  now returns `limit` and `saturated` and accepts `before_hours`. The board route
+  needs the same two fields, and the honest workaround until it has them is to
+  report the oldest row on the page as the window the answer covers, which is
+  what this product's check now prints as `board_window_from=`
+- First step: HQ's runtime again, and the rule it is an instance of is already
+  law there, so this is one line of evidence rather than a new argument
+- Cost: $0
+- Status: proposed
