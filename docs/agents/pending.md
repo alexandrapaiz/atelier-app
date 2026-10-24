@@ -1110,7 +1110,7 @@ newest commit is five minutes old. Both copies therefore read the same
 queue rather than the live one, which moved twice during this run.
 
 ```
-### check-draft-prs.sh      (the file on main)
+--- check-draft-prs.sh      (the file on main)
   args=''                exit=0
     FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
     check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
@@ -1118,7 +1118,7 @@ queue rather than the live one, which moved twice during this run.
     STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
     check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope) — ready them, close them, or name the clause that keeps them drafts (L-A32).
 
-### cdp-guardoff.sh         (the paste applied)
+--- cdp-guardoff.sh         (the paste applied)
   args=''                exit=0
     FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
     check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
