@@ -21,6 +21,19 @@ today owes the sprint.
 **Definition of done:** deployed or installed, verified on a real surface
 (preview, simulator, or phone), tests green, board card checked.
 
+## Posture — asleep (updated 2026-10-24)
+
+Atelier is asleep by decision: `company.yaml` has carried
+`posture: asleep` since the HQ chair's rewrite on 2026-10-16, and the
+company board's current sprint for atelier is "Asleep by decision —
+nothing ships until the owner wakes it, and its PM names the first real
+milestone then." The sprints below are the plan the product was in when
+it went to sleep, not a live commitment: no retro, no next sprint, until
+the owner wakes it. This section is updated in place when the posture
+changes, not appended to, so it stays current for every seat that reads
+this file — this run's own narrative lives in `docs/agents/pending/`,
+not here.
+
 ---
 
 ## Sprint 1 — *Hold it in your hand* · Sep 11 → Sun Sep 20

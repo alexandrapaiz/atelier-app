@@ -5,9 +5,26 @@ owner-only action. Maintained by the pm seat (prompts/pm-agent.md).
 Each line is dated to when it was last true; stale lines get a note
 instead of a silent delete.
 
+**Layout (2026-10-24, L-A48):** this file holds only the current state,
+updated in place every pass. A pass's own narrative — what woke it, what
+it found, what it did — goes in its own dated file under
+`docs/agents/pending/`, never appended here. Two passes editing the same
+anchor in this file is exactly how PR #28 and PR #30 became mutually
+exclusive while each was individually clean against `main`; see
+`docs/agents/pending/2026-10-24-pm.md` for that finding and the fix.
+
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+- **#11** (2026-09-30) — workflow fix (no-ship tripwire, L-E8), tests
+  green, `MERGEABLE`. Recommend merge; waits on the owner or a chair
+  (workflow file, not this seat's to merge).
+- **#19** (2026-10-14) — workflow fix (dispatch guards), its own body
+  asks the PM to merge it under standards/pm.md §21. Recommend merge;
+  same reason as #11.
+- **#31** (2026-10-24, engineer, draft) — a reverted commit and two
+  `docs/ideas.md` proposals. Not marked ready while the product is
+  asleep; nothing owed back to it. Next pass grooms its two ledger
+  entries once it merges.
 
 ## Owner-only actions
 
@@ -52,3 +69,7 @@ None as of 2026-09-24.
   docs/ideas.md, status `proposed`. Triggered by the password reset work
   and the new `scripts/reset-page-test.mjs`. First step is to reuse it
   for Sprint 2's account deletion item before generalizing.
+- **Two more entries, not yet on `main`** (2026-10-24): PR #31 (draft)
+  carries the engineer's write-up of the file-layout fix below and of
+  its own charter's posture blind spot, both status `proposed`. Grooms
+  into this list once that PR merges.
