@@ -12,7 +12,8 @@
 #   tools/check-draft-prs.sh                 every seat named in company.yaml
 #   tools/check-draft-prs.sh --seat engineer one seat
 #   tools/check-draft-prs.sh --all           every open draft, seat or not
-#   tools/check-draft-prs.sh --fresh-under 0 judge every draft, however new
+#   tools/check-draft-prs.sh --fresh-under 0 judge every draft, however new;
+#                                            the summary says the guard was off
 #
 # One line per draft, fields stable enough to grep:
 #   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=none
