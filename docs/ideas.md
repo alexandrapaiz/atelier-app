@@ -207,3 +207,32 @@ rejected / built / urgent; only the owner moves proposed.
   session, this seat's own lane, no new dependency
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The no-ship tripwire in this repo asks a question a single-branch clone cannot answer
+- Trigger: this run's own final check. `git branch -r --contains HEAD` printed
+  nothing on a branch whose tip `git ls-remote origin` answers for by name —
+  `efb64a9` on `refs/heads/atelier-engineer/2026-10-24-hook`. The work was on
+  the remote and the reading said it was nowhere
+- What: `.github/workflows/agent-engineer.yml:56` is
+  `pushed=$(git branch -r --contains HEAD)`, and line 53 before it is `git fetch
+  origin`. The runtime's clone sets `remote.origin.fetch` to
+  `+refs/heads/main:refs/remotes/origin/main` and nothing else, so that fetch
+  brings back `main` alone and no remote-tracking ref is ever created for the
+  branch the seat just pushed. The check then reports `pushed to a remote
+  branch: NO` for a run that shipped. Measured here: 18 tracking refs locally
+  against 20 branches on the remote, and the two missing are this run's own.
+  This is L-E8's first defect still live in this product — its own amendment
+  records the commit-counting form reaching HQ's nine seats and epitome's five
+  and no others — plus a third mechanism L-E8 does not name, which is that the
+  blindness survives a `git fetch` because the refspec, not the depth, is what
+  excludes the branch. A ref-based reading cannot be repaired by fetching more
+  carefully; the question has to change
+- First step: `git ls-remote origin "refs/heads/$branch"` answers the real
+  question in one call and needs no local ref at all, and the commits-ahead
+  count L-E8 prescribes needs `origin/main`, which this refspec does fetch. PR
+  #11 (`exo/2026-09-30-workflow-l-e8`, open since 2026-09-30) is the vehicle
+  that already rewrites this step in all three workflows, so this is evidence
+  for landing it rather than a second pull request against the same files. The
+  workflow files are not this seat's to edit
+- Cost: $0
+- Status: proposed
