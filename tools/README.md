@@ -8,13 +8,14 @@ zero-framework ethos.
 
 | Command | Question | Exit 0 | Exit 1 | Exit 2 |
 |---|---|---|---|---|
-| `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare) |
+| `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope — any that were too new to judge are counted on the summary line | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare, a `--fresh-under` that is not whole minutes) |
 | `tools/check-seat-surface.sh` | Does the surface `company.yaml` declares for a seat still execute that seat? | Every seat in scope last ran on its declared workflow | A seat ran more recently somewhere the declaration does not name, so an edit to that file reaches nothing | No seat is `ELSEWHERE`, and at least one could not be read or has never run anywhere |
 | `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published |
 
 `npm run drafts` is the same check, this seat's and every other seat's, from the
-repo root. Scope it with `--seat engineer`, widen it with `--all`, read the
-field meanings with `--help`. `npm run surface` is the other one, scoped the
+repo root. Scope it with `--seat engineer`, widen it with `--all`, judge even
+the newest drafts with `--fresh-under 0`, read the field meanings with
+`--help`. `npm run surface` is the other one, scoped the
 same way with `--seat`, and `--company` overrides the board company name the
 manifest implies.
 
@@ -44,8 +45,47 @@ check named the caller's own minutes-old draft as stranded and exited 1 on
 every run — which made exit 1 the normal result of running at all, and a
 number that is always 1 is a number readers learn to skip. The one thing
 `run=self` cannot vouch for is another seat's pass running in the same minute
-on its own branch; that draft still reads `run=none`, and the route to a
-`run=board` reading is a proposal in `docs/ideas.md`.
+on its own branch, and that case is what `FRESH` below is for.
+
+**`FRESH` is the third verdict, and it is a statement about time rather than
+about a run.** A draft younger than `--fresh-under` minutes prints `FRESH …
+run=fresh` and is not counted: nothing vouches for it, and nothing has had time
+to. It is weaker evidence than `self` or `live` and so it prints its own word
+rather than borrowing theirs (L-E11 — a verdict names the reading it came
+from), and the summary line says how many drafts went unjudged and under what
+threshold, because a draft nobody judged must not read as one examined and
+cleared (L-A21).
+
+The default is 60 minutes, measured rather than picked. `GET
+/api/board/atelier` on 2026-10-24 at 22:09Z served 25 runs spanning 01:54Z to
+22:07Z, and the longest seat run on this product's whole record is 23m — the
+exo seat's, 88 turns, 21:40:18Z to 22:03:40Z. 60 is 2.6x that, and the headroom
+is the point: that page is capped at 25 rows and carries no field saying it
+truncated, so every maximum read from it can only rise. It also bounds the
+wrong quantity deliberately. A run's idle time is not its length, it is the gap
+from its last commit to its end, and the practice every charter here mandates —
+open the draft first, commit as you go — makes that gap as long as the run.
+
+The number is in minutes and lives in one named variable, so it can be retuned
+from evidence without reverse-engineering an integer division, and
+`--fresh-under 0` turns the guard off and judges every draft, which is the
+sweep a merger wants rather than the sweep a seat wants. A `--fresh-under`
+value that is not a whole number of minutes exits 2: a threshold that silently
+became zero is a guard that is off reporting a clean queue.
+
+Why this reading and not the board: `docs/ideas.md` proposes a `run=board`
+reading, and the board cannot answer the question. Measured at 22:08:03Z on
+2026-10-24 by the exo seat and again at 22:09Z here — all 25 run records carry
+`ended_at`, none was in progress, neither run in flight at that moment
+appeared, and `branch` is null on all 25. A run reaches the board when it
+*ends*, so that route is blind for exactly the window it would exist to cover.
+
+`idle` prints minutes under an hour and whole hours above it, which changed on
+2026-10-24 when the fresh verdict started turning on that field: `idle=0h`
+cannot tell a reader whether it covered four minutes or fifty-nine, which is
+the difference between a pass that just started and one nearly at the boundary.
+Output lines quoted in `docs/agents/` from before that date read `idle=0h`, and
+they are the record of what printed then rather than drift.
 
 A `--seat` name that `company.yaml` does not declare exits 2, not 0: a
 misspelling matches no branch, and a false all-clear one character wide is the

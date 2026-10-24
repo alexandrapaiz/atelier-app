@@ -258,7 +258,16 @@ rejected / built / urgent; only the owner moves proposed.
   this stays proposed and the honest answer is that a concurrent pass's draft
   is unreadable rather than stranded, which is a different word than either
 - Cost: $0
-- Status: proposed
+- Status: **the first step was taken and it rules the board out.** The route is
+  readable: `GET /api/board/atelier` answers a shell holding the runtime token
+  and serves 25 run records with a `branch` field. Measured by the exo seat at
+  22:08:03Z on 2026-10-24 and again here at 22:09Z, and both readings say the
+  same two things. Every record carries an `ended_at` and none was in progress,
+  because a run reaches the board when it *ends* — so the board is blind for
+  exactly the window this reading would exist to cover. And `branch` is null on
+  all 25, so there is nothing to join a draft to even for the runs it does
+  hold. Closed in favour of the entry below, which asks the one surface that
+  knows
 
 ### 2026-10-24 — Two tools in this directory, two hand-rolled ways to fake their world
 - Trigger: `tools/check-seat-surface.sh` grew a `--fixture` mode so its verdict
@@ -350,3 +359,72 @@ rejected / built / urgent; only the owner moves proposed.
   today, duplicated twice
 - Cost: $0
 - Status: proposed
+
+### 2026-10-24 — The liveness question has one surface that knows, and nothing writes it down
+- Trigger: the entry above ruled the board out for "is a seat standing in this
+  branch right now", and the guard that shipped instead answers a different
+  question — `run=fresh` says the branch's newest commit is younger than 60
+  minutes, so *nothing has had time to abandon it*. That is a bound on time,
+  not a reading of a run, and it is deliberately loose: it excuses a draft a
+  dead run really did abandon four minutes before its sandbox was torn down,
+  and from 61 minutes on it excuses nothing while a long run is still working.
+  Two tools now want the same missing fact. `check-draft-prs.sh` needs it to
+  decide `LIVE`, and `check-shipped.sh` needs the pre-run base tip, which is
+  the same shape of fact: something only the caller of a run can know
+- What: the resident runtime is the one actor that knows which seats are
+  running, on which branches, since when, because it starts them. One file it
+  writes at dispatch and removes at teardown — seat, branch, start time, run
+  id — is a local fact a seat checkout can read with `cat`, which is the
+  direction L13 points: ask the system that owns the fact. It turns `run=fresh`
+  from a guess about time into `run=host`, a reading of a run, and it is the
+  same hook that would hand `check-shipped.sh --base-was` its sha, so one
+  change to the caller feeds both checks. The file is the contract, not an API:
+  no token, no network, no second system that has to be watching, which is
+  exactly the failure L12 recorded when the exclusion depended on Actions
+- First step: this is not this repository's to write — the runtime belongs to
+  headquarters, and blocked-fix entry 10 of `docs/agents/pending.md` already
+  carries the ask that something call this repository's checks at all. Add the
+  liveness file to that ask rather than opening a second one, because the two
+  land in the same caller and arguing them separately spends two handoffs on
+  one edit. Until then `run=fresh` is the honest ceiling and the threshold
+  stays a number anyone can retune from evidence
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — The board's message store has no dry run, and its written contract is short of what it enforces
+- Trigger: four messages posted in one run, two of them refused. The standard's
+  own paragraph lists four enforced rules — a paragraph over 420 characters, a
+  reason word somewhere in the body, a 40-character minimum, no codes in the
+  prose — and says it was written by reading `runtime/board/store.py` so that a
+  seat would not have to find them by being refused. Two refusals tonight were
+  outside those four. `data.files` holding a count is a `400`: it must be a list
+  of paths, "because the seat's work timeline draws one entry per path", with
+  `files_count` named in the error as the field to use instead. And the reason
+  word binds a `note` as much as a `done`, which cost a second refusal for a
+  body whose only connectives were bare `so`, a word the accepted list does not
+  contain even though `so that` is on it
+- What: the refusals are good ones. Each named the rule and one named the
+  alternative field, which is the shape L-A14 asks for. The cost is that the
+  store is the one surface in this company with no dry run and no delete, so
+  every lesson about it is learned in public and permanently, which is the
+  whole of L15. A validator this repository owns would move that cost to zero:
+  `tools/check-board-message.sh <file.json>` applying the rules a seat can
+  check locally — the paragraph limit, the reason word against the accepted
+  list, the minimum length, a code-shaped token in `subject` or `body`, and a
+  `data` field named `files` whose value is not a list of paths — exit 0, 1
+  with the offending line or field named, 2 when it could not run. It is the
+  same argument as every other command in `tools/`: a rule a memoryless run has
+  to recall from a vendored paragraph is enforced at the reliability of reading,
+  and the paragraph is already provably incomplete
+- First step: it cannot be authoritative here, because the authority is
+  `runtime/board/store.py` at headquarters and a copy of a validator drifts from
+  what it validates the day the store changes — which is the trap L-A35 names.
+  So either the store grows a dry-run route and this tool calls it, which is the
+  right shape and is not this repository's to build, or the local version is
+  written as advisory and says so in its own output, with the two rules above
+  added to the standard's paragraph by whoever owns it. The engineer seat can
+  write the advisory one in this product; the honest fix is one route at
+  headquarters
+- Cost: $0
+- Status: proposed
+
