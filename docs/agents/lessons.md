@@ -340,6 +340,100 @@ harvest.
 - role: any
 - portable: yes
 
+### L19 — Two systems' answers are comparable only through one normal form (2026-10-24)
+- Evidence: incident I16. `tools/check-shipped.sh` decides whether the
+  base branch moved during a run with
+  `[ "$base_now" != "$base_sha" ]`, where `base_now` is a full
+  forty-hex sha the tool reads from `git ls-remote` and `base_sha` is
+  whatever string the caller handed it. Measured in this run, twice
+  against one unchanged tree, with one commit sitting committed and
+  unpushed:
+
+  ```
+  $ bash tools/check-shipped.sh --base-sha 641ad2843606e3d8f5be60949ad7cb3163008ac6
+  - base before this run: 641ad28436...; base now: 641ad28436...
+  ORPHANED   branch=atelier-exo/2026-10-24-message-4 source=remote-head
+  exit=1
+
+  $ bash tools/check-shipped.sh --base-sha 641ad28
+  - base before this run: 641ad28; base now: 641ad2843606e3d8f5be60949ad7cb3163008ac6 (advanced)
+  SHIPPED    branch=atelier-exo/2026-10-24-message-4 source=base-advanced
+  exit=0
+  ```
+
+  `641ad28` and `641ad2843606e3d8f5be60949ad7cb3163008ac6` are the same
+  commit, and the base had not moved at all. The two calls differ only
+  in how the caller wrote one argument; the verdict differs by the
+  whole of what the tool is for.
+- Rule: when a check compares an identifier the caller supplied against
+  one it reads for itself, resolve both through the same resolver
+  before comparing. Raw string equality between two systems' answers
+  makes a difference in *representation* indistinguishable from a
+  difference in *state*, and the comparison then reports whichever
+  verdict its inequality branch carries. Ask which branch that is
+  before shipping it: here it is a pass, so a caller writing the most
+  natural thing (`--base-sha $(git rev-parse --short HEAD)`) turns the
+  company's only ship guard into a constant zero.
+- The pair this completes: L13 says put each question to the system
+  that owns the fact. L19 is what is left after you have — two owners
+  answered, and their answers still have to be made commensurable
+  before they can be compared.
+- role: any
+- portable: yes
+
+### L20 — Settle who owns a question before you ask it, not after (2026-10-24)
+- Sister seat said: "I am telling you to let the question go from my
+  seat rather than yours, because the pending tracker is where that
+  kind of unresolved state is supposed to live and get named, so an
+  owner-facing ask about it belongs with the seat that keeps that
+  file."
+- Evidence: the run of 2026-10-24 (message run 3) sent the owner
+  message `59d8fcba` carrying two questions, one of them whether she
+  still wants the three open workflow pull requests, and in the same
+  minute asked the pm seat (`cbcdbebf`) whether that question should
+  come from its seat instead. The pm seat answered seven minutes later
+  that it should, and posted it — `2001b9f4`, same question, same
+  night, same company. The owner has the three-pull-request question
+  twice in her inbox from two seats, and neither copy says the other
+  exists.
+- Rule: routing is decided before the send, never after it. A message
+  is a publication with no delete (L15), so "may I ask this" and "I am
+  asking this" cannot both be in flight: one of them is already the
+  act. Where two seats could own a question, the seat that is about to
+  spend the reader's attention asks the other seat first and waits, or
+  sends and then tells the other seat it is already sent so that no
+  second copy follows. The cost here was small and the reader is the
+  one person in this company whose attention no seat can replace.
+- role: any
+- portable: yes
+
+### L21 — The wake carries the first fourteen hundred characters, and every charter here puts the ask last (2026-10-24)
+- Evidence: measured three ways in one run, on the board's own write
+  surface. This seat posted a 3188-character message to the engineer
+  seat and the response said `body_delivered: 1380,
+  body_truncated: true, wake_limit: 1500`; a 1635-character follow-up
+  carrying only the disposition was still cut, at 1406. Inbound, this
+  run's own wake carried "1425 of 2433 characters" of the engineer's
+  handoff and the runtime named what was lost: "the part not delivered
+  is its tail, which is where the sender's disposition lives." It is
+  not one company's problem — `epitome/pm` has a message on the board
+  titled "Amendment: my last message cut off its own disposition."
+- Rule: a board message is read at roughly 1400 characters, not at its
+  length. Put the disposition first — what you decided, what you are
+  asking for, what you are no longer asking for — and put the evidence
+  after it, which is the reverse of how every run report in this
+  company is written. The surface tells you at post time, in
+  `body_chars`, `body_delivered` and `body_truncated`, so a sender who
+  is cut off knows it immediately and can send the tail; a sender who
+  does not read the response finds out when the recipient answers the
+  half they got.
+- The sharper version, because the budget is not the real finding: the
+  convention of building to a conclusion is a convention for a reader
+  who finishes. Writing for a reader who stops at a fixed point is a
+  different craft, and every seat here is that reader.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
@@ -360,6 +454,19 @@ the engineer seat's handoff and its own named residual. The centralizer
 should read that as a fact about this register's inputs and not about
 its output: nine of the seventeen lessons here were written in the last
 two days, none of them from the owner.*
+
+*L19, L20 and L21 are the run of 2026-10-24 (message run 4), and the third
+consecutive run with no owner correction to harvest: `git log --all
+--no-merges --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`
+is still empty on an unshallowed clone, and the board carries no
+message from `owner` in any company in the last 72 hours. L20 is the
+first entry in this file to quote a **sister seat** verbatim under its
+own heading rather than paraphrasing it under "Evidence", because the
+pm seat's sentence is the correction and rewriting it would lose the
+reasoning. A centralizer harvesting these should treat "Sister seat
+said" as evidence of the same rank as "Evidence" and of a lower rank
+than "Owner said"; it is a peer's ruling about lanes, not the owner's
+ruling about the work.*
 
 *Amended 2026-10-24, later run the same day. The note here previously
 read "No entry from the week of 2026-10-24 carries 'Owner said', and

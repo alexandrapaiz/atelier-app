@@ -60,11 +60,12 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twelve entries, of which **one is applied and closed** (entry 9).
+Fifteen entries, of which **two are applied and closed** (entries 9
+and 12).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
-(PR #53). Each says who can apply it and gives the text to paste.
+(PR #53); entries 13-15 from the message run after that (PR #58). Each says who can apply it and gives the text to paste.
 Entries carry a dated update line when a later run changed what is true
 about them, rather than being silently rewritten. A closed entry stays
 here with its closure rather than being deleted, so that a later run
@@ -537,6 +538,43 @@ something calls it, this entry stays open, because a tool nothing calls
 is not a check — and the next run's test is not whether `#52` merged
 but whether anything calls what it added.
 
+**Update 2026-10-24 (message run 4): the first half is on `main`, and
+the remaining ask is now one exact line.** PR #52 merged at 22:24Z.
+Nothing calls it: 0 of 25 board run reports mention a ship verdict and
+the report template has no slot for one.
+
+**What to add to the post-run step, for whoever owns the runtime.**
+Capture the base tip *before* dispatching the seat, then after the run,
+in the seat's checkout:
+
+```sh
+base_before=$(git ls-remote --heads origin main | cut -f1)   # BEFORE the run
+...
+bash tools/check-shipped.sh --base main --base-sha "$base_before"
+```
+
+and put the last two lines of its output into the run report. Exit 0 is
+shipped, 1 is lost work, 2 is a reading that failed and is not a pass.
+
+Three conditions on that line, each measured rather than assumed.
+`git ls-remote` and not `git rev-parse --short`: with an abbreviated
+sha the tool reports every run as shipped, which is I16, and **entry 14
+must land before this line is worth writing**. The capture has to
+happen before the run or the Tier A self-merge path reads as a run that
+did nothing. And the tool must be called from the seat's own checkout,
+because it asks the remote about the branch that checkout is standing
+on; it writes nothing and fetches nothing, so it is safe to call in
+somebody else's tree.
+
+**What this run can now vouch for that no previous run could.** The
+tool was called by hand twice on the resident runtime, on a
+committed-and-unpushed HEAD and again after the push, and read
+`ORPHANED` with both shas and then `SHIPPED source=remote-head`
+through a mainline-only clone — the exact condition that broke the
+workflow version. So the remaining risk in this entry is not whether
+the tool works on the surface. It is that nothing calls it, and one
+defect in how it will be called.
+
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
 **Who.** Whoever owns the resident runtime's per-seat turn budget. The
@@ -714,3 +752,224 @@ argument for this entry: a draft's age does not flicker.
 second seat has a draft open that is minutes old, printing a third word
 for it that is neither `self` nor `live`, and exiting 0 with the fresh
 count named on the summary line. Not the lines being present: run it.
+
+**APPLIED and CLOSED 2026-10-24 (message run 4).** Applied by the
+engineer seat in PR #56, merged at 22:42:45Z, and verified by running
+it rather than by the lines being present: with a colleague's
+four-minute-old draft open, `bash tools/check-draft-prs.sh --all`
+printed `FRESH #60 atelier-engineer/2026-10-24-message-5 idle=4m …
+run=fresh` beside this run's own `LIVE … run=self`, summarised as
+`2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under
+60m), none stranded`, and exited 0. **Do not paste this entry again.** The shipped word is `run=fresh` with
+its own verdict `FRESH`, not the `run=none`-with-an-age this entry
+sketched, and the threshold is `--fresh-under <minutes>` defaulting to
+60 with the derivation beside it rather than a rounded hour. Both are
+better than what was asked and both are confirmed. **The one line of
+documentation this entry also asked for did not land**: `tools/README.md`
+still says "`run=live` can never fire on the surface that runs the
+seats", in `#56`'s own copy, read from the branch and not from the
+description. That residual is entry 15.
+
+### 13. The three workflows should call the tool, not inline eighty lines (I13, and the engineer seat's ask)
+
+**Who.** A seat that may write `.github/workflows/`, on PR #11's
+branch `exo/2026-09-30-workflow-l-e8`. **Not this run**: its own
+instructions bar it from the workflow directory entirely, which is why
+this is a paste and not a commit. It is the exo lane otherwise, so no
+fourth pull request should be opened against those three files — the
+engineer seat deliberately did not open one for exactly that reason
+and asked this seat to land it on top of its own.
+
+**Why.** `tools/check-shipped.sh` is on `main` as of PR #52, and it is
+the same body as the tripwire step with eight deliberate divergences.
+The three workflows still inline their own copy, so there are now two
+implementations of one guard and the next fix lands in four files
+instead of one. The engineer seat named this as the workflow half it
+wants and left it to this lane.
+
+**The paste.** In each of `.github/workflows/agent-engineer.yml`,
+`agent-exo.yml` and `agent-pm.yml`, replace the whole `No-ship
+tripwire` step body with a call. Two steps, because the base tip has
+to be captured **before** the seat runs:
+
+```yaml
+      # Before the seat run step. The base tip as it was, so that a clean
+      # self-merge is not read as a run that did nothing (I13, L-E11).
+      - name: Base tip before the run
+        id: basetip
+        run: echo "sha=$(git ls-remote --heads origin main | cut -f1)" >> "$GITHUB_OUTPUT"
+```
+
+```yaml
+      # Incident 3 and I13 (docs/agents/incidents.md): a run that worked for
+      # dozens of turns, reported success and pushed nothing loses everything
+      # at teardown. One implementation, called from both surfaces.
+      - name: No-ship tripwire
+        if: always()
+        run: bash tools/check-shipped.sh --base main --base-sha "${{ steps.basetip.outputs.sha }}"
+```
+
+`git ls-remote` is deliberate on both sides and gives the **full**
+forty-hex sha. Do not write `git rev-parse --short`, and do not land
+this at all until entry 14 is fixed: with an abbreviated sha the tool
+reports every run as shipped (I16). That ordering is the whole reason
+these are two entries.
+
+**What this changes besides the line count.** The tool writes to
+`$GITHUB_STEP_SUMMARY` when the variable is set, so the job summary is
+unchanged. Exit 2 becomes reachable where the old step only had 0 and
+1, which is the point (L6): a reading that failed stops being reported
+as a finding about the run.
+
+**Verification.** A workflow run — which is itself the problem, since
+these three files have not executed a seat since 2026-09-24 (I13). So
+the honest verification is the smaller one: `bash -n` on each step
+body, and `bash tools/check-shipped.sh --base main --base-sha $(git
+ls-remote --heads origin main | cut -f1)` run by hand from a seat
+checkout, agreeing with the same call made with the abbreviated sha.
+
+### 14. The ship check passes on any abbreviated base sha (I16)
+
+**Who.** The engineer seat. `tools/` and `tests/` are that lane (I12,
+L3), and this is a one-line change plus two test cases.
+
+**Why.** `tools/check-shipped.sh:202` compares a sha the tool reads
+from `git ls-remote` against whatever string the caller passed to
+`--base-sha`, with `!=`. Any difference in spelling reads as the base
+having moved, and `base-advanced` is tested above `ORPHANED`,
+`UNPUSHED` and `NOTHING`, so a false `advanced` masks every failure
+verdict the check has. Measured in this run on one unchanged tree with
+a commit sitting unpushed: the full sha gives `ORPHANED … exit=1`, its
+own abbreviation gives `SHIPPED source=base-advanced … exit=0`. The
+first caller this tool will ever have is the resident runtime, and
+`git rev-parse --short HEAD` is the ordinary way to capture a base tip.
+
+**The paste.** Two changes. First, reject a `--base-sha` that is not a
+sha at all, in the argument loop beside the existing flags:
+
+```sh
+    # A --base-sha that is not hexadecimal is a caller error, not a base tip:
+    # `--base-sha main` or a typo would otherwise be compared as a string and
+    # read as the base having moved, which is the passing branch (I16).
+    --base-sha)
+      base_sha="${2:-}"
+      case "$base_sha" in
+        ''|*[!0-9a-fA-F]*) echo "check-shipped: --base-sha needs a commit sha, got: ${2:-<nothing>}" >&2; exit 2 ;;
+      esac
+      shift 2 ;;
+```
+
+Second, replace the comparison at line 202:
+
+```sh
+  if [ -n "$base_now" ] && [ "$base_now" != "$base_sha" ]; then
+    advanced="origin/$base moved from $base_sha to $base_now"
+  fi
+```
+
+with one that puts both sides into one normal form before comparing:
+
+```sh
+  # One normal form before comparing. $base_now is always a full forty-hex sha
+  # read from git ls-remote; $base_sha is whatever string the caller typed, and
+  # the abbreviation of a commit must not read as that commit having moved --
+  # the inequality branch here is the *passing* one, so a representation
+  # difference would pass a run that shipped nothing (I16, L19). Resolution is
+  # tried first and may legitimately fail: on a shallow clone the pre-run tip
+  # of an advanced base is not an object this checkout holds, which is the
+  # self-merge case --base-sha exists for. So the fallback is a prefix test in
+  # whichever direction is unambiguous, and anything that is neither is movement.
+  if [ -n "$base_now" ] && [ -n "$base_sha" ]; then
+    same=
+    a=$(git rev-parse --verify --quiet "${base_sha}^{commit}" 2>/dev/null || true)
+    b=$(git rev-parse --verify --quiet "${base_now}^{commit}" 2>/dev/null || true)
+    if [ -n "$a" ] && [ -n "$b" ]; then
+      [ "$a" = "$b" ] && same=1
+    elif [ ${#base_sha} -ge 7 ] && [ "${base_now#"$base_sha"}" != "$base_now" ]; then
+      same=1          # base_now starts with what the caller wrote: one commit
+    elif [ ${#base_now} -ge 7 ] && [ "${base_sha#"$base_now"}" != "$base_sha" ]; then
+      same=1
+    else
+      [ "$base_now" = "$base_sha" ] && same=1
+    fi
+    [ -z "$same" ] && advanced="origin/$base moved from $base_sha to $base_now"
+  fi
+```
+
+**What this deliberately does not do, after a first draft that did.**
+The first version of this paste reported an unresolvable `--base-sha`
+as `INCONCLUSIVE`, on the L6 reasoning that a reading which failed is
+not a pass. Graded against the existing fixtures, it turned the
+`self-merge` fixture from `SHIPPED source=base-advanced` into
+`INCONCLUSIVE` and broke the test that pins the one case `--base-sha`
+exists for. The reason is real and not an artefact of the fixture: on
+a shallow clone, the pre-run tip of a base that genuinely advanced is
+not an object the checkout holds, so resolution failing is the normal
+state of the case this flag serves. Hence the prefix fallback, and
+hence two hex strings that are neither resolvable nor a prefix of one
+another still read as movement — which is what the tool does today and
+what its fixtures assert. The caller error that *is* catchable is
+caught at parse time instead, by the hex check above.
+
+**Graded, because a remedy is a claim about a file (L14).** Patched
+into a scratch copy outside this repository, so `tools/` stayed the
+engineer's:
+
+| call, against a base that had not moved, one commit unpushed | today | with the paste |
+|---|---|---|
+| `--base-sha 641ad2843606e3d8f5be60949ad7cb3163008ac6` | `ORPHANED` exit 1 | `ORPHANED` exit 1 |
+| `--base-sha 641ad28` (same commit, abbreviated) | **`SHIPPED` exit 0** | `ORPHANED` exit 1 |
+| `--base-sha main` | **`SHIPPED` exit 0** | exit 2, names the argument |
+| `--base-sha deadbeef` | `SHIPPED` exit 0 | `SHIPPED` exit 0 (unchanged, see above) |
+| `--fixture self-merge --base-sha 1111eeee` | `SHIPPED base-advanced` | `SHIPPED base-advanced` |
+
+`bash -n` passes, and the full suite is **74/74 before and 74/74
+after** in a scratch copy of the repository with only this file
+changed.
+
+**The two test cases it owes**, because the eleven existing fixtures
+all set `--base-sha` and `base_now` to *different* commits and so only
+ever exercise `advanced` being right:
+
+- a fixture whose `base_now` is a full sha and whose `args` pass the
+  first seven characters of that same sha, asserting the verdict is
+  **not** `SHIPPED source=base-advanced`;
+- a live case on the `mainlineOnlyClone` helper: commit without
+  pushing, call with `--base-sha "$(git rev-parse --short HEAD)"` of
+  the unchanged base, and assert exit is not 0. This is the one the
+  runtime will actually hit.
+
+**Verification.** The two calls that disagree in I16, made against one
+unchanged base, agreeing. Not the line being present: run it both ways.
+
+### 15. One sentence in the tools README is false about this repository (I14 item 10)
+
+**Who.** The engineer seat, one line, alongside or after PR #56.
+
+**Why.** `tools/README.md` says "`run=live` can never fire on the
+surface that runs the seats." It fires routinely. `.github/workflows/tests.yml`
+runs on pushes, so every seat branch carries Actions runs even though
+no seat runs through Actions: `gh run list --branch
+atelier-exo/2026-10-24-message-4` returned three completed `tests` runs
+during this run. PR #56 does not touch the sentence — read in the
+branch's own copy of the file, not in its description. The reading is
+coincidental rather than dead: `live` for the seconds CI is in flight,
+`none` before and after, with nothing about the work changing.
+
+**The paste.** Replace:
+
+> So `run=live` can never fire on the surface that runs the seats,
+
+with:
+
+> So `run=live` never means a seat here. It still fires, because
+> `tests.yml` runs on every push and `gh run list` reports it, which
+> makes the reading flicker on CI timing: `live` for the seconds the
+> suite is in flight, `none` before and after, with nothing about the
+> work having changed. Two readers a minute apart will disagree about
+> the same draft, which is the second argument for judging a draft by
+> its age.
+
+**Verification.** `gh run list --branch <any seat branch pushed in the
+last hour>` returning a `tests` run, read against the sentence.
+
