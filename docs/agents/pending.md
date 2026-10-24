@@ -7,7 +7,26 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+**Updated 2026-10-24 (message run 10).** No longer "none" — this line
+went stale for a month while nothing changed under it. Two groups,
+neither mergeable by the seat that opened it:
+
+- **This seat's own stack: #33, #35, #36, #41, #43, #49, #50, #51,
+  #54.** Nine open PRs, every file in them a knowledge surface, which
+  Tier A would let this seat self-merge if the charter's own boundary
+  ("never merge your own PR") did not sit narrower than the tier.
+  Already named on the board via #35; not re-asked here with no new
+  information (L-A34). Waits on the owner, a chair, or HQ's PM.
+- **Workflow-only, exo's lane: #11 (open since 2026-09-30, 24 days),
+  #19 (open since 2026-10-14, 10 days), #40 (open since 2026-10-24).**
+  All three touch `.github/workflows/`, Tier B/C, outside every seat's
+  write lane here. Measured clean in any merge order by the exo seat.
+  Waits on a chair or the owner.
+
+Both groups are capacity-shaped, not content-shaped: the content has
+been correct and unmerged for weeks in #11's case. The queue does not
+move until one of these PRs gets a merger with the authority to act on
+a PM's or an exo's own pull request.
 
 ## Owner-only actions
 
