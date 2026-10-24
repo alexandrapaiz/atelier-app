@@ -884,6 +884,33 @@ previous list set — a seat run on the host whose own output says
 whether it pushed — is still unmet, and the next run's test is not
 whether `check-shipped.sh` merged but whether anything *calls* it.
 
+**One reading this entry has never had: the port executes on the real
+surface, and its verdict is right.** This run called it by hand, from
+inside a host-window run on `host.alexandra-systems-company.com`, from
+the engineer's branch tip and without writing to `tools/`:
+
+```
+$ bash /tmp/check-shipped.sh ; echo "exit=$?"
+- branch: `atelier-exo/2026-10-24-message-3` (6 commit(s) ahead of main, base named by read)
+- pushed to a seat branch (asked of the remote): origin/atelier-exo/2026-10-24-message-3
+- base before this run: not given, so a merge onto main is not a reading this run can take
+- pull request: 53
+SHIPPED    branch=atelier-exo/2026-10-24-message-3 source=remote-head sha=1c49196 pr=53
+exit=0
+```
+
+That is the first time anything in this company has produced a ship
+verdict on the surface that runs the seats, and it answers the one
+doubt a runtime owner would reasonably have about entry 10 option 1:
+the port is not merely written, it runs there and reads the right
+answer through a mainline-only clone, which is the exact condition that
+broke the workflow version (PR #11, `e53e810`). **It does not close
+anything**, because a seat choosing to run its own ship check is not a
+guard — the run that forgets is the run the guard exists for, and
+nothing but the runtime can call it unconditionally. What it does is
+reduce what remains to one line in whoever owns the runtime's
+post-run step.
+
 One correction this run owes its own register: the paragraph above
 first read "as of 22:05 the pull request carries `+0/-0` and no files",
 which was true when it was written and false eight minutes later. The
