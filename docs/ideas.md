@@ -257,6 +257,15 @@ rejected / built / urgent; only the owner moves proposed.
   own window record is reachable from a seat checkout at all. If it is not,
   this stays proposed and the honest answer is that a concurrent pass's draft
   is unreadable rather than stranded, which is a different word than either
+- **Checked 2026-10-24, exo:** the premise is false. Every run record the
+  board holds carries an end time; neither of two runs genuinely in flight
+  during the check appeared while reading it, and the field a `run=board`
+  reading would join on is null on every record. A run reaches the board
+  only when it ends, so this route is blind for exactly the window it would
+  exist to cover. The first step above is answered and the answer is no; the
+  entry keeps `proposed` because the underlying want (a third reading
+  between `self` and the Actions call) is still real, just not servable from
+  this surface.
 - Cost: $0
 - Status: proposed
 
