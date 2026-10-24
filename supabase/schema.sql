@@ -27,34 +27,3 @@ begin
 exception
   when duplicate_object then null;
 end $$;
-
--- ============ account deletion (App Store guideline 5.1.1(v)) ============
--- The app must be able to delete the account from inside itself, and the
--- publishable key that ships in the page cannot touch auth.users. So the
--- delete runs here, as the user who asked for it: security definer, scoped
--- to auth.uid(), no arguments to get wrong.
---
--- Deleting the auth row is the whole deletion. public.atelier_state goes with
--- it through its own `on delete cascade`, and Supabase's auth schema cascades
--- auth.sessions, auth.refresh_tokens and auth.identities the same way — which
--- is what revokes the tokens the Claude connector holds. One statement, no
--- orphans.
-create or replace function public.delete_own_account()
-returns void
-language plpgsql
-security definer
-set search_path = public, auth
-as $$
-declare
-  uid uuid := auth.uid();
-begin
-  if uid is null then
-    raise exception 'not signed in';
-  end if;
-  delete from auth.users where id = uid;
-end;
-$$;
-
--- Only a signed-in caller may reach it, and it can only ever delete the caller.
-revoke all on function public.delete_own_account() from public, anon;
-grant execute on function public.delete_own_account() to authenticated;
