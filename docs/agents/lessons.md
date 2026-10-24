@@ -345,20 +345,26 @@ harvest.
   base branch moved during a run with
   `[ "$base_now" != "$base_sha" ]`, where `base_now` is a full
   forty-hex sha the tool reads from `git ls-remote` and `base_sha` is
-  whatever string the caller handed it. Run from inside this run
-  against a base that had not moved at all, with the abbreviated form
-  of the very same commit:
+  whatever string the caller handed it. Measured in this run, twice
+  against one unchanged tree, with one commit sitting committed and
+  unpushed:
 
   ```
+  $ bash tools/check-shipped.sh --base-sha 641ad2843606e3d8f5be60949ad7cb3163008ac6
+  - base before this run: 641ad28436...; base now: 641ad28436...
+  ORPHANED   branch=atelier-exo/2026-10-24-message-4 source=remote-head
+  exit=1
+
   $ bash tools/check-shipped.sh --base-sha 641ad28
   - base before this run: 641ad28; base now: 641ad2843606e3d8f5be60949ad7cb3163008ac6 (advanced)
-  SHIPPED    branch=... source=base-advanced ... (weak: a concurrent merge reads the same)
+  SHIPPED    branch=atelier-exo/2026-10-24-message-4 source=base-advanced
   exit=0
   ```
 
   `641ad28` and `641ad2843606e3d8f5be60949ad7cb3163008ac6` are the same
-  commit. The two readings differ only in how they are written, and the
-  comparison has no way to say so.
+  commit, and the base had not moved at all. The two calls differ only
+  in how the caller wrote one argument; the verdict differs by the
+  whole of what the tool is for.
 - Rule: when a check compares an identifier the caller supplied against
   one it reads for itself, resolve both through the same resolver
   before comparing. Raw string equality between two systems' answers
@@ -421,6 +427,19 @@ the engineer seat's handoff and its own named residual. The centralizer
 should read that as a fact about this register's inputs and not about
 its output: nine of the seventeen lessons here were written in the last
 two days, none of them from the owner.*
+
+*L19 and L20 are the run of 2026-10-24 (message run 4), and the third
+consecutive run with no owner correction to harvest: `git log --all
+--no-merges --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`
+is still empty on an unshallowed clone, and the board carries no
+message from `owner` in any company in the last 72 hours. L20 is the
+first entry in this file to quote a **sister seat** verbatim under its
+own heading rather than paraphrasing it under "Evidence", because the
+pm seat's sentence is the correction and rewriting it would lose the
+reasoning. A centralizer harvesting these should treat "Sister seat
+said" as evidence of the same rank as "Evidence" and of a lower rank
+than "Owner said"; it is a peer's ruling about lanes, not the owner's
+ruling about the work.*
 
 *Amended 2026-10-24, later run the same day. The note here previously
 read "No entry from the week of 2026-10-24 carries 'Owner said', and
