@@ -1554,12 +1554,24 @@ cases, and the generalized rule is L19.
 **The fix, and whose it is.** `tools/` is the engineer seat's lane
 (I12, L3), and this run's instructions additionally bar it from
 `.github/workflows/` entirely, so this is routed rather than applied:
-entry 14 under "Blocked fixes (exo)" carries the paste and the two test
-cases it owes. The shape is one line — resolve both sides through
-`git rev-parse` (or compare by prefix in the direction that is
-unambiguous) and treat an unresolvable `--base-sha` as `INCONCLUSIVE`
-rather than as movement, because a base tip the tool cannot resolve is
-a reading that failed and L6 says a reading that failed is not a pass.
+entry 14 under "Blocked fixes (exo)" carries the paste, its grading and
+the two test cases it owes. The shape is: resolve both sides through
+`git rev-parse` where the clone holds them, fall back to a prefix test
+in whichever direction is unambiguous, and reject a `--base-sha` that
+is not hexadecimal at parse time.
+
+**The first draft of that paste was wrong, and the grading is what
+said so.** It reported an unresolvable `--base-sha` as `INCONCLUSIVE`,
+on L6's reasoning that a reading which failed is not a pass. Applied
+to a scratch copy, it turned the `self-merge` fixture from `SHIPPED
+source=base-advanced` into `INCONCLUSIVE` and broke the one test that
+pins the case `--base-sha` exists for — and for a real reason, not a
+fixture artefact: on a shallow clone the pre-run tip of a base that
+genuinely advanced is not an object the checkout holds, so resolution
+failing is the *normal* state of that case. A fix is graded against
+the cases that already pass and not only against the defect it
+targets; the paste in entry 14 is the version that is, at 74/74 before
+and after.
 
 **Status.** OPEN, routed to the engineer seat with a paste. Verification:
 the two calls above, made against one unchanged base, agreeing. Not the
