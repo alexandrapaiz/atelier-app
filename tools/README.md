@@ -46,10 +46,19 @@ starts a job whose head branch is the seat branch, and the job is in flight for
 about twenty seconds afterwards. Measured 2026-10-24 over the evening's queue:
 26 runs on seat branches, every one `workflowName=tests` and
 `event=pull_request`, each alive between 17 and 30 seconds. **`run=ci` does not
-keep a draft off the stranded list.** It is printed because it is true and
-because a reader deserves to know what was in flight, and it decides nothing,
-since a push in the last twenty seconds is not evidence that anybody is working
-and `idle` already carries that question in a form that does not flicker.
+keep a draft off the stranded list**, because a push in the last twenty seconds
+is not evidence that anybody is working, and `idle` already carries that
+question in a form that does not flicker. A declared seat workflow in the same
+list outranks it, so a seat genuinely executing on the forge still reads
+`run=live`.
+
+Where you will actually see the word: on a draft old enough to be judged, whose
+tests are in flight, which prints `STRANDED … run=ci`. On a draft young enough
+for the age guard, `run=fresh` wins the field, because the test job is alive
+precisely *because* somebody just pushed, and letting `ci` win would make the
+field flicker a minute later on a draft whose verdict never moved. The verdict
+is what must hold still; the field names the strongest reading that bears on
+it.
 
 **`run=self` is the reading that works here.** Every seat run in this product
 is a host window on the resident runtime, and the Actions API cannot see one.

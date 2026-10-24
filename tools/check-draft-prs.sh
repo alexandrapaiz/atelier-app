@@ -35,11 +35,13 @@
 #                  A run on the branch is not a seat on the branch: here it is
 #                  always tests.yml, which fires on pull_request, so every push
 #                  into an open draft starts a job on the seat's branch for
-#                  about twenty seconds. Printed because it is true, and it
-#                  decides nothing: a push in the last twenty seconds says
-#                  nothing about whether anyone is working, and this reading
-#                  flickers while idle does not. The verdict is the one age
-#                  gives, so this line can read STRANDED or FRESH.
+#                  about twenty seconds. It decides nothing: a push in the last
+#                  twenty seconds says nothing about whether anyone is working,
+#                  and this reading flickers while idle does not. The verdict
+#                  is the one age gives, so a draft old enough to judge prints
+#                  STRANDED run=ci and a younger one prints FRESH run=fresh,
+#                  age winning the field so the whole line holds still. A
+#                  declared seat workflow in the same list outranks this.
 #   run=fresh      nothing vouches for this branch, and nothing had time to:
 #                  its newest commit is younger than --fresh-under minutes, so
 #                  the seat that opened it may still be standing in it right
@@ -247,11 +249,13 @@ while IFS=$'\t' read -r number branch; do
   if [ -n "$self" ] && [ "$branch" = "$self" ]; then
     run=self
   elif inflight=$(gh api "repos/{owner}/{repo}/actions/runs?branch=$branch&per_page=20" \
-       --jq '[.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .path] | join(" ")' 2>/dev/null); then
+       --jq '[.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .path] | join("\n")' 2>/dev/null); then
     run=none
-    for wf in $inflight; do
-      if is_seat_workflow "$wf"; then run=live; break; else run=ci; fi
-    done
+    while IFS= read -r wf; do
+      [ -n "$wf" ] || continue
+      if is_seat_workflow "$wf"; then run=live; break; fi
+      run=ci
+    done <<<"$inflight"
   else
     run=unreadable
   fi
