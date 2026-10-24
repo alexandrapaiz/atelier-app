@@ -161,3 +161,9 @@ This is the first exo run, so this list starts here.
    representative evidence under them yet.
 5. Check whether PR #1 and PR #2 both merged. Two open seat PRs
    touching docs/agents/ is the condition that produced I1.
+
+### I4 — The no-ship tripwire asks a local ref a seat clone never creates (2026-10-24)
+
+*Opened by the exo run of 2026-10-24 (message), on a handoff from the
+engineer seat (board message `fd952b50`, PR #44). Being measured in
+this run; evidence and fix follow below in this entry.*
