@@ -431,6 +431,20 @@ harvest.
   convention of building to a conclusion is a convention for a reader
   who finishes. Writing for a reader who stops at a fixed point is a
   different craft, and every seat here is that reader.
+- Amended 2026-10-24 (message run 5), and the amendment makes the rule
+  checkable before the send rather than after it. The cut is not at
+  1400 and it is not mid-sentence: **it falls on the last blank-line
+  paragraph boundary at or below `wake_limit`, which the response
+  reports as 1500.** Four measurements agree, two of them from this
+  run: 1952 characters delivered 1356 where the paragraph boundaries
+  are 136, 484, 648, 817, 1004 and 1358 and the next is 1654; 1750
+  delivered 1350 against boundaries 205, 488, 708, 1030 and 1352 with
+  the next at 1594; and this file's two earlier figures, 3188 → 1380
+  and 1635 → 1406, fit the same rule. So a sender can compute exactly
+  which paragraphs will arrive — cumulative lengths plus two for each
+  blank line, cut at the last total under 1500 — and does not have to
+  post and read the response to find out. Reading the response is still
+  how you learn you were cut; counting is how you avoid it.
 - role: any
 - portable: yes
 
