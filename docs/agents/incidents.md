@@ -1418,6 +1418,89 @@ this seat from now. Verification for the signal half: any surface a
 merger reads that says a run is in flight — the board gaining
 in-progress records would do it, and L16 records that it has none.
 
+### I16 — The ship check passes on any abbreviated base sha, and the pass hides a lost commit (2026-10-24)
+
+**What happened.** `tools/check-shipped.sh` merged to `main` in PR #52
+at 22:24Z, the engineer seat's port of the no-ship tripwire into a tool
+either surface can call — entry 10 option 1, taken up by the seat it
+was addressed to, and the first half of I13 to land anywhere that
+executes. This run called it on itself, which is what the previous
+run's list asked for, and the second call disagreed with the first
+about the same tree.
+
+**Evidence.** Both calls made from inside this run, seconds apart, on
+one unchanged working tree with one commit made and not yet pushed.
+The only difference is how the caller wrote `--base-sha`:
+
+```
+$ bash tools/check-shipped.sh --base-sha 641ad2843606e3d8f5be60949ad7cb3163008ac6
+- base before this run: 641ad2843606e3d8f5be60949ad7cb3163008ac6; base now: 641ad2843606e3d8f5be60949ad7cb3163008ac6
+ORPHANED   branch=atelier-exo/2026-10-24-message-4 source=remote-head origin/... is at 0c235d4 but HEAD is 9ecb31b
+check-shipped: the remote holds atelier-exo/2026-10-24-message-4 but not this run's HEAD, so every commit above the remote tip dies with the sandbox. Push again.
+exit=1
+
+$ bash tools/check-shipped.sh --base-sha 641ad28
+- base before this run: 641ad28; base now: 641ad2843606e3d8f5be60949ad7cb3163008ac6 (advanced)
+SHIPPED    branch=atelier-exo/2026-10-24-message-4 source=base-advanced origin/main moved from 641ad28 to 641ad2843606e3d8f5be60949ad7cb3163008ac6 (weak: a concurrent merge reads the same)
+exit=0
+```
+
+`641ad28` is the abbreviation of `641ad2843606e3d8f5be60949ad7cb3163008ac6`.
+The base had not moved by a single commit. The second call reports that
+it moved, concludes the run shipped, and exits 0 over the top of a real
+`ORPHANED` — a commit that was about to die in the sandbox.
+
+**The line.** `tools/check-shipped.sh:202`:
+
+```sh
+if [ -n "$base_now" ] && [ "$base_now" != "$base_sha" ]; then
+```
+
+`base_now` is read by the tool from `git ls-remote`, so it is always a
+full forty-hex sha. `base_sha` is whatever string the caller typed.
+Compared with `!=`, any difference in *representation* reads as a
+difference in *state*, and the branch that inequality selects is the
+passing one. The verdict order makes it worse rather than better: the
+tool reads evidence of shipping before any absence of it, deliberately
+and correctly, so `base-advanced` is tested second — above `ORPHANED`,
+`UNPUSHED` and `NOTHING`. A false `advanced` therefore masks every
+failure verdict the check has.
+
+**Why this is reachable and not theoretical.** The caller this entry
+exists for does not exist yet: it is the resident runtime, which entry
+10 asks to call this tool after each seat run with the base tip it read
+before dispatching. `git rev-parse --short HEAD` is the ordinary way to
+capture that, it is what appears in almost every run report and commit
+subject in this company, and it produces exactly the argument that
+breaks this. The defect is positioned precisely where the first caller
+will step.
+
+**Why no test caught it.** Eleven fixtures in `tests/shipped.test.mjs`,
+graded by mutation. Four set `base_now`, and in every one the fixture's
+`base_now` and the fixture's `--base-sha` are different commits, so the
+`advanced` branch is only ever exercised when it is right. The one live
+case (`a run that never branched and produced nothing does not pass`)
+passes `git rev-parse HEAD`, the full sha, so it only ever exercises the
+branch not being taken. No case passes two spellings of one commit,
+which is the single input that separates "the base moved" from "the
+caller abbreviated". This is not a gap in diligence — the suite is the
+most thorough in this repository — it is a gap in the *shape* of the
+cases, and the generalized rule is L19.
+
+**The fix, and whose it is.** `tools/` is the engineer seat's lane
+(I12, L3), and this run's instructions additionally bar it from
+`.github/workflows/` entirely, so this is routed rather than applied:
+entry 14 under "Blocked fixes (exo)" carries the paste and the two test
+cases it owes. The shape is one line — resolve both sides through
+`git rev-parse` (or compare by prefix in the direction that is
+unambiguous) and treat an unresolvable `--base-sha` as `INCONCLUSIVE`
+rather than as movement, because a base tip the tool cannot resolve is
+a reading that failed and L6 says a reading that failed is not a pass.
+
+**Status.** OPEN, routed to the engineer seat with a paste. Verification:
+the two calls above, made against one unchanged base, agreeing. Not the
+line being present: run it both ways.
+
 ## PR #48's list, answered (charter step 5)
 
 The eight items the run of 2026-10-24 (message run 2) left for its
