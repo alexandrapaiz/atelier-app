@@ -33,3 +33,73 @@ smoke-run gate, lessons register, workflow template) — 2026-09-19,
 recorded at HQ as ADR-010.
 
 **Owner:** Alexandra. **Status:** accepted.
+
+## ADR-002 — Atelier is asleep by HQ's decision, and what that suspends here (2026-10-24)
+
+**Decision (HQ's, recorded here).** Atelier is asleep. Nothing ships
+from this repository until the owner wakes the product, and this
+product's PM names the first real milestone when she does.
+
+**Where it actually lives, read rather than recalled:**
+
+- `company.yaml` on `main` carries `posture: asleep` and `priority: 5`.
+  Its own header says the HQ chair wrote the file on 2026-10-16.
+- The company board's current sprint for atelier, read on 2026-10-24
+  with `GET $BOARD_API_URL/api/board/atelier`, is named "Asleep by
+  decision" with the goal "Atelier is backlogged; nothing ships until
+  the owner wakes it, and its PM names the first real milestone then."
+  All five of its columns hold zero items.
+
+**Why this entry exists.** A parent decision governs and a product does
+not get to refuse it, but it is owed notice, and notice has a form: one
+entry in the product's own decisions file naming the parent decision,
+the local files it changes, and the local law it touches (company
+lessons L-A20, clause 1). A commit subject is not that record, because
+nothing reads commit subjects. The posture arrived inside a manifest
+rewrite and for eight days no file a seat is sent to read said it.
+
+**What it suspends.**
+
+1. **SPRINTS.md as a live commitment.** ADR-001's first deviation keeps
+   SPRINTS.md the sprint board of record and that still holds. What the
+   posture overrides is its *liveness*: Sprint 2 is dated Sep 21 to Sep
+   27 and expired, so an unfinished Claude-owned card there is not
+   today's work for any seat.
+2. **The cadence and the ceremony** (ADR-001, deviations 2 and 3). No
+   retro and no next sprint until the owner wakes the product.
+3. **The build lane.** The engineer seat ships no product code while
+   the product sleeps. Picking the next sprint item would be naming the
+   first milestone, which the board reserves for the PM after the wake.
+
+**What it does not touch.** A local law's preconditions survive an
+override unless the override names them (L-A20, clause 3), and this one
+names none of these:
+
+- **The worthiness gate** stands exactly as SPRINTS.md and the local
+  lessons register state it. The posture is not a substitute for it and
+  does not pre-empt it. Waking the product does not enroll anyone in
+  the Apple Developer Program, which stays the owner's call with no
+  date.
+- **The owner-only blocks** in `docs/agents/pending.md` stay owed:
+  the Supabase redirect allowlist that PR #3's reset page needs, the
+  on-device test, the Google Calendar decision. Sleeping does not clear
+  them.
+- **The definition of done** for anything that does land, which is
+  still a real surface plus a green suite. Both are green on `main` as
+  of 2026-10-24: 24 of 24 locally, tests run 40051692307 and the Pages
+  deployment 40051691663.
+- **The inbox.** A message addressed to a seat still wakes it and it
+  still answers, which is how this entry came to be written.
+
+**What would end it.** The owner wakes the product, and the PM then
+names the first milestone on the board. Neither is a seat's call. Until
+then a seat woken with nothing addressed to it says so on the board and
+stops, per section 17 of the vendored PM standard.
+
+**Where a seat can read the posture.** Two surfaces on `main` today:
+`company.yaml`, and this entry. A third is in flight and is cited here
+as in flight rather than as law: a standing Posture section at the top
+of SPRINTS.md, in PR #33, open and clean at the time of writing.
+
+**Owner:** the HQ chair's decision of 2026-10-16, transcribed by the
+engineer seat and not made by it. **Status:** accepted, active.
