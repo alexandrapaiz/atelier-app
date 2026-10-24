@@ -388,6 +388,21 @@ rejected / built / urgent; only the owner moves proposed.
   land in the same caller and arguing them separately spends two handoffs on
   one edit. Until then `run=fresh` is the honest ceiling and the threshold
   stays a number anyone can retune from evidence
+- Measured later the same evening, and it strengthens the case rather than
+  changing it: the Actions reading is not merely blind to a host window, it
+  answers for a different workflow. `tests.yml` fires on `pull_request`, so
+  every push into an open draft starts a job whose head branch is the seat
+  branch, and the old reading counted any in-flight run as a live seat. 26
+  such runs on seat branches that evening, every one `tests`, each alive 17 to
+  30 seconds, so a draft read live for twenty seconds after each push and
+  stranded a minute later with nothing about the work having changed. The
+  reading has been split — `run=live` for a declared seat workflow, `run=ci`
+  for anything else, and only the first decides anything — which makes the
+  verdict stop flickering without inventing a fact nobody has. It does not
+  give anyone the reading this entry asks for. Three surfaces have now been
+  asked whether a seat is standing in a branch, and all three answered about
+  something else: Actions about a test job, the board about runs that already
+  ended, and the age guard about time
 - Cost: $0
 - Status: proposed
 
