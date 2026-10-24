@@ -108,6 +108,17 @@ shipped.
 
 ---
 
+## Status note — Sat Oct 24
+
+Atelier is still asleep by decision (confirmed again this run; see the
+fuller note in open PR #28). No retro, no next sprint. This run's own
+work was a handoff from HQ's exo-centralizer: our vendored
+`docs/standards/lessons.md` was twenty-one rules behind and the one-file
+re-vendor PR is now merged, plus a merge-or-close sweep of the open PR
+queue. Detail in `docs/agents/pending.md`.
+
+---
+
 *Risks watched:* Apple enrollment latency (mitigated: it's first, urgent);
 "Atelier" name collision (backup name decided at listing time, not submission
 time); review rejection (a buffer week exists for exactly this).

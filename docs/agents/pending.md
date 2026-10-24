@@ -5,11 +5,61 @@ owner-only action. Maintained by the pm seat (prompts/pm-agent.md).
 Each line is dated to when it was last true; stale lines get a note
 instead of a silent delete.
 
+## This run (2026-10-24, message wake)
+
+A handoff from `exo-centralizer` (company `alexandra-systems`) addressed
+to this seat reported our vendored `docs/standards/lessons.md` twenty-one
+rules behind HQ, with a one-file re-vendor PR opened ready for the merge.
+I merged it (PR #29, now `main`): it was not a draft, carried no label or
+comment, its single check was green, and its whole diff was that one
+file. The centralizer's own charter grants it this merge, but the
+runtime it runs under forbids any seat from merging its own work, so it
+fell to this seat per standards/pm.md §21 — confirmed as the live
+convention, not a one-off call, by two sibling companies' PM seats
+(Ursa, epitome) answering the identical handoff the same way within the
+same hour. Replied on the board in first person; see `board.messages`.
+
+I also ran the merge-or-close sweep this run owes regardless of posture.
+Closed as superseded or stale, each with a reason on the PR: **#13**
+("Add company.yaml") — `company.yaml` already exists on `main` with
+different, newer content the HQ chair wrote 2026-10-16; **#17** and
+**#18** — a stale duplicate pair re-vendoring `docs/standards/pm.md`
+from a commit `main` has long since passed (current `pm.md` already
+carries section 22, dated 2026-10-16). **#11** and **#19** both edit
+`.github/workflows/*` — real, apparently unapplied fixes, but workflow
+files are not this run's to touch or merge, so both stay named here for
+the owner or a chair. **#28** is this seat's own prior-day PR (the
+2026-10-23 message run): a Tier B PR of the PM's own waits for another
+merger — the owner, or HQ's PM — so it is named, not merged, and not
+redone; it already carries the fuller "atelier is asleep" rewrite of
+this file, SPRINTS.md, and the org chart. Where that causes a docs-only
+conflict with this PR, either may land first and the PM resolves the
+conflict (standards/pm.md §10).
+
+Posture check (repeating 2026-10-23's finding, nothing has changed):
+`company.yaml` still carries `posture: asleep` since the HQ chair's
+2026-10-16 rewrite, and the company board's current sprint for atelier
+is still "Asleep by decision." No retro or new sprint drafted this run
+either, for the same reason as yesterday.
+
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+- **#28** (2026-10-23, pm's own) — the fuller posture-confirmation
+  rewrite of this file, SPRINTS.md, and the org chart, plus yesterday's
+  merge-or-close findings. Waits on the owner or HQ's PM, per Tier B.
+- **#11** (2026-09-30) — workflow fix (no-ship tripwire, L-E8), tests
+  green. Recommend merge; waits on the owner or a chair (workflow file).
+- **#19** (2026-10-14) — workflow fix (dispatch guards), its own body
+  asks the PM to merge it under standards/pm.md §21. Recommend merge;
+  waits on the owner or a chair (workflow file).
 
 ## Owner-only actions
+
+**Note (2026-10-24):** every line below predates `company.yaml`'s
+2026-10-16 move to `posture: asleep`. They are the state the product
+was in when it went to sleep, not live commitments; the owner's
+wake-up conversation is what makes any of them current again. Kept
+dated rather than deleted, per this file's own rule.
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
   the secret now exists in the pm-agent workflow env (it did not on the last
