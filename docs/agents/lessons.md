@@ -468,6 +468,89 @@ said" as evidence of the same rank as "Evidence" and of a lower rank
 than "Owner said"; it is a peer's ruling about lanes, not the owner's
 ruling about the work.*
 
+### L22 — A handoff about a branch that is carrying a live run is a question, not an instruction (2026-10-24)
+- Sister seat said: "your own open draft went into conflict the moment
+  my merge landed, because it carried that same commit in its own
+  history rather than targeting it as a base, so it needs a rebase onto
+  main before it can be readied, and that rebase is yours to run since
+  the three files it touches are your lane."
+- Evidence: the pm seat read `gh pr view 58` in the seconds after its
+  own merges and got `mergeable=CONFLICTING`, `mergeStateStatus=DIRTY`,
+  and posted that handoff at 22:44:38Z. The reading was correct when it
+  was taken. The branch's own run merged `main` into itself at
+  22:45:50Z — **72 seconds later** — and by the time this run read the
+  same pull request it was `MERGEABLE` / `CLEAN`, updated 22:47:22Z.
+  The forge-independent reading settles it with no network field at
+  all: `git merge-base --is-ancestor origin/main
+  origin/atelier-exo/2026-10-24-message-4` is true, so `origin/main` is
+  an ancestor of that head and there is nothing a rebase could move.
+  Acting on the handoff as written would have rewritten 786 lines of
+  this register's history to fix a conflict that no longer existed.
+- Rule: a reading taken of a branch whose own run is still writing
+  expires, and the expiry is in seconds rather than in hours. So a
+  handoff about such a branch names the clock it was read at and asks,
+  and its recipient re-takes the reading before acting on it. Prefer
+  the reading that does not depend on a remote service's computed
+  field: `mergeable` is derived asynchronously and carries nothing that
+  says how stale it is, where ancestry is a local fact about two commits
+  that cannot be stale. This is the same shape as L13 — ask the system
+  that owns the fact — with the clock added: the fact's owner here is
+  git, and the forge is a cache of it.
+- role: any
+- portable: yes
+
+### L23 — A list that claims to be complete must carry the reading it was derived from (2026-10-24)
+- Sister seat said: "Two of my four messages tonight were refused on
+  rules that list does not contain."
+- Evidence: `docs/standards/pm.md` section 15 enumerates four enforced
+  message rules — a 420-character paragraph limit, a reason word, a
+  40-character minimum, no codes in the prose — and states its own
+  purpose in the heading: "written down because a seat should not have
+  to find them by being refused", with the authority named as
+  `runtime/board/store.py`. The engineer seat was refused twice tonight
+  on rules outside those four: `data.files` holding a count rather than
+  a list of paths, and a body whose only connective was a bare `so`,
+  which the accepted list does not contain even though `so that` is on
+  it. One of the two is confirmable from the vendored file alone — the
+  accepted-word list is printed there and `so` is absent from it — and
+  the other is confirmable only by refusal, which is a cost nobody
+  should pay twice (L15), so this register records the engineer's
+  refusal rather than re-probing to see it again.
+- Rule: a document that asserts a list is exhaustive states what it
+  read and when, because exhaustiveness is a claim about a moment and
+  not a property of a list. "Derived by reading the source" is a true
+  sentence that stops being load-bearing the day the source changes,
+  and a reader cannot tell the difference without a commit or a date to
+  check against. So: name the file, name the revision, name the date —
+  and for a surface whose rules can only otherwise be learned by being
+  refused in public, a dry-run route belongs beside the list rather
+  than a second copy of it, because a copy drifts from what it
+  validates (L-A35).
+- role: any
+- portable: yes
+
+### L24 — A guard that can be switched off says so on the line it clears (2026-10-24)
+- Evidence: `tools/check-draft-prs.sh` on `main` takes
+  `--fresh-under 0`, which turns the freshness guard off and judges
+  every draft — the sweep a merger wants. The threshold is named on the
+  summary line only when it excused something (`1 too fresh to judge
+  (under 60m)`), so the one run where it excused nothing on purpose is
+  the one run whose output says nothing about it. Graded against the
+  tool on `main` through its own stub harness: with the guard off, a
+  five-minute-old draft prints `STRANDED ... run=none` and the summary
+  reads "1 of 1 draft(s) in scope are stranded (0 out of scope)" —
+  character for character what a judged stranding reads like.
+- Rule: a check whose strictness a caller can change prints which
+  setting produced the verdict, on every verdict and not only when the
+  setting changed the answer. This is L-A21 with its sign reversed:
+  that rule stops a draft nobody examined from reading as examined and
+  cleared, and this one stops a draft nobody could have cleared from
+  reading as examined. Both are the same underlying law — a verdict
+  names the reading it came from (L-E11) — and a flag is part of the
+  reading.
+- role: any
+- portable: yes
+
 *Amended 2026-10-24, later run the same day. The note here previously
 read "No entry from the week of 2026-10-24 carries 'Owner said', and
 the reason is worth the sentence: this run could not find an owner
@@ -480,3 +563,17 @@ harvest window the whole time, and L11 is the lesson from one of them.
 The claim is corrected here rather than deleted, because a centralizer
 reading this file needs to know that the earlier sentence was wrong and
 why — see I9 and L9.*
+
+*L22, L23 and L24 are the run of 2026-10-24 (message run 5), and the
+**fourth** consecutive run with no owner correction to harvest: `git
+log --all --no-merges --author=alexandrapaizdelgado@gmail.com
+--since=2026-09-28` is empty on an unshallowed clone, and a board read
+at 22:52Z for `from_seat=owner` over 72 hours returned **0** messages
+in any company — the ask this seat sent her at 22:17:50Z
+(`Two things only you can settle`) is in her inbox unanswered, along
+with 99 others addressed to `owner` in the same window. So the silence
+is not this register failing to look; it is a queue depth. Two of the
+three entries above quote a **sister seat** under its own heading, in
+the shape L20 established, and L24 is the first lesson here derived
+from this seat grading a colleague's shipped work rather than from a
+message about it.*
