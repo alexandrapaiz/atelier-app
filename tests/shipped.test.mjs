@@ -287,6 +287,63 @@ test('on the same clone, a branch never pushed is UNPUSHED', (t) => {
   assert.equal(code, 1, out);
 });
 
+// Port change 5, and L-E12's own prescription: a measurement that runs inside a
+// directory somebody else is standing in may only ask questions, and that is
+// pinned by a test rather than by the absence of a fetch in the source. The step
+// ran `git fetch origin`, which writes to the refs of whatever checkout it is
+// standing in; `git ls-remote` needs no local ref at all.
+test('the check writes nothing into the caller checkout', (t) => {
+  const { tmp, work } = mainlineOnlyClone();
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+  git(work, 'checkout', '-b', 'atelier-engineer/read-only');
+  fs.writeFileSync(path.join(work, 'a'), 'a\n');
+  git(work, 'add', '-A');
+  git(work, 'commit', '-m', 'work');
+  git(work, 'push', 'origin', 'HEAD:refs/heads/atelier-engineer/read-only');
+
+  const refsBefore = git(work, 'for-each-ref', '--format=%(refname) %(objectname)');
+  const shallowBefore = fs.existsSync(path.join(work, '.git/shallow'));
+  const headBefore = git(work, 'rev-parse', 'HEAD');
+
+  const { code } = runTool(work);
+  assert.equal(code, 0);
+
+  assert.equal(git(work, 'for-each-ref', '--format=%(refname) %(objectname)'), refsBefore,
+    'the check moved a ref in the caller checkout');
+  assert.equal(fs.existsSync(path.join(work, '.git/shallow')), shallowBefore,
+    'the check left the caller checkout shallow');
+  assert.equal(git(work, 'rev-parse', 'HEAD'), headBefore,
+    'the check moved the caller HEAD');
+  assert.equal(fs.existsSync(path.join(work, '.git/FETCH_HEAD')), false,
+    'the check fetched into the caller checkout');
+});
+
+// Port change 4, on the live path rather than through the fixture reader. The
+// step counted commits with `|| echo 0`, and a zero is an input to the loudest
+// verdict in the file, so a clone with no `origin/<base>` ref at all could have
+// a failed count reported as "this run produced nothing". Written because the
+// fixture case for this row passed a mutant that restored the `echo 0`: the
+// fixture serves the count from a file and never exercises the counting.
+test('a clone with no origin ref for the base says so instead of counting zero', (t) => {
+  const { tmp, work } = mainlineOnlyClone();
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+  git(work, 'checkout', '-b', 'atelier-engineer/no-base-ref');
+  fs.writeFileSync(path.join(work, 'a'), 'a\n');
+  git(work, 'add', '-A');
+  git(work, 'commit', '-m', 'work the count cannot be taken against');
+  // The refspec made exactly one tracking ref. Remove it and the count has
+  // nothing to compare to, which is a failed reading and not a zero.
+  git(work, 'update-ref', '-d', 'refs/remotes/origin/main');
+
+  const { code, out } = runTool(work);
+  assert.match(out, /^INCONCLUSIVE {2}.*source=commits-unreadable/m);
+  assert.match(out, /\(unreadable commit\(s\) ahead of main/);
+  assert.doesNotMatch(out, /^NOTHING/m);
+  assert.equal(code, 2, out);
+});
+
 // The run that never branched: HEAD sits on the base, which is what the old
 // `git branch -r --contains HEAD` reading passed trivially — epitome run
 // 35956231272 died at turn one, produced nothing, and the tripwire was green.
