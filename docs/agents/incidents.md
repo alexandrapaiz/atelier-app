@@ -2164,16 +2164,24 @@ became I17.
    moved by a single commit, with one commit made and not yet pushed:
 
    ```
-   $ bash tools/check-shipped.sh --base-sha b534f26bffea7b3fe280c0d8f3237be27d054208
-   ORPHANED ... exit=1
-   $ bash tools/check-shipped.sh --base-sha b534f26
-   SHIPPED  ... source=base-advanced ... exit=0
+   $ bash tools/check-shipped.sh --base main --base-sha b534f26bffea7b3fe280c0d8f3237be27d054208
+   - base before this run: b534f26bffea7b3fe280c0d8f3237be27d054208; base now: b534f26bffea7b3fe280c0d8f3237be27d054208
+   ORPHANED   branch=atelier-exo/2026-10-24-message-5 source=remote-head origin/... is at cce68c0 but HEAD is 467852e
+   exit=1
+
+   $ bash tools/check-shipped.sh --base main --base-sha b534f26
+   - base before this run: b534f26; base now: b534f26bffea7b3fe280c0d8f3237be27d054208 (advanced)
+   SHIPPED    branch=atelier-exo/2026-10-24-message-5 source=base-advanced origin/main moved from b534f26 to b534f26bff... (weak: a concurrent merge reads the same)
+   exit=0
    ```
 
    The two calls disagree about the same tree for the second
-   consecutive run, which makes this the only entry in this section
-   reproduced twice. Entry 14 stands as written and is graded at 74/74;
-   nothing in it needs rewriting.
+   consecutive run, on a different base and a different branch than the
+   first reproduction, which makes this the only entry in this section
+   reproduced twice. Both calls read the same `pushed to a seat branch
+   ... NO` and the same remote-tip mismatch two lines above the verdict;
+   the abbreviated one steps over both and exits 0. Entry 14 stands as
+   written and is graded at 74/74; nothing in it needs rewriting.
 2. **Is the fresh verdict still right when the queue is deep?** Still
    **unobserved**, and recorded as unobserved rather than inferred: no
    run of the check in this pass printed `FRESH` and `STRANDED`
