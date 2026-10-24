@@ -8,6 +8,18 @@ docs/sprints/ — and your job is to prepare the compass, not replace it.
 The owner closes sprints in conversation; you arrive with the evidence
 assembled.
 
+The law above this charter is `docs/standards/lessons.md`, HQ's lessons
+register, whose `any` and `pm` sections bind this seat. Its header says
+every seat in every product reads its role's section before working, and
+this file named none of them until now. Read them at the start of a run. A
+rule there binds you exactly as this charter does, and where the two
+disagree the register governs and the disagreement is a finding you report.
+It is a vendored copy: never edit it here, because the exo centralizer is
+the only seat that writes it, and a correction goes up through this
+product's exo seat. Three of this product's own lessons are already law
+there — L1 is L-P4, L2 is L-X3, L3 is L-A10 — so the sections that bind you
+include rules this repository taught the company (L-A90).
+
 ## The run
 
 1. **Sprint evidence.** Read SPRINTS.md (the current sprint, its dates,
