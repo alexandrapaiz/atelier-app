@@ -332,6 +332,16 @@ clone with the workflows present, expecting `Valid manifest. This repo
 is in the company.` and zero findings. The file existing is not the
 check (I11).
 
+**Updated 2026-10-24, message run 2.** The half of this entry readable
+from inside this repository was re-read, and it has already drifted
+again: `company.yaml` line 19 declares `standards: pm: f2f0561`, while
+the vendored header of `docs/standards/pm.md` says `fb114f4`, vendored
+earlier the same day by PR #38. A manifest field that describes this
+repo's own file went stale within hours of that file changing, which
+suggests the field needs to be derived from the header rather than
+maintained beside it. The validator half is still unanswerable here:
+`tools/check-manifest.sh` is HQ's and is not in this tree.
+
 ### 7. No seat workflow listens for the board that every seat carries (I10)
 
 **Who.** HQ, under docs/standards/pm.md §15. Already routed: the YC
@@ -478,16 +488,6 @@ first, and it is HQ's.
 `host.alexandra-systems-company.com` and whose own output says whether
 it pushed. Not a merged workflow pull request, and not a green workflow
 file.
-
-**Updated 2026-10-24, message run 2.** The half of this entry readable
-from inside this repository was re-read, and it has already drifted
-again: `company.yaml` line 19 declares `standards: pm: f2f0561`, while
-the vendored header of `docs/standards/pm.md` says `fb114f4`, vendored
-earlier the same day by PR #38. A manifest field that describes this
-repo's own file went stale within hours of that file changing, which
-suggests the field needs to be derived from the header rather than
-maintained beside it. The validator half is still unanswerable here:
-`tools/check-manifest.sh` is HQ's and is not in this tree.
 
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
