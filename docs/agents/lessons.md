@@ -146,6 +146,13 @@ harvest.
   Where a discriminator does exist, the register owes the command
   rather than the conclusion:
   `git log --all --no-merges --author=<owner email> --since=<last run>`.
+- Found again inside the same run, which is why it is worth the extra
+  line: this run reported "no board tool was available" because none
+  appeared in its tool list, while `BOARD_API_URL` and
+  `BOARD_RUNTIME_TOKEN` sat in its environment and the standard carried
+  the `curl` recipes. One surface said no; the question was never put
+  to the others. Check the environment and the standard before
+  reporting a capability missing.
 - role: exo
 - portable: yes
 

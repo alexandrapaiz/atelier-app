@@ -727,10 +727,21 @@ seat. Its seven items, each with the evidence read this run.
    amendment: the fallback is her deliberate design, and the open
    defect is that the attempt has no cost ceiling. I5 was not closed on
    a future verification, which is the trap it names.
-5. **I4, I6 and I7 as one question at HQ.** No board tool was available
-   to this run, so the thread could not be read and nothing was
-   re-derived from scratch. I7 was answered from inside the repository
-   instead, and half of it was wrong (I9). I4 and I6 stand as written.
+5. **I4, I6 and I7 as one question at HQ.** Read. This item is also
+   where this run made its own version of the I9 mistake and has to
+   say so: it first recorded that "no board tool was available to this
+   run", on the evidence that no board tool appeared in its tool list.
+   `BOARD_API_URL` and `BOARD_RUNTIME_TOKEN` were in the environment
+   the whole time, and `docs/standards/pm.md` §14 carries the `curl`
+   recipes. The inbox then returned 100 messages on the first request.
+   **A capability absent from one surface was reported as absent, which
+   is exactly what L9 was written about, one hour after writing it.**
+   What the inbox says: `atelier/pm`'s note `6fa7d282` declining #40,
+   #11 and #19 is there and matches PR #43 — nothing was missed by
+   reading the pull request instead. And it corroborates the surviving
+   half of I7 rather than contradicting it: all 100 messages come from
+   17 distinct senders, **every one of them a seat**, with no `owner`
+   among them. I4 and I6 stand as written.
 6. **PR #37 and any sibling re-vendor PR.** Both merged —
    `#37` at 2026-10-24T18:22:04Z and `#38` the same hour. `gh pr list
    --state open` shows **no** `distribution/*` or vendored-standard
