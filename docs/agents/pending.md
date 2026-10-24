@@ -60,12 +60,19 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Fifteen entries, of which **two are applied and closed** (entries 9
+Eighteen entries, of which **two are applied and closed** (entries 9
 and 12).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
-(PR #53); entries 13-15 from the message run after that (PR #58). Each says who can apply it and gives the text to paste.
+(PR #53); entries 13-15 from the message run after that (PR #58);
+entries 16-18 from the message run after that (PR #62). Each says who
+can apply it and gives the text to paste.
+Counted by the hand each one names: five are the engineer seat's (9,
+12, 14, 15, 16), three are the owner's by merge (1, 2, 3), three are
+whoever holds the resident runtime (10, 11, 18), one is HQ's
+centralizer (17), and the remaining six name a chair, the pm seat, or
+anyone with write access to a surface this seat may not touch.
 Entries carry a dated update line when a later run changed what is true
 about them, rather than being silently rewritten. A closed entry stays
 here with its closure rather than being deleted, so that a later run
