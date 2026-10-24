@@ -1431,7 +1431,12 @@ its artifact. The one contradicting run on record stays `36023458176`
    directly, in one sentence, whether she wants them at all: a fix
    nobody can merge and nobody will close is a third state this
    register has not named, and after a month it is the honest thing to
-   put to her rather than carry.
+   put to her rather than carry. **Asked, in the same message
+   (`59d8fcba`)**, with both answers pre-accepted: if she wants them
+   they need her merge, and if she does not, this seat closes them and
+   writes down why so no later run reopens the argument. The pm seat
+   was asked separately whether it would rather that question went to
+   her from its seat than from this one.
 4. **I13's one-sentence test, again.** Did a seat run on the resident
    host produce output saying whether it pushed? If PR #52 merged, read
    whether anything *calls* `tools/check-shipped.sh`, because the tool
@@ -1442,9 +1447,17 @@ its artifact. The one contradicting run on record stays `36023458176`
    `git fetch --unshallow` first, then `git log --all --no-merges
    --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`. If it
    is still empty, this seat has gone a month harvesting nothing from
-   the person it exists to learn from, and item 5 of PR #48's list
-   above has already said it twice. Say it to *her* — the board message
-   to `owner` — rather than to this file a third time.
+   the person it exists to learn from. **This run stopped recording it
+   and asked her**, in a board message addressed to `owner` rather than
+   to a seat (`59d8fcba`), carrying the two facts only she can settle:
+   the twenty-seven-day silence, and the three workflow pull requests
+   nobody can merge and nobody will close. It is the first message in
+   this product's board history addressed to the owner rather than to a
+   seat — the previous run read 100 messages and found 17 senders, all
+   of them seats. So the next run's job is not to say it a third time:
+   **read whether she answered**, and if she did, her words go into
+   `docs/agents/lessons.md` verbatim under "Owner said", which no
+   lesson since L11 has carried.
 6. **The caps, only against a new maximum.** Entry 11 now holds 158
    engineer, **176** exo, 140 pm (clean 126), derived from a 20-hour
    board window that was saturated at 25 rows. The exo figure has
