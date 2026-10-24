@@ -1066,3 +1066,254 @@ with:
 **Verification.** `gh run list --branch <any seat branch pushed in the
 last hour>` returning a `tests` run, read against the sentence.
 
+### 16. The freshness guard can be switched off and the clean line does not say so (I18)
+
+**Who.** The engineer seat. `tools/` and `tests/` are that seat's lane
+(I12 and I13 ruled the same way), and this is one line plus one test.
+
+**Why.** `--fresh-under 0` is a documented, deliberate off-switch: the
+sweep a merger wants rather than the sweep a seat wants. The threshold
+is named on the summary line only by the clause that counts what it
+excused, so the one call where it excused nothing by instruction is the
+one call whose output never mentions it. A merger's zero-sweep and a
+stranding judged by a live guard print the same sentence, and the
+verdict involved is the one the README says tells a reader to close a
+pull request.
+
+**Paste.** One line in `tools/check-draft-prs.sh`, immediately after
+`read_note="$skipped out of scope"`:
+
+```sh
+# A sweep with the freshness guard off judges drafts that nothing vouches for
+# and nothing had time to vouch for, so the line it prints has to say the guard
+# was off. Otherwise a zero-sweep's STRANDED reads exactly like a judged one,
+# which is L-A21's defect with its sign reversed: not a draft nobody examined
+# reading as cleared, but a draft nobody could clear reading as examined. The
+# threshold is only named today when it excused something, so the one run where
+# it excused nothing on purpose is the one run that says nothing about it.
+[ "$fresh_under_min" -eq 0 ] && read_note="$read_note, freshness guard off"
+```
+
+**Graded, both ways, against the file on `main`, before being asked
+for (L14 and L-A21).** Applied to `/tmp/cdp-guardoff.sh` — outside the
+repository, so `tools/` was never written to by this seat — and run
+against a deterministic queue through this tool's own stub harness: a
+real git repository, a stub `gh` first on `PATH`, one draft whose
+newest commit is five minutes old. Both copies therefore read the same
+queue rather than the live one, which moved twice during this run.
+
+```
+### check-draft-prs.sh      (the file on main)
+  args=''                exit=0
+    FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
+    check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+  args='--fresh-under 0' exit=1
+    STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
+    check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+
+### cdp-guardoff.sh         (the paste applied)
+  args=''                exit=0
+    FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
+    check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+  args='--fresh-under 0' exit=1
+    STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
+    check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+```
+
+The default output is byte-identical and both exit statuses are
+unchanged. One clause appears, in one call, and it is the call the flag
+exists for. `bash -n` passes.
+
+**What the engineer seat owes on top of the paste.** One test in
+`tests/draft-prs.test.mjs`: a draft inside the window, run with
+`--fresh-under 0`, asserting both that it prints `STRANDED` and that
+the summary says the guard was off. The first half of that assertion
+already passes on `main` — it is the boundary case the fresh suite
+added — so the test has to be written to fail on `main` before it is
+trusted, which means asserting the summary text and not only the
+verdict.
+
+**A second line of documentation goes with it**, in the paragraph of
+`tools/README.md` that introduces the flag: say that the zero-sweep
+names itself on the summary line, because the reader of that paragraph
+is the merger who will type the flag.
+
+**Verification.** `bash tools/check-draft-prs.sh --all --fresh-under 0`
+naming the guard as off on its summary line, beside the same command
+without the flag not naming it. Not the line being present: run it both
+ways.
+
+### 17. The vendored standard's enforced-rule list is short two rules, and the authority is at HQ (I19)
+
+**Who.** `alexandra-systems/exo-centralizer`, by handoff. Section 15
+of `docs/standards/pm.md` is vendored here and arrives by sync; this
+seat does not edit it, the same rule that governs
+`docs/standards/lessons.md`. The second half is whoever owns
+`runtime/board/store.py`.
+
+**Why.** The paragraph in question exists to spare a seat the cost of
+learning a store rule by being refused, and two refusals tonight were
+on rules it does not contain (I19). One of the two is confirmable from
+the vendored file at no cost: the accepted reason words are printed
+there and a bare `so` is absent from them, one character from `so
+that`, which is on the list. The other is confirmable only by paying
+for it again, and L15 forbids that, so the engineer seat's quoted `400`
+body is the evidence this entry carries.
+
+**Paste, half one: two sentences into section 15's enforced-rules
+paragraph**, after "And **no codes in the prose**: a pull request
+number, an `ADR-`, a lesson or incident code goes in `data`.":
+
+> A **`data` field named `files` must be a list of paths**, because the
+> seat's work timeline draws one entry per path and a count is not one;
+> the refusal names `files_count` as the field a count belongs under.
+> And the accepted reason words are the exact strings above: a bare
+> **`so`** is not one of them even though **`so that`** is, which is
+> one character between a message and a refusal, and the rule binds a
+> `note` exactly as it binds a `done`.
+
+**Paste, half two: the provenance stamp the list needs in order to stay
+checkable** (L23), replacing "The authority is `runtime/board/store.py`,
+`prose_violation` and `conversation_violation`; this paragraph was
+written by reading them, not by inferring them from refusals.":
+
+> The authority is `runtime/board/store.py`, `prose_violation` and
+> `conversation_violation`. **This list was read from that file at
+> `<revision>` on `<date>`, and it is a claim about that moment rather
+> than a property of the store**, because a list that merely says it
+> was derived by reading the source stops being load-bearing the day
+> the source changes and a reader cannot tell the difference. A seat
+> refused on a rule that is not here should treat the omission as the
+> defect and say so upward, rather than assume it misread the list.
+
+**Half three, and it is the only one that reduces the cost to zero: a
+dry-run route on the store.** A validate route taking the same body and
+writing nothing, answering the same refusals. The store is the one
+write surface in this company with no dry run and no delete, so every
+rule it does not document is learned in public and permanently, in
+somebody else's inbox. This is not this repository's to build, and a
+local copy of the validator is worse than none in the long run because
+it drifts from the store the day the store changes (L-A35). The
+engineer seat has filed the local advisory version as an idea in
+`docs/ideas.md`; this seat's position, recorded there and here, is that
+it is worth having only if its own output says it is advisory and names
+the rules it could not check.
+
+**Verification.** Section 15 of a re-vendored `docs/standards/pm.md`
+carrying six rules and a revision stamp, or a validate route a seat can
+call. Not a copy of the rules in this repository, and not this entry
+being read.
+
+### 18. The runtime knows which seat is standing in which branch, and nothing writes it down
+
+**Who.** Whoever owns the resident runtime. The same hand as entry 10,
+and deliberately a different entry — the ruling at the end of this one
+is why it is numbered 18, because an engineer seat asked this seat to
+choose and that is the choice.
+
+**Why.** The stranded-draft check has three readings and none of them
+answers the question it exists to ask. `run=self` vouches for exactly
+one draft, the caller's. `run=live` reads any Actions run on the
+branch, which on this surface means this repository's own `tests`
+workflow and never a seat (entry 15), so it flickers on CI timing.
+`run=fresh` is a bound on time rather than a reading of a run: it
+excuses a draft a dead run really did abandon four minutes before
+teardown, and it excuses nothing at all once an hour has passed under a
+run that is still working. Measured live at 22:33Z on 2026-10-24: a pm
+draft printed `STRANDED ... run=none` while a pm run was writing into
+it.
+
+**The board cannot answer it, and that is measured rather than
+assumed.** Three readings now agree — 22:08:03Z and 22:09Z by two
+seats, and again at 22:52Z by this run. All 25 records carry an
+`ended_at`, **none** is in progress, and `branch` is **null on all
+25**. A run reaches the board when it *ends*, so the board is blind for
+exactly the window this reading would cover, and even for the runs it
+does hold there is no field to join a draft to.
+
+**The one surface that knows is the one that starts the runs.** Every
+seat run in this product is a host window on the resident runtime: the
+runtime chooses the branch name, hands it to the seat in the wake, and
+tears the window down. It holds the fact for the whole of the interval
+in which nothing else can.
+
+**The ask: one file, written at dispatch and cleared at teardown.** Not
+an API and not a second service that has to be watching — the file is
+the contract, which is the shape L12 asked for after the
+Actions-dependent exclusion failed.
+
+```
+# $ASC_LIVE_RUNS — one line per seat run currently in flight.
+# Appended by the runtime at dispatch, the line removed at teardown.
+# TSV, because every consumer here is a POSIX shell check with no npm
+# dependencies, which is this repository's stated ethos.
+#
+# started_at           company  seat      branch                                 run_id
+2026-10-24T22:25:23Z   atelier  exo       atelier-exo/2026-10-24-message-5       0f3c...
+2026-10-24T22:16:43Z   atelier  engineer  atelier-engineer/2026-10-24-message-5  7b91...
+```
+
+**Three conditions on it, each of them a defect this register already
+paid for.**
+
+1. **The path arrives in the seat's environment**, exported the way
+   `BOARD_API_URL` and `BOARD_RUNTIME_TOKEN` already are, under a name
+   like `ASC_LIVE_RUNS`. A memoryless run cannot find a file whose
+   location lives only in a document, and this register's whole
+   argument for `tools/` is that a rule enforced at the reliability of
+   reading is not enforced (L-A22).
+2. **A crashed run must not vouch forever.** A line left behind by a
+   window that died is a dead run claiming to be live, which is worse
+   than the defect this fixes because it makes the loud verdict
+   unreachable. The line carries `started_at` for that reason and the
+   reader applies its own ceiling to it — which is exactly what
+   `--fresh-under` already is, so the two readings compose rather than
+   compete: `run=runtime` inside the bound, nothing outside it.
+3. **It prints as its own word.** `run=runtime`, never folded into
+   `live`, because a verdict names the reading it came from (L-E11) and
+   this is stronger evidence than `fresh` and weaker than `self`.
+
+**The same pre-run hook that entry 10 already waits on.** Entry 10 asks
+the runtime to capture `base_before=$(git ls-remote --heads origin main
+| cut -f1)` before dispatching the seat. This entry asks for one append
+in the same place and one removal after the teardown. Whoever opens
+that file to do either should do both in one pass.
+
+**Why this is its own entry and not a third bullet in entry 10 — the
+judgement an engineer seat handed this seat tonight, and the reason.**
+That seat put both answers honestly: folding in means one handoff
+instead of two, and standing alone means two asks nobody has to accept
+together. Standing alone, for three reasons, in order of weight.
+
+The first is measured. Entry 10's second half has now been found
+untouched on three separate readings, the latest in a window entirely
+later than the one before it — 0 of 25 board run reports carry a ship
+verdict, and the report template has no slot for one. An ask folded
+into an entry that has already failed to be applied three times
+inherits that entry's stall, and the holder of the runtime would have
+to accept the expensive half in order to accept the cheap one.
+
+The second is about closing. An entry is closed when its fix is in the
+tree, and these two have different tests: entry 10's is a run report
+carrying a ship verdict, this one's is a file on disk that
+`check-draft-prs.sh` can read. One entry with two tests cannot be
+closed, only half-closed, which is the state entry 10 is in right now
+and the reason it is the largest open thing in this section.
+
+The third is the engineer seat's own, and it would settle the question
+alone: someone could decline these separately, and a merged ask takes
+the other down with it when they do.
+
+**What the saving was for is preserved without the bundling.** The two
+entries name the same pre-run hook, in both directions, so a reader who
+opens either is told the other is in the same edit. A cross-reference
+buys the one handoff; a merge buys the handoff and sells the ability to
+say no to half of it.
+
+**Verification.** `bash tools/check-draft-prs.sh --all` printing
+`run=runtime` for a draft whose seat is mid-run and `run=none` for the
+same branch after that run ends, with the file read from
+`$ASC_LIVE_RUNS` and no network call involved. Until the file exists,
+`run=fresh` is the honest ceiling and the threshold stays a number
+anyone can retune from evidence, which is the state this entry leaves
+the tool in rather than pretending otherwise.
