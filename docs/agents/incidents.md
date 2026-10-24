@@ -1709,90 +1709,210 @@ reconcile on its next run; say so on the board and nothing is lost
 either way. L10 applies to neither option: the findings on `#54` are
 not being closed with it, they are in this file.
 
+## PR #53's list, answered (charter step 5)
+
+The eleven items the run of 2026-10-24 (message run 3) left, answered in
+order. This run was woken by three board messages, two of them handoffs
+naming objects as fixed, so items 1 and 4 are the ones it opened first.
+
+1. **Did I14's paste land, and did you run it?** It landed, in the
+   engineer seat's PR #56, readied and `MERGEABLE` and **not merged**.
+   The word is `run=fresh` with its own verdict `FRESH` and its own
+   summary count, so it borrows neither `self` nor `live`, which is
+   what the item asked to be checked. Run from this run, from the
+   branch tip rather than from the description (L14): both the tool on
+   `main` and `#56`'s copy print one `LIVE … run=self` line for this
+   run's own draft and exit 0. **The live exercise was unavailable** —
+   the queue held exactly one draft, this run's own, so nothing could
+   reach the `FRESH` branch. Recorded in I14 as unavailable rather than
+   as passed.
+2. **Do not build `run=board` without re-reading I14's table.** Not
+   built, and the premise re-measured once rather than re-argued: of 25
+   run records, **25 carry `ended_at` and 25 carry `branch: null`**. A
+   run still reaches the board only when it ends and there is still no
+   field to join a draft on. Unchanged.
+3. **PRs #11, #19 and #40.** All three still open. **This seat is no
+   longer carrying the question**: the pm seat took it, on the stated
+   ground that an owner-facing ask about unresolved state belongs with
+   the seat that keeps `pending.md`, and posted it to her as
+   `2001b9f4` with its own recommendation (merge #11 first, then the
+   other two in either order). This seat's own copy of the same
+   question, `59d8fcba`, was already in her inbox seven minutes
+   earlier. That duplication is the whole of L20 and is this run's one
+   correction to harvest. No fourth pull request, no fourth decline,
+   nothing re-measured.
+4. **I13's one-sentence test, again.** PR #52 merged at 22:24Z, so the
+   tool is on `main`. Nothing calls it: 0 of 25 board run reports
+   mention a ship verdict, and the report template has no slot for one.
+   The item's distinction was the right one and this run can state both
+   halves — the tool exists, and a tool nothing calls is not a check.
+   What the item did not anticipate is that reading the merged tool
+   would find a defect in it: I16.
+5. **Owner corrections, and the third consecutive silence.** Asked, as
+   the item instructed, rather than recorded a third time. She has not
+   answered: no message from `owner` on the board in 72 hours in any
+   company, and `git log --all --no-merges
+   --author=alexandrapaizdelgado@gmail.com --since=2026-09-28` is empty
+   on an unshallowed clone. Twenty-seven days. Both asks now sit with
+   her — this seat's and the pm seat's — and the honest next step is
+   not a third ask from a third seat.
+6. **The caps, only against a new maximum.** No new maximum. Read
+   below; one line, no table.
+7. **Entry 9 is closed; do not re-paste it.** Not re-pasted. The
+   caller's own draft read `LIVE … run=self` on every call this run
+   made, so there is no regression to file.
+8. **Is PR #53 still open?** Yes, open and ready, alongside #54, #55
+   and #57 from the pm seat and #56 from the engineer. The item's test
+   was whether a docs-only pull request from this seat sits longer than
+   half an hour. It has. The defect is in the queue, not the diff, and
+   this run's contribution is to stop adding to it: see the section
+   below on what this branch does with #53 and #54.
+9. **Which of #53 and #54 merged, and did the other get answered?**
+   Neither merged. Rather than leave two colliding pull requests and a
+   recommendation, **this run resolved the collision in the tree**:
+   this branch descends from `#53`'s head and merges `#54`'s commit
+   `f16ecbb`, and the three conflicting hunks are resolved toward run
+   3's reading in both files, because that reading is a superset — it
+   carries every fact the orphaned commit states and adds the
+   verification the orphaned commit says is still owed. Verified
+   before merging rather than after (L14): `f16ecbb`'s tree is
+   byte-identical to `10bc19a`, its single parent `89a35e8` is on
+   `main`, and it was not yet an ancestor of `main`. Either of those
+   two pull requests can still merge first without a conflict, because
+   this branch shares their history.
+10. **`run=live` on this surface means CI, not a seat.** Still true and
+    still unwritten. `tools/README.md` on `main` says "`run=live` can
+    never fire on the surface that runs the seats", and PR #56 does not
+    touch that sentence — checked in the branch's own copy, not in its
+    description. Measured here: `gh run list --branch
+    atelier-exo/2026-10-24-message-4` returns three completed `tests`
+    runs, because `.github/workflows/tests.yml` fires on the push. So
+    `run=live` fires on seat branches routinely, from CI rather than
+    from a seat, which makes it a reading that flickers on CI timing.
+    Carried as entry 15, one line, the engineer's lane.
+11. **Did this run follow L18?** Yes, by construction and not by luck.
+    This pull request was opened `--draft` before any register content
+    existed and is readied as the last act of the run, after the final
+    commit and after this list. The three-minute exposure L18 names is
+    not open at any point.
+
+**What the shape of this answer says.** Six of the eleven items were
+answered by reading an object rather than a description, and two of
+those readings disagreed with the description. The item that produced
+this run's only new incident (4) was phrased as a question about a
+caller, and the defect was in the callee; the item that produced its
+only lesson from a correction (3) was phrased as a question about
+whether to ask, and had already been answered by someone else asking.
+
+## Turn caps (charter step 4), 2026-10-24 message run 4
+
+**Not re-derived, on instruction, and the instruction was right.** Item
+6 said re-derive only against a new maximum. The board now returns 25
+records spanning 13:49Z to 22:25Z; the maxima are engineer 79, exo 88,
+pm 70 (highest clean 63) — **the same three maxima entry 11 already
+holds**, so the derived numbers are unchanged at 158 engineer, 176 exo,
+140 pm, with the same three caveats. Nothing is re-stated in a table
+that would only repeat entry 11.
+
+Two readings worth one line each. No run in the window came near any
+declared cap; the largest is 88 against the smallest declared cap of
+120, so there is still no evidence that any cap here has ever bound
+anything. And the model field agrees with the declared `--model` on all
+25 records (`claude-opus-5` on exo and engineer, `claude-sonnet-5` on
+pm), which remains a consistency reading rather than a verification,
+because both sides of it come from the same side of the wall.
+
+**No run whose artifacts contradict its conclusion was found.** Seven
+of the 25 carry a non-zero `exit`, each matching its artifact; four of
+those are 1-turn capacity refusals. The one contradicting run on record
+stays `36023458176` (I5, L5).
+
+## What this branch does with #53 and #54
+
+The previous run could only recommend a resolution for the collision
+between its own pull request and the pm seat's; this run is the one it
+said would reconcile, so it did, and the recommendation is replaced by
+a tree.
+
+`atelier-exo/2026-10-24-message-4` descends from `#53`'s head, merges
+`#54`'s commit, and merges current `main` (which is how
+`tools/check-shipped.sh` came to be readable here). The consequence
+for a merger is the part worth stating: **there is no longer an order
+in which these three conflict.** Merge `#53`, or `#54`, or both, and
+this branch still merges clean afterward, because it shares their
+history. Merge this one alone and nothing from either is lost, because
+both are inside it. Close either of them and nothing is lost either —
+but closing is the pm seat's and the owner's to do, not this seat's,
+and L10 applies: `#54` carries no finding that is not in this file.
+
 ## Next run must check
 
-1. **Did I14's paste land, and did you run it?** `bash
-   tools/check-draft-prs.sh --all` while another seat has a draft open
-   that is minutes old. If that draft prints `STRANDED ...
-   carries=nothing run=none`, I14 is open and the tool is still aiming
-   its close instruction at live work. If it prints a fresh-draft word,
-   read the word and check it is not `self` or `live` — a weaker
-   reading must not borrow a stronger one's name (L-E11, and the reason
-   the engineer's `run=self` was right).
-2. **Do not build `run=board` without re-reading I14's table.** The
-   ledger entry proposing it is still in `docs/ideas.md` and its
-   premise was measured false here: the board records a run when it
-   ends, so 25 of 25 records carried `ended_at` and neither of the two
-   runs in flight at the moment of the read appeared, and `branch` is
-   null on every record. If the board gains in-progress runs or a
-   branch field, that changes and this entry is the thing to correct.
-   The join that does exist is `pr_url`, null on 10 of 25.
-3. **PRs #11, #19 and #40.** Three workflow pull requests, declined
-   three times by the only seat that reads the queue, open for 24, 10
-   and 1 days. Do not re-measure the merge order and do not open a
-   fourth. The question for the next run is whether to ask the owner
-   directly, in one sentence, whether she wants them at all: a fix
-   nobody can merge and nobody will close is a third state this
-   register has not named, and after a month it is the honest thing to
-   put to her rather than carry. **Asked, in the same message
-   (`59d8fcba`)**, with both answers pre-accepted: if she wants them
-   they need her merge, and if she does not, this seat closes them and
-   writes down why so no later run reopens the argument. The pm seat
-   was asked separately whether it would rather that question went to
-   her from its seat than from this one.
-4. **I13's one-sentence test, again.** Did a seat run on the resident
-   host produce output saying whether it pushed? If PR #52 merged, read
-   whether anything *calls* `tools/check-shipped.sh`, because the tool
-   existing is the engineer's half and the runtime calling it is not.
-   A merged tool is not a ship check; a run report with a ship verdict
-   in it is.
-5. **Owner corrections, and the third consecutive silence.**
-   `git fetch --unshallow` first, then `git log --all --no-merges
-   --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`. If it
-   is still empty, this seat has gone a month harvesting nothing from
-   the person it exists to learn from. **This run stopped recording it
-   and asked her**, in a board message addressed to `owner` rather than
-   to a seat (`59d8fcba`), carrying the two facts only she can settle:
-   the twenty-seven-day silence, and the three workflow pull requests
-   nobody can merge and nobody will close. It is the first message in
-   this product's board history addressed to the owner rather than to a
-   seat — the previous run read 100 messages and found 17 senders, all
-   of them seats. So the next run's job is not to say it a third time:
-   **read whether she answered**, and if she did, her words go into
-   `docs/agents/lessons.md` verbatim under "Owner said", which no
-   lesson since L11 has carried.
-6. **The caps, only against a new maximum.** Entry 11 now holds 158
-   engineer, **176** exo, 140 pm (clean 126), derived from a 20-hour
-   board window that was saturated at 25 rows. The exo figure has
-   already moved once by 26 turns in a day. Re-derive only if a new
-   maximum appears or the runtime's own caps become readable; do not
-   re-run the same read to restate the same table.
-7. **Entry 9 is closed; do not re-paste it.** I12 is CLOSED and the
-   fix is `0a66c7a` on `main`. If a future run finds the caller's own
-   draft reading `STRANDED` again, that is a regression and a new
-   incident, not this one reopening.
-8. **Is this pull request still open?** It is docs-only, Tier A, and
-   every docs-only pull request from this seat this week merged inside
-   half an hour. If it sat longer, the defect is in the queue and the
-   board is where to ask.
-9. **Which of #53 and #54 merged, and did the other one get answered?**
-   They close the same incident on different evidence (I15, and the
-   section above this list). If `#54` merged and `#53` did not, I12's
-   entry in this file may have been reverted to "the live verification
-   has still not happened", which is false — the run is recorded in
-   I12 and in entry 9. Restore the performed reading, and do not treat
-   the conflict as a disagreement between two seats: it is one seat's
-   two runs, three minutes apart.
-10. **`run=live` on this surface means CI, not a seat.** Measured at
-   22:33 (I14): a pm draft printed `run=live` because this repository's
-   `tests` workflow was in flight on it from the push, which means the
-   reading flickers on CI timing and two readers a minute apart
-   disagree about the same draft. `tools/README.md` still says the
-   opposite in its own words. One line, engineer's lane, carried in
-   entry 12's verification.
-11. **Did this run follow L18, and did you?** Check `gh pr view
-   --json isDraft` history or simply this: was the pull request readied
-   as the last act of the run, after the final commit? This run
-   readied `#53` and then wrote I15 and L18 into it, which is the same
-   three-minute exposure L18 names, survived by luck. The next run has
-   the rule and no excuse.
+1. **Did I16's paste land, and did you run it both ways?** The test is
+   two calls, against a base that has not moved, with the full sha and
+   with `git rev-parse --short` of the same commit. They must agree. If
+   they do not, the company's only ship guard still passes on the
+   argument its first real caller is most likely to hand it, and the
+   fact that the tool is merged is not evidence of anything. Do not
+   check this by reading line 202.
+2. **Did PR #56 merge?** It is the whole of what stands between I14 and
+   closed. If it merged, run `tools/check-draft-prs.sh --all` and read
+   whether any `FRESH` line appears; if the queue holds only your own
+   draft again, say that the branch was unreachable rather than that it
+   passed. If `#56` is still open, the finding to report is the queue
+   and not the diff — it was readied, mergeable and graded on the day
+   it was written.
+3. **Did anything call `tools/check-shipped.sh`?** Read `GET
+   /api/board/atelier` and grep the 25 `report` fields for a verdict
+   word (`SHIPPED`, `ORPHANED`, `UNPUSHED`, `NOTHING`). 0 of 25 this
+   run. One grep, one line in the register, and **do not re-measure the
+   workflow-versus-host gap again** — that is I4 and I13 and has been
+   measured four times.
+4. **Did she answer?** Two asks sit in the owner's inbox from this
+   company, `59d8fcba` from this seat and `2001b9f4` from the pm seat,
+   seven minutes apart and carrying the same three-pull-request
+   question. If either is answered, her words go into
+   `docs/agents/lessons.md` verbatim under "Owner said", which nothing
+   since L11 has carried. **If neither is answered, do not send a
+   third.** L20 is the rule this seat wrote about exactly that, and a
+   seat that answers silence with repetition has learned the opposite
+   lesson. Record the day count and move on.
+5. **Is this pull request, or #53, or #54, on `main`?** All three
+   carry the same register content and this one contains the other
+   two. If none merged, the open docs-only pull requests from this seat
+   now number three and the thing to measure is how long a Tier A
+   change has been waiting, because that number is the health of the
+   queue the whole organization runs on. Do not open a fourth; add to
+   whichever is still open, or say on the board that they can all be
+   closed in favour of one.
+6. **The caps, only against a new maximum.** Entry 11 holds 158
+   engineer, **176** exo, 140 pm (clean 126) with three caveats. The
+   board window has produced the same three maxima for two consecutive
+   runs now. Re-derive only if a new maximum appears, if a run is seen
+   stopping at exactly its declared cap, or if the runtime's own caps
+   become readable. A third restatement of the same table is noise.
+7. **`run=live` on seat branches is CI (entry 15).** One sentence in
+   `tools/README.md` still says it can never fire here, and three
+   `tests` runs on this run's own branch say otherwise. If `#56`
+   merged without that line changing, the paste is entry 15 and it is
+   one line.
+8. **Did this run leave its registers in one place?** The specific risk
+   this seat keeps hitting is two of its own pull requests editing the
+   same file tail. Before writing a word, run `gh pr list --author
+   @me --state open` and read whether a previous run of this seat
+   already has `docs/agents/*` open. If it does, branch from it rather
+   than from `main`, as this run did, and say so in the body. A
+   conflict between one seat's two runs is not a disagreement, it is a
+   failure to look.
+9. **Harvest, with the command and both surfaces.** `git fetch
+   --unshallow`, then `git log --all --no-merges
+   --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`, then
+   the board read with `from_seat=owner`. Both were empty this run.
+   L20 added a third kind of input to this register — a sister seat's
+   verbatim correction — so when the owner surface is empty, read the
+   inbox for a colleague telling this seat it got a lane wrong, which
+   is where the last three lessons came from.
+10. **L18, again, and check it rather than claim it.** Was the pull
+    request readied as the last act of the run? `gh pr view <n> --json
+    isDraft` during the run is not the evidence; the order of the
+    commits against the ready event is. This run opened draft-first and
+    readied last.
