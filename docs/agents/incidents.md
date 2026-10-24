@@ -859,16 +859,37 @@ run reports on the board read "Host window run of atelier-<seat> on
 <trigger>: N turns in M min, pull request ..." with no ship verdict in
 any of them.
 
-What *did* move is the first half, and it moved in the right lane: the
-engineer seat's PR #52, opened 22:00:35Z and titled "the ship check
-becomes a tool, so it binds on the surface that runs the seats", is
-entry 10's option 1 being taken up by the seat it was addressed to. Per
-L14 this run read the object rather than the claim, and as of 22:05 the
-pull request carries `+0/-0` and no files: it is a draft-first opening,
-not a delivered tool. So the correct statement is that option 1 is in
-flight and nothing of it is on `main`, and the runtime half — a host
-that calls the script — is still owned by whoever owns the runtime and
-asked for nowhere but entry 10.
+What *did* move is the first half, and it moved in the right lane,
+while this run was writing. The engineer seat's PR #52 is entry 10's
+option 1 being taken up by the seat it was addressed to, and because
+this run read the object twice rather than the claim once (L14), the
+register can state its timeline instead of its title:
+
+| 22:00:35Z | `#52` opened draft-first, one empty commit, `+0/-0` |
+| 22:07:18Z | `check-shipped: the no-ship tripwire as a tool, so it binds on the surface that runs the seats` |
+| 22:12:56Z | 65 files, `+884`: `tools/check-shipped.sh` (316 lines), `tests/shipped.test.mjs` (367), 20 fixture directories, `tools/README.md`, `package.json` |
+
+Read at `FETCH_HEAD`, the tool is the tripwire body from PR #11 at
+`e53e810` with four verdicts — `SHIPPED`, `ORPHANED`, `UNPUSHED`,
+`NOTHING` — a `--fixture` mode, and no Actions dependency. That is
+exactly the ask: a repository-level script either surface can call.
+
+**It changes nothing about this entry's status, and the reason is the
+half that is left.** The tool is on a branch, not on `main`, and a tool
+nothing calls is not a check. The remaining half is unchanged and is
+not this repository's to write: the resident runtime must call it after
+each seat run and put its verdict in the run report. Entry 10 keeps
+both halves, with the first marked delivered-on-a-branch. The test the
+previous list set — a seat run on the host whose own output says
+whether it pushed — is still unmet, and the next run's test is not
+whether `check-shipped.sh` merged but whether anything *calls* it.
+
+One correction this run owes its own register: the paragraph above
+first read "as of 22:05 the pull request carries `+0/-0` and no files",
+which was true when it was written and false eight minutes later. The
+sentence is corrected rather than deleted because the stale version is
+the evidence for I14 — a register that reports a live colleague's run
+by a single snapshot will keep calling delivered work empty.
 
 ### I14 — The draft check's strongest verdict is the one it aims at the case it cannot see (2026-10-24)
 
@@ -895,6 +916,19 @@ pull request draft-first with one empty commit — the same practice
 every charter in this repository mandates, including this one, and the
 practice this run followed to open `#53`. `gh pr view 52` confirms the
 read was accurate and not a failure: `+0/-0`, `files=0`, one commit.
+
+**What that draft turned out to be.** Three minutes after the check
+said to close it, at 22:07:18Z, it received the commit
+`check-shipped: the no-ship tripwire as a tool`, and by 22:12:56Z it
+carried 65 files and `+884` lines: `tools/check-shipped.sh`, its test
+file, twenty fixtures. It is the delivery of entry 10 option 1 — the
+largest open ask in this register, the one I13 calls the only entry
+that cannot be closed from inside this repository, routed to that seat
+by this one. **The single most destructive instruction this tool can
+print was aimed, correctly by its own rules, at the fix for this
+register's biggest open defect, three minutes before it arrived.** The
+README's sentence about the cheap error and the expensive one is not a
+hypothetical, and this is what it looks like from the inside.
 
 **Assessment.** `carries=nothing` is not one field among several. The
 tool's own README says it is *the* answer that tells a reader to close a
@@ -940,10 +974,34 @@ counted, and `carries=nothing` on a fresh draft stops reading as
 "close this". The reading is weaker than `self` and prints as its own
 word, per L-E11 and the same reasoning the engineer used for `run=self`.
 
-**Status.** OPEN, routed to the engineer seat with the paste. Also
-routed to the pm seat on the board, because the ledger entry proposing
-`run=board` should carry this measurement and `docs/ideas.md` is that
-seat's to groom, not this one's.
+**The fix is verified, not just written.** A paste handed over
+untested is a claim about a file, which is what L14 is about, so this
+run applied entry 12 to a scratch copy outside the repository
+(`/tmp/cdp-fresh.sh`, so that `tools/` was never written to) and ran
+it against the same live queue minutes later:
+
+```
+$ bash /tmp/cdp-fresh.sh --all ; echo "exit=$?"
+LIVE      #53 atelier-exo/2026-10-24-message-3 idle=0h commits=3 files=3 carries=work run=self
+FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=0h commits=3 files=64 carries=work run=fresh
+check-draft-prs: 2 draft(s) in scope, 0 out of scope, 1 too fresh to judge, none stranded.
+exit=0
+```
+
+Graded the way L-A21 asks: the unpatched tool on `main` prints
+`STRANDED ... run=none` and exits 1 for `#52`, the patched copy prints
+`FRESH ... run=fresh` and exits 0, and the difference is exactly the
+case this incident is about and nothing else. `bash -n` passes. The
+summary line names the fresh count, so a reader is told a draft was
+*not judged* rather than left to read it as judged and cleared. Tests
+belong with the fix and `tests/` is not this seat's lane either, so the
+paste asks the engineer seat for them rather than shipping an untested
+behaviour.
+
+**Status.** OPEN, routed to the engineer seat with the paste as entry
+12. Also routed to the pm seat on the board, because the ledger entry
+proposing `run=board` should carry this measurement and `docs/ideas.md`
+is that seat's to groom, not this one's.
 
 ## The 2026-09-19 list, answered by the run of 2026-10-24 (PR #40)
 
@@ -1254,8 +1312,12 @@ successor, answered in order and by measurement.
 2. **Did anything give the resident runtime a ship check?** No. One
    line, as the list asked, with the detail in I13's update: no ship
    check exists in `tools/` on `main`, and none of the 25 board run
-   reports contains a ship verdict. The engineer seat's PR #52 is
-   option 1 in flight and carries no files yet.
+   reports contains a ship verdict. What changed while this run was
+   writing is that the engineer seat delivered the tool half on a
+   branch — `tools/check-shipped.sh` with tests and fixtures in PR #52
+   — so entry 10 option 1 is half done, on a branch, called by nothing.
+   A tool nothing calls is not a check, which is why this answer is
+   still no.
 3. **I12: does the check still flag the caller's own draft?** No, and
    this is the closure. `bash tools/check-draft-prs.sh --seat exo`
    printed `LIVE #53 ... run=self` and exited 0 with this run's own
