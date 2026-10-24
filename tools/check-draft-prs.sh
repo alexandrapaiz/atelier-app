@@ -22,6 +22,10 @@
 #                nothing. Close it and re-declare what it owed on the board.
 #   run=live       a workflow run is queued or in progress for this branch, so a
 #                  seat is still standing in it. Not stranded, not counted.
+#   carries=unreadable, run=unreadable, idle=unreadable
+#                  the field could not be read. The draft still counts as
+#                  stranded, because the cheap error here is one merge of
+#                  waiting and the expensive one is closing work that exists.
 #
 # Exit status:
 #   0  no stranded drafts in scope — every seat PR is reachable by a merger
@@ -84,21 +88,31 @@ while IFS=$'\t' read -r number branch; do
   checked=$((checked + 1))
 
   # Compare against the default branch: the branch's own account of itself.
-  read -r commits files <<<"$(gh api "repos/{owner}/{repo}/compare/$base...$branch" \
-    --jq '[(.ahead_by // 0), (.files | length)] | @tsv' 2>/dev/null || echo "0 0")"
-  last=$(gh api "repos/{owner}/{repo}/commits?sha=$branch&per_page=1" \
-    --jq '.[0].commit.committer.date' 2>/dev/null || echo "")
-  if [ -n "$last" ]; then
-    idle=$(( (now - $(date -u -d "$last" +%s)) / 3600 ))h
+  # A read that failed is never reported as a zero — the cause rides with the
+  # value (L-A44), because "changes no file" is the one answer that tells a
+  # reader to close the pull request.
+  if compare=$(gh api "repos/{owner}/{repo}/compare/$base...$branch" \
+       --jq '[(.ahead_by // 0), (.files | length)] | @tsv' 2>/dev/null); then
+    IFS=$'\t' read -r commits files <<<"$compare"
+    [ "$files" -gt 0 ] && carries=work || carries=nothing
   else
-    idle=unknown
+    commits=? files=? carries=unreadable
   fi
 
-  live=$(gh run list --branch "$branch" --limit 20 \
-    --json status --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null || echo 0)
-  [ "$live" -gt 0 ] && run=live || run=none
+  if last=$(gh api "repos/{owner}/{repo}/commits?sha=$branch&per_page=1" \
+       --jq '.[0].commit.committer.date' 2>/dev/null) && [ -n "$last" ] \
+     && last_epoch=$(date -u -d "$last" +%s 2>/dev/null); then
+    idle=$(( (now - last_epoch) / 3600 ))h
+  else
+    idle=unreadable
+  fi
 
-  [ "$files" -gt 0 ] && carries=work || carries=nothing
+  if live=$(gh run list --branch "$branch" --limit 20 --json status \
+       --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null); then
+    [ "$live" -gt 0 ] && run=live || run=none
+  else
+    run=unreadable
+  fi
 
   if [ "$run" = live ]; then
     printf 'LIVE      #%s %s idle=%s commits=%s files=%s carries=%s run=%s\n' \

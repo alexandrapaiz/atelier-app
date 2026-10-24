@@ -16,3 +16,9 @@ field meanings with `--help`.
 
 A draft whose branch is carrying a run right now prints `LIVE` and is not
 counted: that is the run you are standing in, not a stranded one.
+
+A field the check could not read prints `unreadable` rather than a zero, and
+the draft still counts as stranded (L-A44: the cause rides with the value).
+`carries=nothing` is the one answer that tells a reader to close a pull
+request, so a failed read must never be able to produce it. The cheap error
+here is one merge of waiting; the expensive one is closing work that exists.
