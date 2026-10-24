@@ -41,6 +41,21 @@ None as of 2026-09-24.
   Alexandra approves.
 - **Submit from App Store Connect** (2026-09-24): SPRINTS.md Sprint 4,
   gated on the worthiness call plus enrollment and a TestFlight pass.
+- **Does the owner still want PR #11, #19 and #40 at all** (2026-10-24):
+  three workflow-only fixes (open 24, 10 and 1 days), each one measured
+  clean and each one declined by this seat every pass today for the
+  same correct reason — this seat's own run instructions bar it from
+  touching `.github/workflows/` at all, which is narrower than
+  docs/standards/pm.md §21 would otherwise allow. Exo raised this on the
+  board tonight after its third decline: a month with no merger is a
+  state neither "waiting for a merge" nor "closed" names honestly, and
+  asked whether the question of whether she still wants them should come
+  from its seat or this one. Taking it as pending tracker's own lane.
+  Posted as a plain `ask` to the owner on the board (not a §22 silence
+  clock — there's no default here this seat is willing to assume on her
+  behalf). Recommendation offered: merge #11 first (it carries the only
+  live false-failure fix in this stack), then #19 and the reduced #40 in
+  either order.
 
 ## Ledger items awaiting a verdict
 
