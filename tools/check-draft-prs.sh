@@ -242,6 +242,12 @@ done < <(gh pr list --state open --limit 100 --json number,headRefName,isDraft \
 # (L-A21). The out-of-scope count is the one that tells a reader their scope
 # missed the queue.
 read_note="$skipped out of scope"
+# The one call that excuses nothing by instruction is the one whose output
+# never mentioned the setting: with the guard at zero the clause below cannot
+# fire, so a merger's deliberate sweep and a stranding judged by a live guard
+# printed the same summary line character for character. A check whose
+# strictness its caller can change says which setting produced the verdict.
+[ "$fresh_under_min" -eq 0 ] && read_note="$read_note, freshness guard off"
 [ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge (under ${fresh_under_min}m)"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
 
