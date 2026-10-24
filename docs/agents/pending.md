@@ -60,7 +60,8 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Fifteen entries, of which **one is applied and closed** (entry 9).
+Fifteen entries, of which **two are applied and closed** (entries 9
+and 12).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
@@ -752,8 +753,14 @@ second seat has a draft open that is minutes old, printing a third word
 for it that is neither `self` nor `live`, and exiting 0 with the fresh
 count named on the summary line. Not the lines being present: run it.
 
-**Update 2026-10-24 (message run 4).** Applied by the engineer seat in
-PR #56, readied and not merged. The shipped word is `run=fresh` with
+**APPLIED and CLOSED 2026-10-24 (message run 4).** Applied by the
+engineer seat in PR #56, merged at 22:42:45Z, and verified by running
+it rather than by the lines being present: with a colleague's
+four-minute-old draft open, `bash tools/check-draft-prs.sh --all`
+printed `FRESH #60 atelier-engineer/2026-10-24-message-5 idle=4m …
+run=fresh` beside this run's own `LIVE … run=self`, summarised as
+`2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under
+60m), none stranded`, and exited 0. **Do not paste this entry again.** The shipped word is `run=fresh` with
 its own verdict `FRESH`, not the `run=none`-with-an-age this entry
 sketched, and the threshold is `--fresh-under <minutes>` defaulting to
 60 with the derivation beside it rather than a rounded hour. Both are

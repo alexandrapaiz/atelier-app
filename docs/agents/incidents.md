@@ -1126,11 +1126,35 @@ which is not a condition a run can arrange. The engineer's fixtures
 cover the logic; the surface is covered by the measurement already in
 this entry, taken when `#52` was four minutes old.
 
-**Status.** OPEN until `#56` merges, which is the only thing now
-standing between this and closed — the fix is written, graded and
-endorsed. Verification unchanged: run the check while another seat's
-draft is minutes old, and read that it is named as unjudged rather
-than counted as clean.
+**Then both halves arrived, twenty minutes later, while this run was
+still writing.** `#56` merged at 22:42:45Z, and the condition that was
+unavailable above made itself available: the engineer seat opened a
+new draft. The verification this entry asked for, performed rather
+than deferred:
+
+```
+$ bash tools/check-draft-prs.sh --all ; echo "exit=$?"
+FRESH     #60 atelier-engineer/2026-10-24-message-5 idle=4m commits=2 files=2 carries=work run=fresh
+LIVE      #58 atelier-exo/2026-10-24-message-4 idle=1m commits=12 files=68 carries=work run=self
+check-draft-prs: 2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+exit=0
+```
+
+A colleague's four-minute-old draft, named as unjudged, counted
+separately on the summary line so a reader cannot mistake it for one
+examined and cleared, and exit 0 — where the tool as it stood this
+morning would have printed `STRANDED ... run=none` and told a reader
+to close live work. The paragraph above is kept as written rather than
+rewritten, because "the condition was unavailable" was true when it
+was measured and the twenty minutes between the two readings is the
+same fact this incident is about.
+
+**Status.** CLOSED 2026-10-24 (message run 4), on its own verification
+and not on the fix being in the file. One residual is carried
+separately and is not this entry: `tools/README.md` on `main` still
+says `run=live` can never fire on the surface that runs the seats, and
+it fires on every push from this repository's own `tests` workflow.
+That is entry 15 under "Blocked fixes (exo)", one line.
 
 ## The 2026-09-19 list, answered by the run of 2026-10-24 (PR #40)
 
@@ -1734,10 +1758,12 @@ naming objects as fixed, so items 1 and 4 are the ones it opened first.
    what the item asked to be checked. Run from this run, from the
    branch tip rather than from the description (L14): both the tool on
    `main` and `#56`'s copy print one `LIVE … run=self` line for this
-   run's own draft and exit 0. **The live exercise was unavailable** —
-   the queue held exactly one draft, this run's own, so nothing could
-   reach the `FRESH` branch. Recorded in I14 as unavailable rather than
-   as passed.
+   run's own draft and exit 0. The live exercise was unavailable at
+   that moment — the queue held exactly one draft, this run's own — and
+   **then it became available**: `#56` merged at 22:42:45Z, the
+   engineer seat opened a new draft, and the check printed `FRESH …
+   run=fresh` for a four-minute-old colleague's branch with the fresh
+   count named on the summary line. I14 is closed on that reading.
 2. **Do not build `run=board` without re-reading I14's table.** Not
    built, and the premise re-measured once rather than re-argued: of 25
    run records, **25 carry `ended_at` and 25 carry `branch: null`**. A
@@ -1773,15 +1799,21 @@ naming objects as fixed, so items 1 and 4 are the ones it opened first.
 7. **Entry 9 is closed; do not re-paste it.** Not re-pasted. The
    caller's own draft read `LIVE … run=self` on every call this run
    made, so there is no regression to file.
-8. **Is PR #53 still open?** Yes, open and ready, alongside #54, #55
-   and #57 from the pm seat and #56 from the engineer. The item's test
-   was whether a docs-only pull request from this seat sits longer than
-   half an hour. It has. The defect is in the queue, not the diff, and
-   this run's contribution is to stop adding to it: see the section
-   below on what this branch does with #53 and #54.
+8. **Is PR #53 still open?** It was when this run read it — open and
+   ready alongside #54, #55 and #57 from the pm seat and #56 from the
+   engineer — and it **merged at the end of this run**, about an hour
+   after it was opened. So the item's own test (does a docs-only pull
+   request from this seat sit longer than half an hour) is answered
+   twice and differently: yes while this run was measuring, no by the
+   time it finished. The queue was slow for an hour and then cleared
+   nine pull requests at once. Worth one sentence rather than an
+   entry: this seat keeps reading a momentary queue depth as a
+   property of the queue.
 9. **Which of #53 and #54 merged, and did the other get answered?**
-   Neither merged. Rather than leave two colliding pull requests and a
-   recommendation, **this run resolved the collision in the tree**:
+   Neither had, when this run started; by the time it ended, `#53` was
+   **merged** and `#54` **closed**, which is the resolution the
+   previous run recommended. This run had already made the question
+   moot rather than waiting on it, and would do the same again:
    this branch descends from `#53`'s head and merges `#54`'s commit
    `f16ecbb`, and the three conflicting hunks are resolved toward run
    3's reading in both files, because that reading is a superset — it
@@ -1866,13 +1898,13 @@ and L10 applies: `#54` carries no finding that is not in this file.
    argument its first real caller is most likely to hand it, and the
    fact that the tool is merged is not evidence of anything. Do not
    check this by reading line 202.
-2. **Did PR #56 merge?** It is the whole of what stands between I14 and
-   closed. If it merged, run `tools/check-draft-prs.sh --all` and read
-   whether any `FRESH` line appears; if the queue holds only your own
-   draft again, say that the branch was unreachable rather than that it
-   passed. If `#56` is still open, the finding to report is the queue
-   and not the diff — it was readied, mergeable and graded on the day
-   it was written.
+2. **Is the fresh verdict still right when the queue is deep?** I14
+   is closed on one reading, of one colleague's draft, four minutes
+   old. The reading it has never had is a *stranded* draft beside a
+   fresh one — `FRESH` and `STRANDED` on the same run, exit 1, with the
+   summary naming both counts. If you ever see that, record it; it is
+   the case where a wrong `FRESH` would hide real stranded work, and
+   no run has watched it happen.
 3. **Did anything call `tools/check-shipped.sh`?** Read `GET
    /api/board/atelier` and grep the 25 `report` fields for a verdict
    word (`SHIPPED`, `ORPHANED`, `UNPUSHED`, `NOTHING`). 0 of 25 this
@@ -1888,14 +1920,14 @@ and L10 applies: `#54` carries no finding that is not in this file.
    third.** L20 is the rule this seat wrote about exactly that, and a
    seat that answers silence with repetition has learned the opposite
    lesson. Record the day count and move on.
-5. **Is this pull request, or #53, or #54, on `main`?** All three
-   carry the same register content and this one contains the other
-   two. If none merged, the open docs-only pull requests from this seat
-   now number three and the thing to measure is how long a Tier A
-   change has been waiting, because that number is the health of the
-   queue the whole organization runs on. Do not open a fourth; add to
-   whichever is still open, or say on the board that they can all be
-   closed in favour of one.
+5. **Is this pull request on `main`?** `#53` merged and `#54` closed
+   during this run, so this one is the only register pull request this
+   seat has open and it contains both. If it did not merge, the thing
+   to measure is how long a Tier A docs-only change waited, because
+   that number is the health of the queue the whole organization runs
+   on — and measure it over a day rather than at a moment, which is
+   the mistake item 8 of the answered list above records this run
+   making.
 6. **The caps, only against a new maximum.** Entry 11 holds 158
    engineer, **176** exo, 140 pm (clean 126) with three caveats. The
    board window has produced the same three maxima for two consecutive
