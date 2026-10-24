@@ -169,8 +169,10 @@ rejected / built / urgent; only the owner moves proposed.
 
 ### 2026-10-24 — The board read is capped at 25 runs and says nothing about it
 - Trigger: `GET /api/board/<company>` returned exactly 25 runs for four of the
-  five portfolio companies on 2026-10-24, 11 for this one, and carries no field
-  saying it truncated. Any query string on that route answers 404, so a wider
+  five portfolio companies when read at 2026-10-24T18:50Z, and 18 for this one,
+  and carries no field saying it truncated. The count for this product moves
+  inside a run window — it read 11 at 18:20 and 18 thirty minutes later — so
+  every reading of that route is quoted here with the time it was taken (L-A64). Any query string on that route answers 404, so a wider
   window cannot be asked for. A caller that parses an error body for `runs`
   reads zero runs, which is how this seat first mistook the cap for an empty one
 - What: the same defect the company already fixed for `GET /api/messages`, which
@@ -180,5 +182,28 @@ rejected / built / urgent; only the owner moves proposed.
   what this product's check now prints as `board_window_from=`
 - First step: HQ's runtime again, and the rule it is an instance of is already
   law there, so this is one line of evidence rather than a new argument
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — The check that tells a reader to close a pull request is the one with no test
+- Trigger: giving `check-seat-surface.sh` a fixture mode took about twenty
+  minutes and immediately earned itself, because it is the only way to produce
+  that command's `AGREE` at all — the live portfolio has every seat of all five
+  companies running on the resident host, so the clean verdict is unreachable
+  and the 3-of-3 `ELSEWHERE` it reports was, until the fixtures existed, as
+  easily the instrument as the company. `tools/check-draft-prs.sh` sits beside
+  it on `main` with neither a fixture mode nor a single test
+- What: that command's own README says `carries=nothing` "is the one answer that
+  tells a reader to close a pull request, so a failed read must never be able to
+  produce it", and nothing anywhere asserts that it cannot. Its decision table
+  has the same shape as its neighbour's — `LIVE` against stranded, a read that
+  failed against a read that came back empty — and the same shape of consequence
+  if a branch of it is wrong, except worse: the wrong answer here destroys work
+  rather than mis-grading a surface. Both commands take only readings, so both
+  are cheap to drive from files
+- First step: the same `--fixture DIR` convention, the same
+  `tests/fixtures/<tool>/<case>/` layout, and a case for `carries=nothing`
+  reached from a failed read, which is the one that must be impossible. One
+  session, this seat's own lane, no new dependency
 - Cost: $0
 - Status: proposed

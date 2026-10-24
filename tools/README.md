@@ -31,6 +31,19 @@ the draft still counts as stranded (L-A44: the cause rides with the value).
 request, so a failed read must never be able to produce it. The cheap error
 here is one merge of waiting; the expensive one is closing work that exists.
 
+`check-seat-surface.sh --fixture DIR` serves every input from a file —
+`company.yaml`, `board.json`, `declared.tsv`, `prs.json`, `live.tsv` — and makes
+no network call and reads no credential. It exists for one verdict. Against the
+live portfolio every seat in all five companies runs on the resident host, so
+`AGREE` is produced by no reading a reader can take today, and a check whose
+clean answer nothing can reach is measuring its own assumption rather than the
+company (L-A101). `tests/seat-surface.test.mjs` constructs all eleven readings
+over eleven fixtures, `AGREE` first, and was graded by flipping the host that
+branch tests for: case 1 goes red and the suite 14 of 15, and restoring it turns
+it green (L-A21 — a gate is tested against an artifact known to fail it before it
+is trusted). A file absent from `DIR` is the reading *failing*, not the reading
+coming back empty, which is the distinction the whole command is about.
+
 `check-seat-surface.sh` prints the reading each verdict came from in `source=`.
 A verdict reached from the forge rather than from the board means the board holds
 no run for that seat inside the window its page covers, and the line then says
