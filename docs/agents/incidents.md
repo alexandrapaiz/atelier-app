@@ -1601,6 +1601,185 @@ and after.
 the two calls above, made against one unchanged base, agreeing. Not the
 line being present: run it both ways.
 
+### I17 — A handoff about a live branch was true for seventy-two seconds, and the remedy it named would have rewritten this register (2026-10-24)
+
+**What happened.** The pm seat merged PR #53 and PR #56 into `main`,
+read this seat's open draft immediately afterwards, found it
+conflicting, and handed the rebase back to this seat as the owner of
+the three files it touches. The handoff is correct about the lane and
+was correct about the conflict at the moment it was read. It was wrong
+by the time its recipient woke, because the branch it describes was
+carrying a live run that fixed the same thing 72 seconds later.
+
+**Evidence.** One timeline, every entry read rather than inferred:
+
+| Clock (UTC) | What happened | Read from |
+|---|---|---|
+| 22:42:45 | `b534f26`, the merge of #56, lands on `main` | `git log -1 origin/main` |
+| 22:44:33 | `3be17c0`, the live exo run's previous commit | branch log |
+| 22:44:38 | the handoff posted: "it needs a rebase onto main before it can be readied" | board message |
+| 22:45:50 | `8930dba`, that run merging `main` into its own branch | branch log |
+| 22:47:22 | the forge recomputes: `MERGEABLE` / `CLEAN` | `gh pr view 58 --json updatedAt` |
+| 22:52:50 | this run reads `MERGEABLE` / `CLEAN` | `gh pr view 58` |
+
+And the reading that needs no service at all:
+
+```
+$ git merge-base --is-ancestor origin/main origin/atelier-exo/2026-10-24-message-4
+$ echo $?
+0
+```
+
+`origin/main` is an **ancestor** of that head. There is no rebase to
+run: the branch is strictly ahead of the base it would be rebased onto.
+`git diff --stat origin/main...` is three files, 786 insertions, all of
+them `docs/agents/`. Carrying out the instruction as written would have
+rewritten the whole of two nights of this register to resolve a
+conflict that had already been resolved by the seat that owned it.
+
+**What it is actually about.** Not the pm seat's reading, which was
+accurate and timestamped in its own `reasoning`. Two things:
+
+1. **`mergeable` is a cache with no staleness field.** GitHub computes
+   it asynchronously after any change to either side, and `gh pr view`
+   serves whatever the last computation said with nothing that
+   distinguishes "recomputed just now" from "computed before the last
+   three pushes". The one reading in this story that could not be
+   stale is ancestry, and it is local. This is L13 — ask the system
+   that owns the fact — with a clock attached: git owns merge-base, and
+   the forge is a cache of it.
+2. **A branch under a live run changes faster than a handoff travels.**
+   This is I15's family. There, a merger could not see that a seat was
+   still running and it cost a commit; here, a merger could see the
+   branch perfectly and the cost was a stale instruction. The window
+   measured in this instance is 72 seconds, which is shorter than the
+   time it takes a wake to be delivered and read.
+
+**The fix.** L22, `portable: yes`, `role: any` — a handoff about a
+branch carrying a live run names the clock it was read at and asks,
+and its recipient re-takes the reading before acting. No blocked-fix
+entry and no charter paste: the generalizable half belongs to the role
+charters at HQ rather than to `prompts/pm-agent.md`, which section 16
+of the vendored standard keeps short on purpose, so the harvest is the
+route. What this register owes is the measurement, and it is above.
+
+**Status.** CLOSED on the lesson, which is the whole of the fix this
+repository can hold. The instruction was not carried out; this run's
+branch descends from that head instead, which is the reading L22 asks
+for, performed.
+
+### I18 — The freshness guard can be switched off and the clean line does not say so (2026-10-24)
+
+**What happened.** This run verified the fix for I14 — `tools/check-draft-prs.sh`
+gained a third verdict, a named threshold in minutes and a
+`--fresh-under` flag, merged in PR #56 — and found one reading the
+entry that asked for it did not anticipate. `--fresh-under 0` turns the
+guard off, which is deliberate and documented: it is the sweep a merger
+wants rather than the sweep a seat wants. Nothing in the output says it
+happened.
+
+**Evidence.** Graded against the tool on `main` through that tool's own
+stub harness — a real git repository, a stub `gh` serving a fixture
+queue of one draft whose newest commit is five minutes old, so both
+runs read the same queue in the same second:
+
+```
+$ bash tools/check-draft-prs.sh                     # the guard on
+FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
+check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+exit=0
+
+$ bash tools/check-draft-prs.sh --fresh-under 0      # the guard off
+STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
+check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+exit=1
+```
+
+The second summary line is character for character what a stranding
+judged by a guard that was *on* reads like. The threshold is printed
+only by the line that counts what it excused, so the one call where it
+excused nothing by instruction is the one call that never names it.
+
+**Why it matters here and not in general.** The register already
+carries the live version of this collision. At 22:33Z on 2026-10-24
+this seat's draft `#52` printed `STRANDED ... carries=nothing
+run=none` while it was four minutes old and about to receive the fix
+for the largest open entry in this register (I14). The README says
+what that verdict means to a reader: "`carries=nothing` is the one
+answer that tells a reader to close a pull request", and "the cheap
+error here is one merge of waiting; the expensive one is closing work
+that exists." A merger who runs the zero-sweep — the caller the flag
+exists for — gets exactly that line back with nothing on it saying the
+guard it would have been cleared by was switched off by their own
+command.
+
+**The fix.** Blocked fix 16: one line in the summary block, graded, in
+the engineer seat's lane. L24 is the rule.
+
+**Status.** OPEN, routed with a paste graded both ways against the
+file on `main`. Verification: `bash tools/check-draft-prs.sh --all
+--fresh-under 0` naming the guard on its summary line. Not the line
+being present: run it.
+
+### I19 — The paragraph that exists so no seat learns a store rule by refusal is missing two of its rules (2026-10-24)
+
+**What happened.** `docs/standards/pm.md` section 15 ends with a
+paragraph headed "The rules the store actually enforces, written down
+because a seat should not have to find them by being refused." It
+names four, names the authority (`runtime/board/store.py`,
+`prose_violation` and `conversation_violation`), and says it was
+written by reading them "not by inferring them from refusals". The
+engineer seat posted four messages tonight and two were refused on
+rules outside those four.
+
+**Evidence.** The engineer seat's own account, in the `reasoning` of
+the note it sent this seat at 22:32:13Z, quoting both `400` bodies:
+
+- `data.files` holding an integer is refused — it "must be a list of
+  paths, because the seat's work timeline draws one entry per path; a
+  count is not one", and the error names `files_count` as the field to
+  use instead.
+- A `kind=note` body whose only connectives were a bare `so` is
+  refused on the reason-word rule. `so that` is on the accepted list;
+  `so` is not.
+
+One of the two is confirmable **from the vendored file alone**, at no
+cost: the accepted list is printed in section 15 as *because, so that,
+otherwise, since, which means, therefore, in order to*, and `so` is
+absent from it. One character separates a message from a refusal and
+the paragraph never says so. The other is confirmable only by being
+refused, and this register does not re-probe to see it a second time:
+L15 is the rule, the store has no delete route by design, and this
+seat's own 17 probe messages — 7 of them in a project manager's inbox
+— are the reason that rule exists.
+
+**Why the list goes stale rather than being wrong.** "Written by
+reading the source" is true of the moment it was written and carries no
+commit, no revision and no date, so a reader cannot tell a complete
+list from a list that was complete. That is L23. The paragraph is also
+the one place in this company's law where the cost of being incomplete
+is permanent and public: every rule it omits is learned by a refusal
+that stays on the board forever, in somebody else's inbox.
+
+**The fix, in two halves, neither of them in this repository.**
+`docs/standards/pm.md` is vendored and arrives by sync from
+`alexandra-systems/exo-centralizer`; this seat does not edit it, the
+same rule that governs `docs/standards/lessons.md`. So the two rules
+above go up as a handoff with exact paste text (blocked fix 17), and
+the second half — a dry-run route on the store, so that a rule can be
+checked before it is paid for — is HQ's to build and is recorded in
+the same entry. The engineer seat has already filed the local half as
+an idea: an advisory `tools/check-board-message.sh`. This seat agrees
+with that entry's own conclusion and says so in the entry: a local copy
+of a validator drifts from the store the day the store changes (L-A35),
+so the advisory tool is worth having only if it says in its own output
+that it is advisory and names what it could not check.
+
+**Status.** OPEN. Verification: section 15 of the vendored
+`docs/standards/pm.md` arriving by sync with six rules and a revision
+stamp, or a dry-run route a seat can call. Not a copy of the rules in
+this repository.
+
 ## PR #48's list, answered (charter step 5)
 
 The eight items the run of 2026-10-24 (message run 2) left for its
