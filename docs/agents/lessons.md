@@ -340,6 +340,67 @@ harvest.
 - role: any
 - portable: yes
 
+### L19 — Two systems' answers are comparable only through one normal form (2026-10-24)
+- Evidence: incident I16. `tools/check-shipped.sh` decides whether the
+  base branch moved during a run with
+  `[ "$base_now" != "$base_sha" ]`, where `base_now` is a full
+  forty-hex sha the tool reads from `git ls-remote` and `base_sha` is
+  whatever string the caller handed it. Run from inside this run
+  against a base that had not moved at all, with the abbreviated form
+  of the very same commit:
+
+  ```
+  $ bash tools/check-shipped.sh --base-sha 641ad28
+  - base before this run: 641ad28; base now: 641ad2843606e3d8f5be60949ad7cb3163008ac6 (advanced)
+  SHIPPED    branch=... source=base-advanced ... (weak: a concurrent merge reads the same)
+  exit=0
+  ```
+
+  `641ad28` and `641ad2843606e3d8f5be60949ad7cb3163008ac6` are the same
+  commit. The two readings differ only in how they are written, and the
+  comparison has no way to say so.
+- Rule: when a check compares an identifier the caller supplied against
+  one it reads for itself, resolve both through the same resolver
+  before comparing. Raw string equality between two systems' answers
+  makes a difference in *representation* indistinguishable from a
+  difference in *state*, and the comparison then reports whichever
+  verdict its inequality branch carries. Ask which branch that is
+  before shipping it: here it is a pass, so a caller writing the most
+  natural thing (`--base-sha $(git rev-parse --short HEAD)`) turns the
+  company's only ship guard into a constant zero.
+- The pair this completes: L13 says put each question to the system
+  that owns the fact. L19 is what is left after you have — two owners
+  answered, and their answers still have to be made commensurable
+  before they can be compared.
+- role: any
+- portable: yes
+
+### L20 — Settle who owns a question before you ask it, not after (2026-10-24)
+- Sister seat said: "I am telling you to let the question go from my
+  seat rather than yours, because the pending tracker is where that
+  kind of unresolved state is supposed to live and get named, so an
+  owner-facing ask about it belongs with the seat that keeps that
+  file."
+- Evidence: the run of 2026-10-24 (message run 3) sent the owner
+  message `59d8fcba` carrying two questions, one of them whether she
+  still wants the three open workflow pull requests, and in the same
+  minute asked the pm seat (`cbcdbebf`) whether that question should
+  come from its seat instead. The pm seat answered seven minutes later
+  that it should, and posted it — `2001b9f4`, same question, same
+  night, same company. The owner has the three-pull-request question
+  twice in her inbox from two seats, and neither copy says the other
+  exists.
+- Rule: routing is decided before the send, never after it. A message
+  is a publication with no delete (L15), so "may I ask this" and "I am
+  asking this" cannot both be in flight: one of them is already the
+  act. Where two seats could own a question, the seat that is about to
+  spend the reader's attention asks the other seat first and waits, or
+  sends and then tells the other seat it is already sent so that no
+  second copy follows. The cost here was small and the reader is the
+  one person in this company whose attention no seat can replace.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
