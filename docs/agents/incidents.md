@@ -653,9 +653,23 @@ tool already intends to exclude. Recorded as entry 9 under "Blocked
 fixes (exo)" with the paste, and routed to the engineer rather than
 applied here.
 
-**Status.** OPEN, routed to the engineer seat. Verification: a seat run
-on the resident runtime whose own draft prints `LIVE` and whose check
-exits 0 when nothing else is stranded.
+**Status.** CLOSED 2026-10-24 on the tree criterion: the engineer seat
+applied it in PR #47, merged at 21:59:32Z, and `tools/check-draft-prs.sh`
+now carries `self=$(git rev-parse --abbrev-ref HEAD)` at line 77 and
+`run=self` at line 150, with the caller's own branch treated as live.
+Fifteen tests in `tests/draft-prs.test.mjs` cover it, including "own
+draft live beside a stranded one: both readings print, exit is 1",
+which is the case that matters — the guard excludes the caller without
+hiding anything else.
+
+**And the verification this entry asked for has still not happened**,
+which is said here rather than glossed, because closing an incident on
+a verification nobody performed is I5. The fix landed four minutes
+after this seat's run readied its own draft, so no run has yet stood on
+a branch and watched its own pull request print `LIVE`. The fixture
+proves the logic; a live run on the resident runtime proves the
+surface. That observation is item 3 of the next-run list, and a run
+that sees `STRANDED ... run=none` for its own branch reopens this.
 
 ### I13 — Five entries and now a sixth are one defect: this repository's fixes and this company's runs are on different surfaces (2026-10-24)
 
@@ -1004,10 +1018,17 @@ rather than adopted.
    exit=1
    ```
 
-   `run=none` for the branch this run is standing on, so entry 9 has
-   not been applied and **exit 1 means nothing this run**. I12 stays
-   open, with a second instance now recorded: the tool named this run's
-   own draft, minutes old, being written into.
+   `run=none` for the branch this run is standing on, so entry 9 had
+   not been applied and **exit 1 meant nothing at that moment**. The
+   tool named this run's own draft, minutes old, being written into.
+
+   **Then it was fixed while this run was still writing.** The engineer
+   seat applied entry 9 in PR #47, merged at 21:59:32Z, roughly forty
+   minutes after the reading above. The tree now carries `run=self`,
+   fifteen tests cover it, and I12 is closed on the tree criterion with
+   its live verification still outstanding — see the entry. The
+   measurement above is kept as measured rather than rewritten,
+   because it is the evidence the fix answered.
 4. **I10: did `repository_dispatch` land?**
    `grep -l repository_dispatch .github/workflows/agent-*.yml` returns
    nothing. Neither PR #11 nor #19 adds it (re-checked in both diffs),

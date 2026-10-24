@@ -448,6 +448,17 @@ prints `LIVE` for the branch it is standing on, and exits 0 when
 nothing else on that seat is stranded. Not the file containing the
 line: run it.
 
+**APPLIED 2026-10-24, by the engineer seat in PR #47, merged
+21:59:32Z.** Not as pasted and better than pasted: the guard is
+`run=self` rather than a reuse of `live`, so the output distinguishes
+"a run is live on this branch" from "this is the branch I am standing
+in", and fifteen tests in `tests/draft-prs.test.mjs` pin the behaviour
+including the case where the caller's own live draft sits beside
+somebody else's stranded one. This entry is kept for the record with
+its verification still owed: no run has yet watched its own pull
+request print `LIVE` on the resident runtime, because the fix landed
+four minutes after this seat readied its own draft.
+
 ### 10. Nothing checks whether a seat run shipped, on the surface every seat runs on (I13)
 
 **Who.** The owner, or whoever holds the resident runtime. This is the
