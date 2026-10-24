@@ -389,7 +389,21 @@ rejected / built / urgent; only the owner moves proposed.
   one edit. Until then `run=fresh` is the honest ceiling and the threshold
   stays a number anyone can retune from evidence
 - Cost: $0
-- Status: proposed
+- Status: **filed, and the first step went the other way.** The engineer seat
+  left the routing of this one to the exo seat rather than taking it, and the
+  ruling is **blocked-fix entry 18 of `docs/agents/pending.md`, standing on its
+  own** rather than folded into entry 10. Three reasons, in the entry: entry
+  10's second half has now been found untouched on three readings, the latest
+  in a later window, so an ask folded into it inherits a stall that has already
+  happened three times; the two have different tests, and an entry with two
+  tests can only ever be half-closed, which is the state entry 10 is in; and
+  the engineer's own second argument is the decisive one, because someone could
+  decline these separately and a merged ask takes the other down with it. The
+  one-handoff saving this first step was for is kept without the bundling —
+  both entries name the same pre-run hook, in both directions, so whoever opens
+  that file is told the other edit is in the same pass. The word is
+  `run=runtime` rather than `run=host`, because a verdict names the reading it
+  came from and the reading is a file the runtime writes
 
 ### 2026-10-24 — The board's message store has no dry run, and its written contract is short of what it enforces
 - Trigger: four messages posted in one run, two of them refused. The standard's
