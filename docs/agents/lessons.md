@@ -213,10 +213,78 @@ harvest.
 - role: engineer
 - portable: yes
 
+### L13 — Ask the system that owns the fact (2026-10-24)
+- Evidence: incident I13. The no-ship tripwire asked
+  `git branch -r --contains HEAD` whether this run's work is on the
+  remote. `git branch -r` does not know that; it knows which
+  remote-tracking refs the clone's refspec created. On a clone that
+  fetches `+refs/heads/main:refs/remotes/origin/main` the answer is
+  empty for a branch the remote is holding at that exact sha, measured
+  both ways in one run. `git ls-remote --heads origin "$branch"` asks
+  the party that owns the answer, in one call, with no local ref.
+- Rule: for every reading a check makes, name which system owns the
+  fact, and put the question to that system. A local proxy for a
+  remote fact is a cache nobody invalidated; a remote proxy for a local
+  fact is a dependency nobody declared. Both report a confident wrong
+  answer rather than failing.
+- Reconciles L12 rather than contradicting it, and the pair is worth
+  reading together: L12 says prefer local facts for anything about the
+  run doing the checking, because Actions cannot see a run on the
+  resident host; L13 says prefer the remote for whether the remote has
+  your commits. Same principle, opposite direction, because the owner
+  of the fact is different. The defect in both cases was asking a
+  system that merely has an opinion.
+- role: any
+- portable: yes
+
+### L14 — A handoff's remedy is a claim about a file, and claims get read (2026-10-24)
+- Evidence: incident I13. A sister seat measured a real defect, named
+  the cause correctly, named the right vehicle for the fix, and said
+  that this seat's open pull request "already rewrites that step" and
+  "already fixes it" (board message `fd952b50`). It rewrote the step
+  and kept the defective line. Running that branch's own version of the
+  check reproduced the false failure in one command:
+  `commits=1 pushed=[EMPTY] pr=48` → `::error::never pushed`. Had the
+  remedy been adopted on its description, the incident would have been
+  closed by merging a pull request that does not fix it — and closed
+  with a measurement attached, which is the most durable way to be
+  wrong.
+- Rule: take a handoff's evidence and verify its remedy. The evidence
+  is what the sending seat measured and the remedy is what it inferred
+  about a file it did not open, and only one of those two was tested.
+  Read the object the remedy names before building on it; the cost is
+  one command and the saving is an incident closed on a fix that is not
+  there. Say so plainly in the reply, because the sending seat is
+  memoryless and will otherwise hand the same remedy to the next run.
+- role: any
+- portable: yes
+
+### L15 — Probe a write surface addressed to yourself (2026-10-24)
+- Evidence: the board's message store refuses a body that is not one
+  whole sentence per line with a reason in words, and refuses one
+  carrying a pull request number or a rule code. The refusal says what
+  shape it wants but not which line failed, and there is no dry run and
+  no delete. This run learned the contract by posting a two-line probe
+  **addressed to the engineer seat**, which left a message reading
+  "probe subject" permanently in a colleague's inbox and cost the real
+  reply its first paragraph to explain it.
+- Rule: when probing a write surface for its contract, address the
+  probe to your own seat. The contract is identical and the blast
+  radius is your own inbox. More generally, a write API with no dry run
+  and no delete is a surface where the first call is the publication,
+  so decide the addressee before the payload.
+- role: any
+- portable: yes
+
 *Provenance note for the centralizer. L1 and L11 carry the owner's
 verbatim words under "Owner said". L2 through L10 and L12 were derived
 by the exo seat from run evidence and carry "Evidence" instead, because
-no owner correction sits behind them. Both kinds keep the `role` and
+no owner correction sits behind them. L13, L14 and L15 are the run of
+2026-10-24 (message, run 2) and carry "Evidence" for a sharper reason:
+`git log --all --no-merges --author=<owner email>` returns nothing
+since 2026-09-27, so there was no owner correction in the window to
+harvest. The correction behind both came from a sister seat's handoff,
+which is the first seat-to-seat correction in this register. Both kinds keep the `role` and
 `portable` fields the harvest depends on.*
 
 *Amended 2026-10-24, later run the same day. The note here previously
