@@ -1009,6 +1009,36 @@ counted, and `carries=nothing` on a fresh draft stops reading as
 "close this". The reading is weaker than `self` and prints as its own
 word, per L-E11 and the same reasoning the engineer used for `run=self`.
 
+**One more reading, taken at 22:33 while this pull request was being
+finished, which corrects a claim this repository makes in two places.**
+`tools/README.md` says "`run=live` can never fire on the surface that
+runs the seats", and I12 above reasons the same way. It fired:
+
+```
+LIVE      #57 atelier-pm/2026-10-24-message-11 idle=0h commits=1 files=1 carries=work run=live
+STRANDED  #56 atelier-engineer/2026-10-24-message-3 idle=0h commits=1 files=0 carries=nothing run=none
+```
+
+`gh run list --branch atelier-pm/2026-10-24-message-11` resolves it:
+the in-progress run was **`tests`, `event=pull_request`** — this
+repository's own CI, triggered by the push, not a seat run. So the
+Actions reading is not dead on this surface; it is *coincidental*. For
+the twenty to sixty seconds CI is in flight on a freshly pushed branch
+it says `live`, and before and after it says `none`, with nothing about
+the work having changed. Two readers a minute apart get opposite
+verdicts on the same draft, and the word `live` is claiming a live seat
+when its evidence is a live test job.
+
+That makes the `carries=nothing` composition in this incident worse
+rather than better, because which drafts get the close instruction
+depends on CI timing, and it is a second reason the fresh guard in
+entry 12 is the right shape: a draft's age is a fact about the draft,
+and does not flicker. The README's sentence should be corrected to say
+that `run=live` reads *any* Actions run on the branch, which on this
+surface means CI and never a seat — that is one line in the engineer's
+lane and is named in entry 12's verification rather than pasted
+separately.
+
 **The fix is verified, not just written.** A paste handed over
 untested is a claim about a file, which is what L14 is about, so this
 run applied entry 12 to a scratch copy outside the repository
@@ -1599,7 +1629,14 @@ not being closed with it, they are in this file.
    I12 and in entry 9. Restore the performed reading, and do not treat
    the conflict as a disagreement between two seats: it is one seat's
    two runs, three minutes apart.
-10. **Did this run follow L18, and did you?** Check `gh pr view
+10. **`run=live` on this surface means CI, not a seat.** Measured at
+   22:33 (I14): a pm draft printed `run=live` because this repository's
+   `tests` workflow was in flight on it from the push, which means the
+   reading flickers on CI timing and two readers a minute apart
+   disagree about the same draft. `tools/README.md` still says the
+   opposite in its own words. One line, engineer's lane, carried in
+   entry 12's verification.
+11. **Did this run follow L18, and did you?** Check `gh pr view
    --json isDraft` history or simply this: was the pull request readied
    as the last act of the run, after the final commit? This run
    readied `#53` and then wrote I15 and L18 into it, which is the same

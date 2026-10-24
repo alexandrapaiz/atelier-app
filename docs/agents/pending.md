@@ -699,6 +699,17 @@ guard needs no new read — or becomes a named constant in minutes, which
 would cost one more field but let the number be derived from the board
 instead of rounded from it.
 
+**One line of documentation goes with it.** `tools/README.md` says
+"`run=live` can never fire on the surface that runs the seats", and
+this run watched it fire: a pm draft read `run=live` because this
+repository's own `tests` workflow was in flight on the branch from the
+push (`gh run list --branch ... → tests, event=pull_request`). The
+reading is coincidental rather than dead — `live` for the seconds CI
+runs, `none` before and after, with nothing about the work changing —
+so the sentence should say that `run=live` reads *any* Actions run on
+the branch, which here means CI and never a seat. It is also the second
+argument for this entry: a draft's age does not flicker.
+
 **Verification.** `bash tools/check-draft-prs.sh --all` run while a
 second seat has a draft open that is minutes old, printing a third word
 for it that is neither `self` nor `live`, and exiting 0 with the fresh
