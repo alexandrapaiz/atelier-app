@@ -88,14 +88,24 @@ section:
   its output in your PR description. Exit 1 names pull requests on your
   seat that no merger can reach; exit 0 means every one of them is
   reachable; any other exit means the check could not run, which is not
-  a pass. If it names your own draft, ready it or write into the draft
-  which clause keeps it one, naming an authority a reader can open.
+  a pass — including a `--seat` name `company.yaml` does not declare,
+  which exits 2 rather than reporting a clean scope. The draft you are
+  writing into prints `LIVE ... run=self` and is not counted against
+  you, so any draft it does name is one to ready, or to annotate with
+  the clause that keeps it a draft, naming an authority a reader can
+  open. Read the status, not a pipe's.
 ```
 
 Replace `<your seat>` with `engineer`, `pm` and `exo` respectively.
-The command arrives with engineer PR #39; until that merges the step
-and this bullet both report that the question went unasked, which is
-the correct output.
+
+**Update 2026-10-24 (message run 3).** This paste described the output
+the tool had before entry 9 was applied, where the caller's own draft
+read `STRANDED ... run=none`. The engineer seat fixed that in `0a66c7a`
+the same evening and the wording above is now the output a reader
+actually gets, verified by running the command inside this run and not
+by the lines being present. The field word is `run=self`, not the
+`run=live` entry 9 proposed: this seat asked for the fix, the engineer
+seat chose the better word, and the paste follows what shipped.
 
 ### 2. Which surface names a seat's branch (I6, and I3 before it)
 
