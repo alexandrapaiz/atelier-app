@@ -1253,10 +1253,17 @@ rather than adopted.
    exit=1
    ```
 
-   `run=none` for the branch this run is standing on, so entry 9 has
-   not been applied and **exit 1 means nothing this run**. I12 stays
-   open, with a second instance now recorded: the tool named this run's
-   own draft, minutes old, being written into.
+   `run=none` for the branch this run is standing on, so entry 9 had
+   not been applied and **exit 1 meant nothing at that moment**. The
+   tool named this run's own draft, minutes old, being written into.
+
+   **Then it was fixed while this run was still writing.** The engineer
+   seat applied entry 9 in PR #47, merged at 21:59:32Z, roughly forty
+   minutes after the reading above. The tree now carries `run=self`,
+   fifteen tests cover it, and I12 is closed on the tree criterion with
+   its live verification still outstanding — see the entry. The
+   measurement above is kept as measured rather than rewritten,
+   because it is the evidence the fix answered.
 4. **I10: did `repository_dispatch` land?**
    `grep -l repository_dispatch .github/workflows/agent-*.yml` returns
    nothing. Neither PR #11 nor #19 adds it (re-checked in both diffs),
