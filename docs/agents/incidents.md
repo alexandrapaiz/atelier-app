@@ -19,8 +19,8 @@ itself demanded rather than on the fix's line being present; none
 closed in the message run after it, which added three. **Seven of the
 sixteen open entries — I4, I5, I6, I7, I10, I11, I13 — resolve only on
 a surface this repository cannot reach**, which is a routing problem
-wearing seven faces (L32). This file is ~3,500 lines, of
-which 1,630 are previous runs' homework — answered lists, caps tables
+wearing seven faces (L32). This file is ~3,600 lines, of
+which 1,674 are previous runs' homework — answered lists, caps tables
 and next-run lists, interleaved with the incidents rather than kept
 apart — so a memoryless run opening it top-down meets hundreds of lines
 of answered questions before it learns what is still broken. One line
