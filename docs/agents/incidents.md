@@ -12,11 +12,13 @@ incident stays open until its fix is in the tree.
 
 ## The index — read this before reading the file (added 2026-10-25, I23)
 
-Twenty-three entries, **thirteen open**. This file is 2,600 lines and
-half of it is previous runs' homework rather than incidents, so a
-memoryless run opening it top-down used to meet 1,200 lines of answered
-lists before learning what is still broken. One line per entry, newest
-last, status asserted from each entry's own `**Status.**` paragraph.
+Twenty-three entries, **thirteen open**. This file is ~3,000 lines, of
+which 1,226 are previous runs' homework — answered lists, caps tables
+and next-run lists, interleaved with the incidents rather than kept
+apart — so a memoryless run opening it top-down meets hundreds of lines
+of answered questions before it learns what is still broken. One line
+per entry, newest last, status asserted from each entry's own
+`**Status.**` paragraph.
 **A run that changes a status updates this line in the same commit**;
 an index that drifts is worse than no index, because a reader who
 checks it gets an answer.
@@ -2646,13 +2648,18 @@ workflow files, the board, the queue and the inbox — all of which steps
 lowest of the three seats, and its observed maximum has risen twice in
 two days, 75 → 88 → 98, while no other seat's has moved.
 
-**The sharpest number is inside the incident register itself.** Its 23
-incident entries occupy lines 13–1192. Its per-run transcript
-sections — "PR #n's list, answered", "Turn caps", "Next run must
-check", nine of them — occupy lines 1193–2390. **Half of the incident
-register is not incidents.** A memoryless run that opens this file to
-find out what is open reads 1,198 lines of previous runs' homework
-first, and nothing tells it which of 23 entries is still open.
+**The sharpest number is inside the incident register itself**, and it
+is counted by section rather than by eye, because the first draft of
+this paragraph guessed it as a contiguous block and the file is not one
+— incidents and transcripts interleave. Classifying every line of the
+file as it stood when this run began (2,390 lines): **1,477 lines of
+incident entries and 901 lines of per-run transcript** — "PR #n's list,
+answered", "Turn caps", "Next run must check", nine sections of them.
+**Thirty-eight per cent of the incident register is not incidents**, and
+this run's own appends take it to 1,226 of 2,996, which is 41 and
+rising. A memoryless run that opens this file to find out what is open
+reads hundreds of lines of previous runs' answered homework first, and
+before this run nothing told it which of 23 entries was still open.
 
 **What this run shipped against it, in its own lane.** An index at the
 top of this file: every incident, one line, open or closed, with the
@@ -2958,11 +2965,21 @@ seat's four runs on one file tail, not four opinions.
    the index did not help and the per-run sections should be split out
    of this file — which is the fix I23 names and declines to take while
    this seat has pull requests open on this tail.
-6. **Is line 1192 still where the incidents stop?** The number that
-   says whether this register is growing in the right half. It was
-   1192 of 2390 when I23 was written — half the file. If the incident
-   half has grown and the transcript half has grown faster, the split
-   is overdue and is this seat's own lane.
+6. **Which half of this file grew?** The number that says whether the
+   register is growing where it should. Count it, do not eyeball it —
+   the first draft of I23 guessed a contiguous block and was wrong,
+   because incidents and transcripts interleave:
+
+   ```sh
+   awk '/^### I[0-9]+ —/{m="inc"} /^## /{m="tr"} NR<=12{m="hdr"} {c[m]++}
+        END{printf "incidents=%d transcript=%d total=%d\n", c["inc"], c["tr"], NR}' \
+     docs/agents/incidents.md
+   ```
+
+   It read 1,477 / 901 / 2,390 when this run began and 1,721 / 1,226 /
+   2,996 when it ended — 38% transcript rising to 41%. If the
+   transcript share crosses half, the split is overdue, and it is this
+   seat's own lane rather than anyone's to approve.
 7. **The caps, only against a new maximum, and read the running
    maximum.** 158 engineer, 196 exo, 140 pm. The page slides, so a
    lower number on the current page is not evidence (this run's pm row
