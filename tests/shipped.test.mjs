@@ -365,3 +365,84 @@ test('a run that never branched and produced nothing does not pass', (t) => {
   assert.notEqual(code, 0, `a run that shipped nothing must not exit 0: ${out}`);
   assert.equal(code, 2, out);
 });
+
+// --- the base tip's spelling ------------------------------------------------
+//
+// Every one of the eleven fixtures above sets --base-sha and base_now to
+// *different* commits, so all of them only ever exercise `advanced` being
+// right. The reading nothing reached: the same commit, spelled two ways.
+// `base_now` is a full sha the tool reads from `git ls-remote`; `--base-sha` is
+// whatever the caller captured, and compared as plain strings an abbreviation
+// read as the base having *moved* — the passing branch, tested above ORPHANED,
+// UNPUSHED and NOTHING, so one short sha masked every failing verdict here.
+// Measured by atelier/exo on one unchanged tree, seconds apart: full sha
+// ORPHANED exit 1, its own abbreviation SHIPPED exit 0 (I16).
+
+test('an abbreviated base tip is the same commit, not an advance', () => {
+  const { code, out } = shipped('base-abbreviated');
+  // The fixture is the self-merge shape with the base standing still: HEAD on
+  // the base, nothing committed, and the caller passing the first seven
+  // characters of the sha the tool reads for itself.
+  assert.doesNotMatch(out, /source=base-advanced/);
+  assert.match(out, /^NOTHING {4}branch=main source=base-unmoved/m);
+  assert.equal(code, 1, out);
+});
+
+test('the base tip is read case-insensitively, since a spelling is not a move', () => {
+  const { code, out } = shipped('base-abbreviated', ['--base-sha', '641AD2843606E3D8F5BE60949AD7CB3163008AC6']);
+  assert.doesNotMatch(out, /source=base-advanced/);
+  assert.equal(code, 1, out);
+});
+
+// The fixture that exo's first draft of this fix broke, kept here as the
+// guard it was: resolving both sides against the object store would report an
+// unresolvable pre-run tip as INCONCLUSIVE, and on a shallow clone the pre-run
+// tip of a base that really did advance is not an object the checkout holds —
+// which is the one case --base-sha exists for. So the normal form is lexical,
+// and two shas that are neither equal nor one another's prefix still mean the
+// base moved.
+test('two different shas still read as the base having advanced', () => {
+  const { code, out } = shipped('self-merge');
+  assert.match(out, /^SHIPPED {4}branch=main source=base-advanced/m);
+  assert.equal(code, 0, out);
+});
+
+test('a --base-sha that is not a sha exits 2 and names the argument', () => {
+  for (const bad of ['main', 'HEAD', 'dea', 'origin/main']) {
+    const r = spawnSync('bash', ['tools/check-shipped.sh', '--base-sha', bad], { cwd: root, encoding: 'utf8' });
+    const out = `${r.stdout}${r.stderr}`;
+    assert.equal(r.status, 2, `--base-sha ${bad}: ${out}`);
+    assert.match(out, new RegExp(`got: ${bad.replace('/', '\\/')}`));
+    // A caller error must never be able to publish a verdict, least of all the
+    // passing one.
+    assert.doesNotMatch(out, /^SHIPPED/m);
+  }
+});
+
+// The case the resident runtime will actually hit, on a real clone rather than
+// through the fixture reader: a run that committed and never pushed, with the
+// base tip captured the way a shell captures one.
+test('on a real clone, a short base tip does not pass a run that pushed nothing', (t) => {
+  const { tmp, work } = mainlineOnlyClone();
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+  const baseShort = git(work, 'rev-parse', '--short', 'HEAD');
+  const baseFull = git(work, 'rev-parse', 'HEAD');
+  assert.ok(baseShort.length >= 4 && baseShort.length < baseFull.length,
+    `the point of this test is an abbreviation: got ${baseShort}`);
+
+  git(work, 'checkout', '-b', 'atelier-engineer/short-base-sha');
+  fs.writeFileSync(path.join(work, 'a'), 'a\n');
+  git(work, 'add', '-A');
+  git(work, 'commit', '-m', 'work that never left the sandbox');
+
+  const abbreviated = runTool(work, '--base-sha', baseShort);
+  assert.match(abbreviated.out, /^UNPUSHED {3}branch=atelier-engineer\/short-base-sha/m);
+  assert.equal(abbreviated.code, 1, abbreviated.out);
+
+  // The two calls that disagreed in I16, made against one unchanged base,
+  // agreeing: same verdict, same exit status, same tree.
+  const full = runTool(work, '--base-sha', baseFull);
+  assert.equal(full.code, abbreviated.code, full.out);
+  assert.match(full.out, /^UNPUSHED {3}/m);
+});

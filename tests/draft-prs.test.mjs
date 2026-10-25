@@ -16,7 +16,13 @@ const TOOL = resolve("tools/check-draft-prs.sh");
 
 /* The stub answers the six calls the script makes, from files, so a test says
    what GitHub said. A fixture value of "fail" makes that call exit non-zero,
-   which is how the unreadable readings are reached. */
+   which is how the unreadable readings are reached.
+
+   There is deliberately no case for `gh run list`. The liveness reading moved
+   to the Actions runs API on 2026-10-24 to get each in-flight run's workflow
+   path, and a stub that still answered the old call would let a revert to the
+   count pass green. With the case gone, a revert reaches `*)` and every
+   liveness test fails loudly. */
 const STUB = `#!/usr/bin/env bash
 F="$GH_FIXTURE"
 emit() { # fixture file; "fail" means the call itself failed
@@ -29,7 +35,7 @@ case "$all" in
   "auth status"*) exit 0 ;;
   "repo view"*)   emit base ;;
   "pr list"*)     emit prs.tsv ;;
-  "run list"*)    emit runs ;;
+  *actions/runs*) emit runs ;;
   *compare*)      emit compare ;;
   *commits*)      emit commitdate ;;
   *) echo "stub gh: no fixture for: $all" >&2; exit 9 ;;
@@ -46,7 +52,7 @@ const minutesAgo = n => new Date(Date.now() - n * 60_000).toISOString();
 
 /* One run of the check. `files` are the fixture's contents; `branch` is the
    branch the repository is standing on; `args` go to the script. */
-function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args = [], seats = ["engineer", "exo", "pm"], detach = false } = {}) {
+function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args = [], seats = ["engineer", "exo", "pm"], detach = false, workflows = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "drafts-"));
   const bin = join(dir, "bin");
   const fixture = join(dir, "fixture");
@@ -58,14 +64,23 @@ function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args 
   writeFileSync(join(bin, "gh"), STUB);
   chmodSync(join(bin, "gh"), 0o755);
 
-  const defaults = { base: "main", "prs.tsv": "", runs: "0", compare: "4\t1", commitdate: minutesAgo(25 * 60) };
+  /* `runs` is the workflow path of every run in flight on the branch, one per
+     line, which is what the script's own --jq produces. Empty means nothing is
+     in flight; absent means the call failed. */
+  const defaults = { base: "main", "prs.tsv": "", runs: "", compare: "4\t1", commitdate: minutesAgo(25 * 60) };
   for (const [name, body] of Object.entries({ ...defaults, ...files })) {
     writeFileSync(join(fixture, name), body);
   }
 
   copyFileSync(TOOL, join(repo, "tools", "check-draft-prs.sh"));
+  /* The declared workflow path is load-bearing now, not filler: it is the
+     string an in-flight run's own path is compared against. `workflows: false`
+     declares the seats with no workflow at all, which is the case where
+     nothing can read run=live. */
   writeFileSync(join(repo, "company.yaml"),
-    "seats:\n" + seats.map(s => `  - { name: ${s}, workflow: x, cadence: on-dispatch, status: dormant }\n`).join(""));
+    "seats:\n" + seats.map(s => workflows
+      ? `  - { name: ${s}, workflow: .github/workflows/agent-${s}.yml, cadence: on-dispatch, status: dormant }\n`
+      : `  - { name: ${s}, cadence: on-dispatch, status: dormant }\n`).join(""));
 
   const git = (...a) => execFileSync("git", a, { cwd: repo, stdio: "pipe" });
   git("init", "-q", "-b", "main");
@@ -116,13 +131,77 @@ test("a detached HEAD has no own branch, so nothing is excused", () => {
   assert.equal(r.status, 1, "the conservative default survives the fix");
 });
 
-test("an Actions run in progress still reads live for a branch that is not ours", () => {
-  const r = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: "1" } });
+test("a seat workflow in progress still reads live for a branch that is not ours", () => {
+  const r = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: ".github/workflows/agent-pm.yml" } });
   assert.match(r.stdout, /^LIVE +#28 .*run=live$/m);
   assert.equal(r.status, 0);
 });
 
-test("an unreadable run list is stranded, not excused", () => {
+/* 2026-10-24, the exo seat's second finding of the evening. The check counted
+   in-flight runs on the branch and called any of them a live seat. The only
+   workflow that runs on a seat branch in this repository is tests.yml, which
+   fires on pull_request, so every push into an open draft bought the draft
+   about twenty seconds of LIVE and the verdict depended on when the tests
+   happened to run. Measured that evening: 26 runs on seat branches, every one
+   tests.yml on pull_request, alive 17 to 30 seconds. */
+test("a test job in flight is not a live seat, and does not excuse an idle draft", () => {
+  const r = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: ".github/workflows/tests.yml" } });
+  assert.match(r.stdout, /^STRANDED +#28 .*run=ci$/m);
+  assert.equal(r.status, 1, "a job on the branch is not a seat on the branch");
+});
+
+test("the verdict for an idle draft is the same whether or not its tests are running", () => {
+  const quiet = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: "" } });
+  const testing = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: ".github/workflows/tests.yml" } });
+  assert.equal(quiet.status, testing.status, "two readers a minute apart must agree about the same draft");
+  assert.match(quiet.stdout, /^STRANDED +#28 /m);
+  assert.match(testing.stdout, /^STRANDED +#28 /m);
+  /* The readings differ and say so, because a verdict names the reading it came
+     from (L-E11). It is the verdict that must not flicker, not the field. */
+  assert.match(quiet.stdout, /run=none$/m);
+  assert.match(testing.stdout, /run=ci$/m);
+});
+
+/* Both orderings, because the list comes back newest first and a seat run and
+   its branch's test job are in flight together whenever a seat pushes from the
+   forge. Asserting one order grades nothing: it passes whether the loop stops
+   at the seat workflow or merely happens to read it last. */
+for (const [label, runs] of [
+  ["a test job listed first", ".github/workflows/tests.yml\n.github/workflows/agent-pm.yml"],
+  ["a test job listed after", ".github/workflows/agent-pm.yml\n.github/workflows/tests.yml"],
+]) {
+  test(`a seat workflow outranks ${label} in the same list`, () => {
+    const r = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs } });
+    assert.match(r.stdout, /^LIVE +#28 .*run=live$/m);
+    assert.equal(r.status, 0, "a seat really executing there outranks the noise beside it");
+  });
+}
+
+test("a fresh draft whose tests are running prints the statement about time, so the whole line holds still", () => {
+  const r = run({ files: {
+    "prs.tsv": prs([[52, "atelier-engineer/2026-10-24-message-2"]]),
+    runs: ".github/workflows/tests.yml",
+    commitdate: minutesAgo(4),
+  } });
+  /* Age outranks the CI reading in the field as well as in the verdict. The
+     test job is alive precisely because somebody just pushed, so the draft is
+     fresh in the same breath, and letting `ci` win the field would make the
+     line flicker a minute later for a draft whose verdict never moved. */
+  assert.match(r.stdout, /^FRESH +#52 .*run=fresh$/m);
+  assert.equal(r.status, 0);
+});
+
+test("seats declared with no workflow can reach no live reading, and the summary says so", () => {
+  const r = run({ workflows: false, files: {
+    "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]),
+    runs: ".github/workflows/agent-pm.yml",
+  } });
+  assert.match(r.stdout, /^STRANDED +#28 .*run=ci$/m);
+  assert.match(r.stdout, /no seat workflow declared \(run=live unreachable\)/);
+  assert.equal(r.status, 1, "a reading nothing can reach is named, not assumed clean");
+});
+
+test("an unreadable liveness reading is stranded, not excused", () => {
   const r = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]), runs: "fail" } });
   assert.match(r.stdout, /^STRANDED +#28 .*run=unreadable$/m);
   assert.equal(r.status, 1);
