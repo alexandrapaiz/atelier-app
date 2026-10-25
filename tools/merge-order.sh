@@ -106,10 +106,41 @@
 #      says so on the anchor line so the measured-wrong fix is not proposed a
 #      fifth time.
 #
+# The last line this writes to stdout names the status it is about to return,
+# as `(exit N)`, and so does a refusal that only writes to stderr. The exit
+# status is still the contract; the suffix is there because a pipe destroys the
+# status and not the text, and a verdict line pasted into a register loses its
+# status on the way. The advice lines are on stderr and come after the verdict,
+# so the verdict stays the last thing on stdout. If you need the status out of a
+# pipeline it is ${PIPESTATUS[0]}.
+#
 # Requires: git, and gh only for the live queue — `--prs` replaces it. No npm
 # dependencies, by this app's zero-framework ethos.
 
 set -euo pipefail
+
+# The status appears once and is both printed and returned. `verdict` prints the
+# verdict line with its status attached and remembers the number; the `exit`
+# that follows returns exactly what was printed, so the two cannot drift apart.
+# A line that merely mentions a status somebody typed is a second decision.
+verdict_status=
+verdict() { # status, line...
+  verdict_status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$verdict_status"
+}
+refuse() { # status, line...  — a refusal with no verdict line, on stderr
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status" >&2
+  exit "$status"
+}
+
+# A flag typed without its value is a question nobody asked. `shift 2` with one
+# argument left fails, and `set -e` turns a failed shift into exit 1 — the
+# status that means this queue is blocked. So `--base` with nothing after it
+# reported contention that had not been measured (L6).
+need_value() { # flag, $# at the point of the match
+  [ "$2" -ge 2 ] || refuse 2 "merge-order: $1 needs a value"
+}
 
 base=
 prs_file=
@@ -119,9 +150,9 @@ do_unshallow=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base)   base="${2:-}"; shift 2 ;;
-    --prs)    prs_file="${2:-}"; shift 2 ;;
-    --limit)  limit="${2:-}"; shift 2 ;;
+    --base)   need_value --base $#;  base="$2"; shift 2 ;;
+    --prs)    need_value --prs $#;   prs_file="$2"; shift 2 ;;
+    --limit)  need_value --limit $#; limit="$2"; shift 2 ;;
     --fetch)  do_fetch=1; shift ;;
     --unshallow) do_unshallow=1; do_fetch=1; shift ;;
     # The range is found rather than hardcoded: growing this header by twenty
@@ -130,11 +161,11 @@ while [ $# -gt 0 ]; do
     # on main. The contract a reader is sent to must not be shortenable by a
     # documentation edit.
     -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
-    *) echo "merge-order: unknown argument: $1" >&2; exit 2 ;;
+    *) refuse 2 "merge-order: unknown argument: $1" ;;
   esac
 done
 
-die2() { echo "merge-order: $1" >&2; exit 2; }
+die2() { refuse 2 "merge-order: $1"; }
 
 case "$limit" in
   ''|*[!0-9]*) die2 "--limit wants a whole number of pull requests, got: $limit" ;;
@@ -180,7 +211,7 @@ fi
 base_sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$base" \
         || git rev-parse --verify --quiet "$base" || true)
 if [ -z "$base_sha" ]; then
-  echo "INCONCLUSIVE  reason=no-base base=$base"
+  verdict 2 "INCONCLUSIVE  reason=no-base base=$base"
   die2 "the base branch '$base' is not in this clone"
 fi
 
@@ -200,11 +231,11 @@ if [ -n "$remote_base" ] && [ "$remote_base" != "$base_sha" ]; then
     base_sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$base" || echo "$base_sha")
   fi
   if [ "$base_sha" != "$remote_base" ]; then
-    echo "INCONCLUSIVE  reason=stale-base base=$base local=${base_sha:0:8} remote=${remote_base:0:8}"
+    verdict 2 "INCONCLUSIVE  reason=stale-base base=$base local=${base_sha:0:8} remote=${remote_base:0:8}"
     echo "merge-order: this clone's $base is behind the remote's, so every merge" >&2
     echo "  below would be measured against a queue that no longer exists. Run:" >&2
     echo "    git fetch origin $base    (or pass --fetch)" >&2
-    exit 2
+    exit "$verdict_status"
   fi
 fi
 base_label="$base@${base_sha:0:8}"
@@ -260,14 +291,14 @@ done
 
 if [ "$n" -eq 0 ]; then
   if [ "$out_of_scope" -gt 0 ]; then
-    echo "INCONCLUSIVE  in-scope=0 out-of-scope=$out_of_scope base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
+    verdict 2 "INCONCLUSIVE  in-scope=0 out-of-scope=$out_of_scope base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
     echo "merge-order: every open pull request's head is missing from this clone;" >&2
     echo "  re-run with --fetch to bring the branch refs in." >&2
-    exit 2
+    exit "$verdict_status"
   fi
-  echo "CLEAN  in-scope=0 out-of-scope=0 sequence=0/0 exclusive-pairs=0/0 base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
+  verdict 0 "CLEAN  in-scope=0 out-of-scope=0 sequence=0/0 exclusive-pairs=0/0 base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
   echo "merge-order: no open pull requests against $base, so nothing is in contention." >&2
-  exit 0
+  exit "$verdict_status"
 fi
 
 # --- the merge, twice: in sequence, then every pair --------------------------
@@ -377,7 +408,7 @@ if [ "$shallow" = true ]; then clone_label=shallow; fi
 tail="in-scope=$in_scope out-of-scope=$out_of_scope sequence=$seq_ok/$n exclusive-pairs=$excl/$pairs base=$base_label"
 
 if [ "$inconclusive" = 1 ]; then
-  echo "INCONCLUSIVE  $tail anchor=$anchor clone=$clone_label"
+  verdict 2 "INCONCLUSIVE  $tail anchor=$anchor clone=$clone_label"
   echo "merge-order: at least one reading could not be taken, so the queue got no" >&2
   echo "  verdict. A fatal merge is not a conflict (L-A55)." >&2
   if [ "$shallow" = true ]; then
@@ -386,19 +417,19 @@ if [ "$inconclusive" = 1 ]; then
     echo "  conflict. Re-run with --unshallow, or:" >&2
     echo "    git fetch --unshallow origin" >&2
   fi
-  exit 2
+  exit "$verdict_status"
 fi
 
 if [ "$seq_ok" -lt "$n" ] || [ "$excl" -gt 0 ]; then
-  echo "BLOCKED  $tail anchor=$anchor clone=$clone_label"
+  verdict 1 "BLOCKED  $tail anchor=$anchor clone=$clone_label"
   if [ "$anchor" != none ]; then
     echo "merge-order: $anchor blocks the most pairs. The fix is L-A48's file" >&2
     echo "  layout — a dated file per pass under a directory, or one writer on the" >&2
     echo "  shared table. Not a merge driver: L-A49 measured all three arms, GitHub" >&2
     echo "  honours none of them, and merge=union destroys records where it runs." >&2
   fi
-  exit 1
+  exit "$verdict_status"
 fi
 
-echo "CLEAN  $tail anchor=none clone=$clone_label"
-exit 0
+verdict 0 "CLEAN  $tail anchor=none clone=$clone_label"
+exit "$verdict_status"
