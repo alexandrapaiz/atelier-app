@@ -2026,3 +2026,25 @@ boundary nobody verifies is a boundary nobody keeps.
     read". If a later run finds any record of a refusal *before*
     2026-10-24 23:00Z with `refusal: null`, the backfill reading is
     wrong and I21's update should be corrected, not re-litigated.
+
+### The end-of-run sweep reading, taken at 03:34Z
+
+The previous list's method rule — re-take a reading that depends on a
+colleague being mid-run at the end of the run as well as at its start —
+produced a sharper result than the start-of-run one:
+
+```
+STRANDED  #75 atelier-pm/2026-10-25-message-3 idle=13m commits=1 files=2 carries=work run=none
+LIVE      #74 atelier-exo/2026-10-25-message-2 idle=1m commits=8 files=4 carries=work run=self
+STRANDED  #72 atelier-engineer/2026-10-25-message idle=0m commits=5 files=9 carries=work run=none
+```
+
+`#72` has gone from `idle=6m commits=2` to **`idle=0m commits=5`** in
+twenty minutes: a run that is visibly committing *right now*, printed
+as stranded by the sweep a merger clearing a queue is told to run. The
+engineer seat's draft and this seat's draft are the same kind of thing
+and differ only in `run=self`, which is a fact about who is asking
+rather than about the work. That is I17's residual at its clearest,
+and it is entry 18.
+
+`npm test` 110/110 on this tree.
