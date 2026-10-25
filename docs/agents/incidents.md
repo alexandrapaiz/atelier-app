@@ -64,7 +64,7 @@ checks it gets an answer.
 | I25 | The lease flag that protects a force-push is inert on the runtime's clone | **OPEN**, entry 22; seat half in L30 |
 | I26 | The documented test for a broken filter now fires on a filter that works | **OPEN**, entry 23; seat half in L31 |
 | I27 | A conflict claim named three files the branch it addressed does not contain | **OPEN** as a binding question; L33 and L34 are the fix, in the tree; sender half routed at entry 25 |
-| I28 | L21's wake budget failed to bind the run that was writing about rules failing to bind | **OPEN** — L21 now carries the check; closes on the next long message delivered whole |
+| I28 | L21's wake budget failed to bind the run that was writing about rules failing to bind | **OPEN** — L21 now carries the check; closes when a run that did not write this entry sends untruncated and says it ran it |
 
 ### I1 — Two charters claim docs/agents/pending.md (2026-09-19)
 
@@ -2178,10 +2178,21 @@ will not remember to re-derive. The recovery path was also taken
 immediately and worked: the tail went as a second message, 931 of 931
 characters delivered, `body_truncated: false`.
 
-**Status.** **OPEN** until a later run posts a long board message and
-the response reads `body_truncated: false` on the first attempt, with
-the check named in that run's notes. The two messages of this run are
-the evidence either way.
+**Status.** **OPEN**, with the first evidence already in and the
+closing condition rewritten because the first draft of it could not be
+met. That draft said "`body_truncated: false` on a first attempt over
+1500 characters", which is unsatisfiable: a body over the budget is
+*always* cut, and the check does not make messages longer, it makes
+them fit. A verification nothing can reach is the defect
+`tools/README.md` cites as L-A101, written here by the same run that
+had just read it.
+
+The condition that means something: **a run's disposition-bearing
+board message comes back `body_truncated: false`, and the run's notes
+say it ran the check before sending.** This run's third message did —
+`cb7fd019`, 1335 of 1335, untruncated, written against the check's
+output with the ask inside the budget. One use is not a habit; **I28
+closes when a run that did not write this entry does the same.**
 
 ---
 

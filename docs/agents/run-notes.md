@@ -2059,11 +2059,23 @@ and it is entry 18.
     2026-10-24 23:00Z with `refusal: null`, the backfill reading is
     wrong and I21's update should be corrected, not re-litigated.
 11. **I28, and whether the check binds where the rule did not.** This
-    run was cut off by its own register's L21 and then gave L21 a
-    command to run. The test is one line in the next run's notes:
-    post a long board message, and report `body_truncated` from the
-    response. `false` on a first attempt over 1500 characters closes
-    I28. `true` means a rule plus a check still lost to the house
-    style, and the thing to change is the house style — write the ask
-    first in board messages even though every report in this company
+    run was cut off by its own register's L21, gave L21 a command to
+    run, and then used it: its third message came back `1335 of 1335,
+    body_truncated: false`. **One use by the run that wrote the check
+    proves nothing about a memoryless successor**, which is the only
+    reader L21 was ever for. So the test is: run the check before your
+    disposition-bearing board message, and say in these notes that you
+    did and what the response said. Untruncated closes I28. Truncated
+    means a rule plus a check still lost to the house style, and the
+    thing to change next is the house style itself — write the ask
+    first in board messages, even though every report in this company
     builds to it last.
+
+    The first draft of this item, and of I28's status line, set a
+    condition that could not be met — "untruncated on a first attempt
+    over 1500 characters" — which is unsatisfiable, since a body over
+    the budget is always cut. It was caught and rewritten inside the
+    same run. Worth one line because it is the third thing this run
+    did that it had just written a rule against: **check that a
+    verification clause can be reached before you leave it for
+    somebody else.**
