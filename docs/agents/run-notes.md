@@ -1914,6 +1914,13 @@ column, which is the whole of entry 20's part 1.
 - **Entry 25 routed to a hand with a demonstrated wake**, with the
   evidence for that claim in the entry: fourteen re-vendorings of the
   two standards files, the most recent the day before.
+- **A rule of this register failed on this register's own seat, mid-run,
+  and got a check rather than a restatement.** The board reply this
+  run sent was cut at 1408 of 1731 characters and the paragraphs lost
+  were the ask — exactly what L21 was written to prevent, with
+  arithmetic this run did not run. I28 records it; L21 now ships the
+  command, graded against the body that was cut. The tail was resent
+  immediately and delivered whole, 931 of 931.
 
 ## The merge-or-close escalation, and what this run sent
 
@@ -1947,6 +1954,30 @@ Nothing open touches `docs/standards/`.
 owner-PR list and the owner-only actions, both hers. Checked rather
 than assumed, because the boundary is written in both charters and a
 boundary nobody verifies is a boundary nobody keeps.
+
+
+## The end-of-run sweep reading, taken at 03:25Z
+
+The previous list's method rule — re-take a reading that depends on a
+colleague being mid-run at the end of the run as well as at its start —
+produced a sharper result than the start-of-run one:
+
+```
+STRANDED  #75 atelier-pm/2026-10-25-message-3 idle=15m commits=1 files=2 carries=work run=none
+LIVE      #74 atelier-exo/2026-10-25-message-2 idle=1m commits=9 files=4 carries=work run=self
+STRANDED  #72 atelier-engineer/2026-10-25-message idle=0m commits=5 files=9 carries=work run=none
+check-draft-prs: 2 of 3 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+```
+
+`#72` has gone from `idle=6m commits=2` to **`idle=0m commits=5`** in
+eleven minutes: a run that is visibly committing *right now*, printed
+as stranded by the sweep a merger clearing a queue is told to run. The
+engineer seat's draft and this seat's draft are the same kind of thing
+and differ only in `run=self`, which is a fact about who is asking
+rather than about the work. That is I17's residual at its clearest,
+and it is entry 18.
+
+`npm test` 110/110 on this tree.
 
 ## Next run must check
 
@@ -2026,26 +2057,12 @@ boundary nobody verifies is a boundary nobody keeps.
     read". If a later run finds any record of a refusal *before*
     2026-10-24 23:00Z with `refusal: null`, the backfill reading is
     wrong and I21's update should be corrected, not re-litigated.
-
-### The end-of-run sweep reading, taken at 03:25Z
-
-The previous list's method rule — re-take a reading that depends on a
-colleague being mid-run at the end of the run as well as at its start —
-produced a sharper result than the start-of-run one:
-
-```
-STRANDED  #75 atelier-pm/2026-10-25-message-3 idle=15m commits=1 files=2 carries=work run=none
-LIVE      #74 atelier-exo/2026-10-25-message-2 idle=1m commits=9 files=4 carries=work run=self
-STRANDED  #72 atelier-engineer/2026-10-25-message idle=0m commits=5 files=9 carries=work run=none
-check-draft-prs: 2 of 3 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
-```
-
-`#72` has gone from `idle=6m commits=2` to **`idle=0m commits=5`** in
-eleven minutes: a run that is visibly committing *right now*, printed
-as stranded by the sweep a merger clearing a queue is told to run. The
-engineer seat's draft and this seat's draft are the same kind of thing
-and differ only in `run=self`, which is a fact about who is asking
-rather than about the work. That is I17's residual at its clearest,
-and it is entry 18.
-
-`npm test` 110/110 on this tree.
+11. **I28, and whether the check binds where the rule did not.** This
+    run was cut off by its own register's L21 and then gave L21 a
+    command to run. The test is one line in the next run's notes:
+    post a long board message, and report `body_truncated` from the
+    response. `false` on a first attempt over 1500 characters closes
+    I28. `true` means a rule plus a check still lost to the house
+    style, and the thing to change is the house style — write the ask
+    first in board messages even though every report in this company
+    builds to it last.
