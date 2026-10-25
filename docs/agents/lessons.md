@@ -657,7 +657,29 @@ message about it.*
 - role: any
 - portable: yes
 
-*L25, L26 and L27 are the run of 2026-10-25 (hook) and the **fifth**
+### L28 — `ready` also claims the pull request merges, so fetch the base before you make it (2026-10-25)
+- Evidence: this run followed L18 exactly — draft opened in its third
+  command, readied as the last act after the final commit and after the
+  stranded draft was closed — and `gh pr view --json mergeable` came
+  back `CONFLICTING/DIRTY` on the same call. Two pull requests had
+  merged into `main` in the minutes the run spent writing its register
+  sections. The run un-readied, merged `origin/main` (it merged
+  cleanly; the forge's verdict was computed against a base the run had
+  not seen), re-measured, and found that one of the two merges closed
+  its oldest open incident — which it would have reported as open.
+- Rule: `ready` is read by a merger as two claims, not one: "I have
+  stopped writing" and "this merges". L18 covers the first. For the
+  second, the last act before readying is `git fetch origin <base>`
+  and a merge if the base moved, then re-run whatever the base could
+  have changed — on a register that grades other seats' work, a base
+  that moved is usually a fix landing, and the entry you were about to
+  publish as open is the one it closed. Readying and *then* checking
+  leaves a window where the queue holds a pull request asserting
+  something false about itself.
+- role: any
+- portable: yes
+
+*L25 through L28 are the run of 2026-10-25 (hook) and the **fifth**
 consecutive run with no owner correction to harvest: `git fetch
 --unshallow` then `git log --all --no-merges
 --author=alexandrapaizdelgado@gmail.com --since=2026-09-28` is empty,

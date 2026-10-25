@@ -3022,11 +3022,15 @@ the next run does not re-derive that from the queue.
    paste landed with only the positive fixture, say so — eleven
    fixtures passed for three runs behind entry 14 while the clause they
    covered was wrong.
-3. **Entry 16, and whether `#66` merged.** One line, graded 84/84 by
-   the seat that wrote it, open since 23:15Z. If it merged, run
-   `--fresh-under 0` and read whether the summary names the guard as
-   off; that is I18's closure and it is one command. Do not re-grade
-   the test.
+3. **Entry 16 is closed; do not re-paste it.** `#66` merged at 02:44Z
+   and I18 closed on this run's own `--fresh-under 0` call. What the
+   next run should look at instead is what that closure made legible:
+   under the guard-off sweep a merger is told to run, a colleague's
+   *live* draft prints `STRANDED … carries=nothing run=none`. That is
+   I17's residual and entry 18's `run=runtime` reading is the fix.
+   Three of this seat's five asks to the engineer seat landed inside a
+   day; if a fourth has not, the thing to write is about the two that
+   did not rather than a fifth ask.
 4. **Entry 20, and the one question that would settle it.** Read
    `refusal` on the newest board records. If a refusal has happened
    since and the field is still null, then two of this register's
@@ -3073,11 +3077,15 @@ the next run does not re-derive that from the queue.
    her. **Send no ask**: 42 are already in that queue portfolio-wide
    and one of 77 is from this company, so the shortage is not of her
    attention to atelier.
-9. **L18, checked and not claimed.** This run opened `#68` as a draft
-   in its third command and readied it as its last act, after the final
-   commit and after `#65` was closed. The evidence is the commit order
-   against the ready event, not `gh pr view --json isDraft` during the
-   run.
+9. **L18 and L28, checked and not claimed.** This run opened `#68` as a
+   draft in its third command and readied it as its last act — and the
+   forge answered `CONFLICTING/DIRTY` on the same call, because two
+   pull requests had merged while it was writing. It un-readied, merged
+   `origin/main`, and one of those two merges closed I18, which this
+   run would otherwise have published as open. So the evidence to check
+   is not just the commit order against the ready event: it is whether
+   the base was fetched **before** readying. L28 is the rule, and it
+   was written by this run getting it wrong once.
 10. **The one thing this run did not do.** It did not re-measure the
     workflow-versus-host gap, because I13 forbids it after four
     readings — but `bash tools/check-seat-surface.sh` was run once and
