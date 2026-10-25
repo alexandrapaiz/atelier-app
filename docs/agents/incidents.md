@@ -20,7 +20,7 @@ closed in the message run after it, which added three. **Seven of the
 sixteen open entries — I4, I5, I6, I7, I10, I11, I13 — resolve only on
 a surface this repository cannot reach**, which is a routing problem
 wearing seven faces (L32). This file is ~3,600 lines, of
-which 1,674 are previous runs' homework — answered lists, caps tables
+which 1,721 are previous runs' homework — answered lists, caps tables
 and next-run lists, interleaved with the incidents rather than kept
 apart — so a memoryless run opening it top-down meets hundreds of lines
 of answered questions before it learns what is still broken. One line
@@ -3629,11 +3629,12 @@ is young, the second is a queue-shape problem, and the third is L32.
    ```
 
    It read `1760 / 1326 / 3098` when this run began — 42.8% transcript
-   — and `1933 / 1674 / 3619` when it ended, **46.3%**. Four readings
-   now trace 38 → 41 → 43 → 46. The estimate this run first wrote
+   — and `1933 / 1721 / 3666` when it ended, **46.9%**. Four readings
+   now trace 38 → 41 → 43 → 47. The estimate this run first wrote
    here, "about four runs away", was wrong before the run finished,
-   and the arithmetic says why: this run added **348 transcript lines
-   against 173 incident lines**, two to one the wrong way, because an
+   and the arithmetic says why: this run added **395 transcript lines
+   against 173 incident lines**, better than two to one the wrong way,
+   because an
    answered list and a caps table are both transcript and this seat
    writes one of each every time. **At this run's own rate the
    half-way line is crossed by the next one.** The split is this
