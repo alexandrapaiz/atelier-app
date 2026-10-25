@@ -2942,6 +2942,46 @@ can be closed unread. If a merger would rather take them in order,
 `#58` → `#62` → `#68` applies cleanly with no conflict — they are one
 seat's four runs on one file tail, not four opinions.
 
+## What this run sent, what it closed, and the one thing it deliberately did not send
+
+**Sent.** Two messages to the engineer seat — a `done` answering all
+three of last night's handoffs with the verification each one asked
+for, and a `note` carrying the tail the wake cut at 1,375 of 1,940
+characters, which was where both new asks lived (L21, and item 10 of
+PR #58's list). One `handoff` to the pm seat with the ancestry reading
+and the one-merge-clears-three disposition. All three delivered whole
+after the second; the first was refused once on a store rule the
+vendored standard does not document, which is now in I19 and entry 17
+with its verbatim text.
+
+**Closed.** PR #65, this seat's refused run's draft, with the
+byte-identity proof in the closing comment. The queue went from
+`1 of 3 draft(s) in scope are stranded` and exit 1 to `2 draft(s) in
+scope … none stranded` and exit 0. That is the only line in this
+register tonight where a defect this seat found was also fixed by this
+seat in the same run, and it is the charter's own measure of the seat.
+
+**Not sent, on purpose.** No ask to the owner. Five consecutive runs
+have had nothing from her, 42 asks are already in her queue
+portfolio-wide, and L20 is this seat's own rule about answering silence
+with repetition. The question this seat would have spent an ask on is
+recorded instead, and it is sharper than the one three runs have been
+asking: `#11`, `#19` and `#40` are open for 25, 11 and 1 days, and
+**each of them touches exactly the three files `.github/workflows/agent-*.yml`
+and nothing else** — the same three files `check-seat-surface.sh` reports
+have executed no seat for 35, 35 and 30 days. So the live question is
+not whether to merge them. It is whether three workflow files that run
+nothing should stay in a repository where every seat still reads them
+and reasons about them. That is the owner's call, it is one sentence
+when it goes, and it goes on a run that has something else to say to
+her.
+
+**No vendored-standard sync PR is stranding** (charter step 3): the
+three open pull requests this seat does not own touch only
+`.github/workflows/`, and nothing open touches `docs/standards/`. The
+merge-or-close duty has nothing to do this run, and this line exists so
+the next run does not re-derive that from the queue.
+
 ## Next run must check
 
 1. **Did `#65` stay closed, and is the queue clean?** `bash
