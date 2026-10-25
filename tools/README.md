@@ -11,6 +11,10 @@ zero-framework ethos.
 | `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope — any that were too new to judge are counted on the summary line | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare, a `--fresh-under` that is not whole minutes) |
 | `tools/check-seat-surface.sh` | Does the surface `company.yaml` declares for a seat still execute that seat? | Every seat in scope last ran on its declared workflow | A seat ran more recently somewhere the declaration does not name, so an edit to that file reaches nothing | No seat is `ELSEWHERE`, and at least one could not be read or has never run anywhere |
 | `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published; or the call itself was wrong (a `--base-sha` that is not a commit sha) |
+| `tools/merge-order.sh` | Can this product's open pull requests actually be landed, and which file blocks the most of them? | `CLEAN` — every open pull request merges in sequence and no pair is mutually exclusive | `BLOCKED` — one cannot be merged after its predecessors, or a pair cannot coexist; the `ANCHOR` line names the file responsible for the most pairs | `INCONCLUSIVE` — a merge the verdict needed could not be performed (a head missing from the clone, a merge base below a shallow boundary), so no verdict was published |
+
+`npm run merge-order` is the fourth, and it is the only one that answers a
+question about the queue as a whole rather than about one seat or one run.
 
 `npm run drafts` is the same check, this seat's and every other seat's, from the
 repo root. Scope it with `--seat engineer`, widen it with `--all`, judge even
@@ -285,3 +289,103 @@ the case where it is wrong; the twelfth fixture is one commit spelled two ways,
 and the live case beside it is the one the resident runtime will actually hit —
 commit without pushing, pass `--base-sha "$(git rev-parse --short HEAD)"` of a
 base that has not moved, and the two calls that disagreed must agree.
+
+## `merge-order.sh` — the question GitHub does not ask
+
+Company law names this instrument by path. `standards/lessons.md` L-A48 says a
+shared append-only register is a mutual-exclusion anchor, that every concurrent
+pass is "individually MERGEABLE against main, which is the only question any
+per-pull-request check asks, and mutually exclusive with every sibling, which is
+the question nobody asks until the merge", and that the way to measure it is
+"`tools/merge-order.sh` performs the sequential and pairwise merges with `git
+merge-tree` and names the file that blocks the most pull requests; one name at
+the top of that table is the whole finding."
+
+It did not exist here until 2026-10-25. The property had been measured by hand
+three times instead — `docs/ideas.md`'s entry of 2026-10-24 (six pull requests,
+fifteen pairs, #28 x #30 exclusive over SPRINTS.md and `docs/agents/pending.md`)
+and `docs/agents/pending.md` entry 5, twice, the second time because the branch
+had moved under the first reading.
+
+**Why a tool and not a fourth hand measurement.** The answer perishes. Three
+readings were taken during the run that wrote this file, and all three
+disagreed, because the queue moved under each one:
+
+| Read against | Open | In sequence | Exclusive pairs | Anchor |
+|---|---|---|---|---|
+| `main@b534f26b` | 12 | — | #64 x #66 | `docs/ideas.md` |
+| `main@fa7c2514` | 11 | 10 of 11 | #59 x #63 (1 of 55) | `docs/agents/pending.md` |
+| `main@dfa351cd` | 6 | 6 of 6 | none (0 of 15) | none |
+
+Nothing was fixed between the second row and the third; seven pull requests
+merged. That is L-A64 — a measurement of another seat's branch perishes, so the
+thing worth shipping is the taking rather than the number — and it is why every
+verdict line carries `base=<branch>@<sha>`. A number in a register without that
+field cannot be compared to anything.
+
+**The base tip is asked of the remote, and a clone behind it refuses.** L13:
+put every reading to the system that owns the fact. The first live run of this
+tool measured against a stale `refs/remotes/origin/main` — two of the engineer
+seat's own pull requests merged at 02:27Z while the file was being written — and
+reported `base=main` without saying which commit that was. Every number in that
+run described a queue that no longer existed. So `git ls-remote` is asked for
+the base tip, a local ref behind it is `INCONCLUSIVE reason=stale-base`, and
+`--fetch` is the opt-in that moves it.
+
+**The clone's depth is reported, not refused.** The first draft of this tool
+exited 2 on any shallow clone, on L-A55's warning that `git merge-tree` "exits
+fatal and a loop reads that as a conflict". Measured on 2026-10-25, that was
+wrong in both directions:
+
+- The clone a seat is handed is *always* shallow, so a blanket refusal makes
+  exit 2 the outcome of every ordinary run — a check that degrades to a
+  constant, which L12 calls worse than a missing check.
+- The fatality is conditional. With the true merge base inside the fetched
+  depth, `merge-tree` answers and answers correctly. With the base below the
+  boundary, `git merge-base` prints nothing and `merge-tree` exits **128**,
+  "refusing to merge unrelated histories" — it never guesses, so there is no
+  silently wrong answer to defend against.
+
+128 is greater than 1, so the exit-status split already classes it as a failed
+reading rather than a conflict, which is the whole of L-A55's warning and is
+handled where the merge happens. The depth therefore prints as
+`clone=shallow|complete`, the `INCONCLUSIVE` diagnosis names it when a merge did
+come back unreadable, and `--unshallow` turns a partial answer into a full one.
+
+**`git merge-tree` exit 1 is a conflict and exit >1 is a failed reading**, and
+the two never share a field (L-A50, L6). Only exit 1 produces `EXCLUSIVE`. This
+is graded rather than asserted: collapsing the two in `merge_probe` turns
+`tests/merge-order.test.mjs` red on the shallow-boundary case and green again
+when it is restored (L-A21 — a gate is tested against an artifact known to fail
+it before it is trusted).
+
+**A head the clone cannot resolve withholds the verdict.** One unmeasured member
+means the queue cannot be certified landable, so `out-of-scope` greater than zero
+forces `INCONCLUSIVE` rather than certifying the readable remainder. The
+`UNREADABLE` lines name the pull requests `--fetch` would bring in.
+
+**Nothing here moves a ref, an index or a working tree.** `merge-tree` adds
+objects to the store and touches nothing a caller can see, which is why it and
+not `git merge` is the verb (L-E12). The three hand measurements before this one
+used real `git merge` in the run's own checkout. `--fetch` and `--unshallow` are
+the two writes, both opt-in and named in the flags, and neither ever passes
+`--depth` — the flag that looks like thrift and leaves somebody else's complete
+clone shallow for every later reader.
+
+**The fix a finding here points at is never a merge driver.** L-A49 measured all
+three arms on byte-identical commits: GitHub's merge API answered 409 on all of
+them, and `merge=union` destroys records where it does run — two appended
+entries in, one and a half out, exit 0, no conflict marker, still valid
+Markdown. The remedy is L-A48's file layout: a dated file per pass under a
+directory, or one writer on the shared table. The tool prints that on the anchor
+line so the measured-wrong fix is not proposed a fifth time.
+
+`tests/merge-order.test.mjs` builds real repositories rather than fixtures,
+which is a deliberate break from the other three suites here. The thing under
+test *is* a merge, so a fixture serving merge results would be testing the
+fixture; only the pull request list, the one genuinely remote input, comes from
+a file via `--prs`. Two cases also need a real `git clone --depth 1` over
+`file://` — git ignores `--depth` on a local-path clone and hardlinks the whole
+object store, so a path clone is neither shallow nor missing the objects of the
+branches it did not fetch, which are exactly the two conditions those cases
+exist to build.

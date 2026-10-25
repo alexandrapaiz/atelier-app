@@ -86,6 +86,20 @@ rejected / built / urgent; only the owner moves proposed.
   to accept, so it enters here as a proposal and goes no further this run
 - Cost: $0
 - Status: proposed
+- **Updated 2026-10-25**, by the instrument rather than by hand. L-A48 names
+  `tools/merge-order.sh` and this repository did not have it, so the entry above
+  was measured with a hand-rolled loop; the tool now exists and its first live
+  readings agree with the entry's conclusion from a different queue. Against
+  `main@fa7c2514` with eleven pull requests open, ten merged in sequence and one
+  pair of fifty-five was mutually exclusive: #59 x #63, two consecutive PM
+  passes, over `docs/agents/pending.md` alone. That is the second independent
+  measurement naming the PM's registers and no other file, which promotes "the
+  two registers that collide here are the PM's" from one reading to a pattern
+  and leaves `docs/ideas.md` and `docs/agents/incidents.md` still uncontended.
+  The proposal is unchanged and still the PM's lane to design. What the tool
+  adds is that nobody has to re-derive the finding to act on it, and that the
+  answer now carries the base sha it was taken at — see the entry below on how
+  fast it moved
 
 ### 2026-10-24 — A wake message was the only thing that remembered two stranded drafts
 - Trigger: this seat's third run was woken with a sentence listing #31 and
@@ -559,5 +573,74 @@ rejected / built / urgent; only the owner moves proposed.
 - First step: the same one-line change in both, and one test per tool asserting
   the last line of the header block appears in `--help` output, so the pattern
   is pinned rather than remembered
+- **Updated 2026-10-25.** Still open for the two tools it names. What changed is
+  that a fourth tool arrived and had the defect before it shipped: growing
+  `merge-order.sh`'s header by twenty lines mid-run truncated its `--help`, and
+  the range was patched by hand once before this entry was read. It now carries
+  the `awk` form `check-shipped.sh` uses, plus the test asked for here — it
+  reads the last prose line of the header out of the file and asserts `--help`
+  reached it, graded by restoring a hardcoded range, which turns it red. So the
+  remedy is proven twice and the pattern is pinned in two of four tools.
+  `check-draft-prs.sh` and `check-seat-surface.sh` are untouched and this entry
+  is the only record of that
+
+### 2026-10-25 — Three tools now need a complete clone and each one solves it alone
+- Trigger: this run opened by measuring three branches by hand and getting an
+  empty merge base for one of them, because the clone a seat is handed carries
+  `.git/shallow` with exactly one commit on `main`. L-A55 names
+  `tools/ensure-full-clone.sh` as the thing to run "before the command that
+  proves it", and this repository has no such file. The fourth tool shipped
+  today therefore handles depth itself, with a `clone=` field and an
+  `--unshallow` flag
+- What: the shallow single-branch clone is now load-bearing for three of the
+  four commands in `tools/`. `check-shipped.sh` avoids it by never needing a
+  local ref — it asks `git ls-remote` instead (L13), which is the cleanest of
+  the three answers. `check-draft-prs.sh` reads `git rev-parse --abbrev-ref
+  HEAD`, which a shallow clone answers correctly, so it is untouched by
+  accident rather than by design. `merge-order.sh` cannot avoid it, because a
+  merge needs history, so it carries its own depth handling. Three solutions to
+  one precondition, in three files, is the shape L-A48's "one writer" clause
+  warns about pointed at code rather than at registers: the next tool that needs
+  history will write a fourth
+- First step: the honest version is small and is not a new idea — one
+  `tools/ensure-full-clone.sh` that reports shallow, deepens on request, and
+  never passes `--depth` into a caller's tree (L-E12), with the three existing
+  tools calling it rather than each testing `--is-shallow-repository`. The
+  reason it is a proposal and not a commit today is that it is a refactor of two
+  files this run did not otherwise touch, and one run opens one pull request.
+  Worth noting against the temptation to skip it: the measured behaviour is
+  genuinely subtle — a shallow clone answers a merge correctly when the merge
+  base is inside the fetched depth and exits 128 when it is not — so every
+  future caller re-deriving that is a caller that will get it wrong once
+- Cost: $0
+- Status: proposed
+
+### 2026-10-25 — The answer to "can this queue be landed" perished three times inside one run
+- Trigger: `tools/merge-order.sh` was run three times while this run was writing
+  it, and all three readings disagreed. Against `main@b534f26b`, twelve pull
+  requests open and #64 x #66 exclusive over `docs/ideas.md`. Against
+  `main@fa7c2514`, eleven open, ten merging in sequence, #59 x #63 exclusive
+  over `docs/agents/pending.md`. Against `main@dfa351cd`, six open, six merging,
+  no exclusive pair at all. Nothing was fixed between the second reading and the
+  third; seven pull requests merged
+- What: L-A64 says a measurement of another seat's branch perishes, and this is
+  that rule with a number on it — the half-life of this particular answer is
+  minutes on a busy evening, not days. Two consequences, and the second is the
+  one worth acting on. First, every verdict line now carries
+  `base=<branch>@<sha>`, because a contention number in a register that does not
+  say what it was read against cannot be compared to the next one. Second, and
+  this is the gap: the reading is most valuable to the seat deciding what to
+  merge, and that seat is the one reader currently not taking it. The pm seat's
+  merge-or-close sweep picks an order by reading `gh pr list`, which answers the
+  per-pull-request question — the one L-A48 says is "the only question any
+  per-pull-request check asks" and the wrong one for a sweep
+- First step: name `npm run merge-order` in the pm charter's sweep step, so the
+  order is chosen from the sequential pass rather than from the open list. That
+  is `prompts/` and `docs/standards/`, neither of which is the engineer seat's
+  to edit, so it goes to the pm and the exo as a proposal. The cheaper half is
+  already done and needs nobody: the command exists, exits 0, 1 or 2, and names
+  the anchor file on a greppable line, so a sweep can gate on it the day someone
+  decides to. Until then this is a tool nobody calls, which is the same standing
+  as the ship check — see the 2026-10-24 entry on exactly that
 - Cost: $0
 - Status: proposed
