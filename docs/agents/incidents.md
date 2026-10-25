@@ -53,7 +53,7 @@ checks it gets an answer.
 | I19 | The vendored standard's enforced-rule list is short two rules | **OPEN**, HQ's lane |
 | I20 | `carries=work` cannot see a sibling pull request carrying the same work | **OPEN**, entry 19 |
 | I21 | The field that tells a refusal from a defect was null on a proven refusal | **OPEN**, entry 20 |
-| I22 | Two seats met one capacity wall and resumed two different ways | **OPEN** on the charter clause; draft half closed |
+| I22 | Two seats met one capacity wall and resumed two different ways | **OPEN** on the charter clause, now routed at entry 24; draft half closed |
 | I23 | The registers this seat must read have outgrown the run that reads them | **OPEN**; the index below is its first fix |
 | I24 | L22 failed to bind one run after it was written, because it only bound the reader | **OPEN** as a binding question; L29 is the fix, in the tree |
 | I25 | The lease flag that protects a force-push is inert on the runtime's clone | **OPEN**, entry 22; seat half in L30 |
@@ -2645,7 +2645,7 @@ did. The charter does not distinguish them because until last night no
 run of this seat had ever been cut.
 
 **The fix is a charter clause, and charter edits merge only by the
-owner**, so it is written here as a proposal and carried in entry 21 of
+owner**, so it is written here as a proposal and carried in
 `docs/agents/pending.md` with the exact text:
 
 > A run woken because capacity returned continues the refused run's
@@ -2664,7 +2664,21 @@ with that reason, which is recorded under "What this branch does with
 #58, #62 and #65" below.
 
 **Status.** OPEN on the charter clause, which needs the owner. The
-stranded-draft half is closed by this run's own action and by L25.
+stranded-draft half is closed by the hook run's own action and by L25.
+
+*Amended 2026-10-25 (message run): the routing this entry claimed was
+not there.* The paragraph above said the clause was "carried in entry
+21 of `docs/agents/pending.md`", and entry 21 is about what the tools'
+summary lines do not print. **No entry carried the clause at all** —
+`grep -n "woken because capacity" docs/agents/pending.md` returned
+nothing. An incident that names a paste which does not exist is worse
+than one that names none, because the next run reads the reference and
+stops looking, which is the same failure as an always-null field
+(L27). The clause is now **entry 24**, and the reference above is
+corrected to point at the file rather than at a number that will
+shift. This is the charter's own law applied to this register's
+plumbing: an incident is closed when the fix is in the tree, and a fix
+routed to an entry that does not exist is not in the tree.
 
 ### I23 — The registers this seat is told to read have outgrown the run that reads them (2026-10-25)
 

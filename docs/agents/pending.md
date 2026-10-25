@@ -60,7 +60,7 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twenty-three entries, of which **five are applied and closed**
+Twenty-four entries, of which **five are applied and closed**
 (entries 9, 12, 14, 15 and 16 — the last three during the hook run of
 2026-10-25).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
@@ -69,10 +69,12 @@ message run after it (PR #48); entry 12 from the message run after that
 (PR #53); entries 13-15 from the message run after that (PR #58);
 entries 16-18 from the message run after that (PR #62); entries 19-21
 from the hook run of 2026-10-25 (PR #68); entries 22-23 from the
-message run after that (PR #71). Each says who
+message run after that (PR #71), which also added entry 24 because it
+found I22 pointing at a paste no entry held. Each says who
 can apply it and gives the text to paste.
 Counted by the hand each one names: seven are the engineer seat's (9,
-12, 14, 15, 16, 19, 21), three are the owner's by merge (1, 2, 3),
+12, 14, 15, 16, 19, 21), **four** are the owner's by merge (1, 2, 3,
+24),
 **five** are whoever holds the resident runtime (10, 11, 18, 20, 22),
 two are HQ's centralizer (17, 23), and the remaining six name a chair,
 the pm seat, or anyone with write access to a surface this seat may
@@ -1801,3 +1803,72 @@ number that means anything is 79.
 message count says whether it carried `everyone=0`. Until then, L31 is
 the local rule and this register states the parameter beside every
 number it takes from that route.
+
+### 24. The charter clause for a run that wakes because capacity returned (I22, L25)
+
+**Who.** The owner. Charter edits merge only by her hand, which is why
+this is a paste in this file and not a diff against
+`prompts/exo-agent.md`. Keeping it out of the diff also keeps this
+seat's weekly pull request docs-only and mergeable by a seat, so the
+register does not sit behind a decision.
+
+**Why this entry exists at all, and it is an admission.** I22 was
+written during the hook run of 2026-10-25 and its own text says the
+clause is "carried in entry 21 of `docs/agents/pending.md` with the
+exact text". It was not. Entry 21 is about printing exit statuses, and
+`grep -n "woken because capacity" docs/agents/pending.md` returned
+nothing until this entry. The incident recorded a routing that did not
+happen, which is the exact failure mode this register keeps naming in
+other people's work: an incident is closed when the fix is in the
+tree, and a fix routed to an entry number that does not hold it is not
+routed. Found by the next run reading its own predecessor's
+cross-references, and it is the cheapest audit in this file.
+
+**Why the clause.** One capacity wall at 23:22Z on 2026-10-24 cut two
+seats and refused three wakes at one turn each. The engineer seat
+resumed onto its own branch and its own pull request and finished the
+work. This seat was dispatched onto a new branch, obeyed the
+one-pull-request rule as written, and left `#65` behind — a draft
+whose tree was byte-identical to an open, ready sibling, idle three
+hours, the first genuinely stranded draft on this product's record.
+Both seats obeyed correctly. The charter says "One PR per run on
+branch `exo/YYYY-MM-DD`, draft-first" and says nothing about a run
+that is the second half of a cut one; read literally a resumed run is
+a new run and owes a new branch, and read by intent one wake's work
+should land once.
+
+**The paste.** Add to `prompts/exo-agent.md` under **Boundaries**,
+after the sentence beginning "One PR per run":
+
+```
+A run woken because capacity returned continues the refused run's
+branch and pull request rather than opening its own. The refused run
+left a draft; finishing it is this run's one pull request, and the
+one-per-run rule is satisfied by the pull request that already
+exists. If the branch cannot be reused — a name the dispatch fixed, a
+push that is refused — the new run's first act is to close the
+refused run's draft with a one-line reason naming the pull request
+that replaces it, so no stranded draft outlives the wake that made
+it.
+```
+
+The same three sentences apply verbatim to `prompts/pm-agent.md` and
+`prompts/engineer-agent.md`, which carry the same one-pull-request
+rule and the same silence about resumption; the engineer seat reached
+the right answer without the clause, so for that charter it is a
+confirmation rather than a change.
+
+**The half that needs nobody is already honoured.** The second
+sentence — close the refused draft first — was carried out by the hook
+run of 2026-10-25 against `#65`, and it is L25 in
+`docs/agents/lessons.md`, `portable: yes`. So the cost of this entry
+sitting unmerged is bounded: a future cut run will still be told by
+the lessons register to clean up after itself, it just will not be
+told by its charter.
+
+**Verification.** The next run of any seat here that is woken with a
+capacity-returned message either continues the refused run's pull
+request, or closes the refused draft in its first act and says so. If
+a third stranded draft appears after a capacity wall, the clause is
+needed and unmerged, and that is the sentence to put in front of the
+owner rather than this one.
