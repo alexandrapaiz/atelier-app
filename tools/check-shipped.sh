@@ -24,6 +24,13 @@
 #   tools/check-shipped.sh --base-sha <sha>     the base tip read BEFORE the run
 #   tools/check-shipped.sh --fixture DIR        read every input from files
 #
+# --base-sha takes a commit sha, full or abbreviated — `git rev-parse HEAD` and
+# `git rev-parse --short HEAD` are both read as the same tip, because an
+# abbreviation is a spelling and not a movement. Anything that is not 4 to 40
+# hex characters is a caller error and exits 2 rather than being compared as a
+# string: that comparison's unequal branch is the one that *passes*, so a bad
+# argument there would mask every failing verdict below (I16).
+#
 # One line per reading, then one verdict line. Fields stable enough to grep:
 #   SHIPPED    branch=atelier-engineer/2026-10-24-message-2 source=remote-head
 #
@@ -87,9 +94,31 @@ fixture=
 while [ $# -gt 0 ]; do
   case "$1" in
     --base)     base="${2:-}"; shift 2 ;;
-    --base-sha) base_sha="${2:-}"; shift 2 ;;
+    # A --base-sha that is not a commit sha is a caller error and not a base
+    # tip. `--base-sha main`, or a typo, would otherwise be compared against
+    # the sha the tool reads and read as the base having moved — which is the
+    # *passing* branch below, so the loudest failures in this file would be
+    # masked by a bad argument (I16). The bounds are git's own: 4 is the
+    # shortest abbreviation git will resolve (core.abbrev), 40 a full sha, and
+    # the lower bound matters because anything shorter could collide with a
+    # real tip by chance and so must never reach the comparison at all.
+    --base-sha)
+      base_sha="${2:-}"
+      base_sha_ok=yes
+      case "$base_sha" in ''|*[!0-9a-fA-F]*) base_sha_ok=no ;; esac
+      if [ "${#base_sha}" -lt 4 ] || [ "${#base_sha}" -gt 40 ]; then
+        base_sha_ok=no
+      fi
+      if [ "$base_sha_ok" = no ]; then
+        echo "check-shipped: --base-sha needs a commit sha of 4 to 40 hex characters, got: ${2:-<nothing>}" >&2
+        exit 2
+      fi
+      shift 2 ;;
     --fixture)  fixture="${2:-}"; shift 2 ;;
-    -h|--help)  sed -n '2,81p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # The whole header block, found by where the comments stop rather than by a
+    # line number: this run grew the header by six lines, and a hardcoded range
+    # would have silently cut --help off mid-sentence.
+    -h|--help)  awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
     *) echo "check-shipped: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -199,8 +228,35 @@ if [ -n "$base_sha" ]; then
   else
     base_now=$(git ls-remote --heads origin "$base" 2>/dev/null | head -1 | cut -f1 || echo "")
   fi
-  if [ -n "$base_now" ] && [ "$base_now" != "$base_sha" ]; then
-    advanced="origin/$base moved from $base_sha to $base_now"
+  # Both sides into one normal form before they are compared. $base_now is a
+  # full forty-hex sha the tool read for itself; $base_sha is whatever spelling
+  # the caller captured, and `git rev-parse --short HEAD` is the ordinary way
+  # to capture a base tip in a shell — it is what nearly every run report in
+  # this company prints. Compared as plain strings, the abbreviation of a
+  # commit reads as that commit having *moved*, and the inequality branch is
+  # the passing one, tested above ORPHANED, UNPUSHED and NOTHING: so one short
+  # sha masked every failing verdict this check has (I16).
+  #
+  # The normal form is lowercase, then equality or prefix. Two spellings of one
+  # commit can only differ in case or in length, so that pair decides every
+  # case, and the parse check above has already guaranteed both are hex and at
+  # least four characters — the shortest abbreviation git itself will resolve.
+  # Deliberately no `git rev-parse` here: resolution would decide nothing the
+  # prefix test does not, and it fails exactly where this flag is needed, since
+  # on a shallow clone the pre-run tip of a base that really did advance is not
+  # an object the checkout holds (the self-merge case). Where the two are
+  # neither equal nor a prefix, the base moved.
+  if [ -n "$base_now" ]; then
+    then_sha=$(printf '%s' "$base_sha" | tr 'A-F' 'a-f')
+    now_sha=$(printf '%s' "$base_now" | tr 'A-F' 'a-f')
+    if [ "$then_sha" = "$now_sha" ]; then
+      :
+    elif [ "${now_sha#"$then_sha"}" != "$now_sha" ] \
+      || [ "${then_sha#"$now_sha"}" != "$then_sha" ]; then
+      :   # one is the other's abbreviation, so this is one commit
+    else
+      advanced="origin/$base moved from $base_sha to $base_now"
+    fi
   fi
 fi
 

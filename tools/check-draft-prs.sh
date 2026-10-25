@@ -18,17 +18,31 @@
 #   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=none
 #   LIVE      #47 atelier-engineer/2026-10-24-message idle=2m commits=1 files=1 carries=work run=self
 #   FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=4m commits=1 files=0 carries=nothing run=fresh
+#   STRANDED  #40 atelier-exo/2026-10-24-message idle=4h commits=3 files=2 carries=work run=ci
 #
 # carries=work   the branch changes files, so it is unfinished work: ready it
 #                (gh pr ready <n>), or write in it which clause keeps it a draft
-#   carries=nothing  the branch changes no file: it is not unfinished work, it is
-#                nothing. Close it and re-declare what it owed on the board.
+#   carries=nothing  the branch changes no file: it is not unfinished work, it
+#                  is nothing. Close it and re-declare what it owed on the
+#                  board.
 #   run=self       this is the branch the calling run is standing in, so the seat
 #                  holding it is the one reading this line. Not stranded, not
 #                  counted. The only reading that works on the surface the seats
 #                  actually run on, where there is no Actions run to find.
-#   run=live       a workflow run is queued or in progress for this branch, so a
-#                  seat is still standing in it. Not stranded, not counted.
+#   run=live       a run of one of the seat workflows company.yaml declares is
+#                  queued or in progress on this branch, so a seat is still
+#                  standing in it. Not stranded, not counted.
+#   run=ci         some other workflow is queued or in progress on this branch.
+#                  A run on the branch is not a seat on the branch: here it is
+#                  always tests.yml, which fires on pull_request, so every push
+#                  into an open draft starts a job on the seat's branch for
+#                  about twenty seconds. It decides nothing: a push in the last
+#                  twenty seconds says nothing about whether anyone is working,
+#                  and this reading flickers while idle does not. The verdict
+#                  is the one age gives, so a draft old enough to judge prints
+#                  STRANDED run=ci and a younger one prints FRESH run=fresh,
+#                  age winning the field so the whole line holds still. A
+#                  declared seat workflow in the same list outranks this.
 #   run=fresh      nothing vouches for this branch, and nothing had time to:
 #                  its newest commit is younger than --fresh-under minutes, so
 #                  the seat that opened it may still be standing in it right
@@ -36,7 +50,9 @@
 #                  because a draft left unjudged must not read as one examined
 #                  and cleared (L-A21). This is the reading that covers another
 #                  seat's pass running in the same minute as yours, which
-#                  run=self cannot see and run=live cannot see here.
+#                  run=self cannot see and run=live cannot see here, since no
+#                  seat in this product has run on a seat workflow since
+#                  September.
 #   idle=Nm, idle=Nh
 #                  how long since the branch's newest commit — minutes under an
 #                  hour, whole hours above it. Minutes because the fresh verdict
@@ -70,7 +86,10 @@ set -euo pipefail
 # the same minute as yours — the Actions API cannot see a host window at all,
 # and the board only learns of a run when it ends. So the only reading left for
 # that case is the age of the branch's newest commit, and this is the number it
-# is compared against.
+# is compared against. It is also the reading that replaced the Actions one for
+# every draft but a genuine forge seat run, because an age is a fact about the
+# branch and the presence of a test job is a fact about the last twenty
+# seconds.
 #
 # 60, measured rather than picked. `GET /api/board/atelier` on 2026-10-24 at
 # 22:09Z served 25 runs spanning 01:54Z to 22:07Z, and the longest seat run on
@@ -123,10 +142,10 @@ base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) || {
 # The branch this run is standing in, read once. A run's own draft is live by
 # construction, and on the surface that actually runs the seats there is no
 # other way to know it: every seat run here is a host window on the resident
-# runtime, which the Actions API below cannot see, so `run=live` can never
-# fire and the caller's own minutes-old draft reads as stranded. Empty when
-# HEAD is detached, and empty keeps the conservative default: a draft nothing
-# vouches for still counts as stranded.
+# runtime, which the Actions API below cannot see, so `run=live` fires on no
+# run this product is actually having and the caller's own minutes-old draft
+# read as stranded. Empty when HEAD is detached, and empty keeps the
+# conservative default: a draft nothing vouches for still counts as stranded.
 self=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || self=
 [ "$self" = HEAD ] && self=
 
@@ -137,6 +156,27 @@ if [ -f "$root/company.yaml" ]; then
   while IFS= read -r line; do declared+=("$line"); done < <(
     sed -n 's/^  - *{ *name: *\([a-z0-9-]*\).*/\1/p' "$root/company.yaml")
 fi
+
+# And the workflow each seat is declared to run on, which is what separates a
+# seat executing on the forge from the test job every push to an open draft
+# starts. The Actions API reports a run's workflow as the path of its file,
+# which is the same string company.yaml carries, so the two are compared
+# without a name lookup and a workflow rename cannot drift them apart.
+# Empty means nothing can read `run=live`, and the summary line says so rather
+# than letting every in-flight run quietly become a `ci`.
+declared_workflows=()
+if [ -f "$root/company.yaml" ]; then
+  while IFS= read -r line; do declared_workflows+=("$line"); done < <(
+    sed -n 's/^  - *{ *name: *[a-z0-9-]* *, *workflow: *\([^ ,}]*\).*/\1/p' "$root/company.yaml")
+fi
+
+is_seat_workflow() { # path
+  local w
+  for w in ${declared_workflows[@]+"${declared_workflows[@]}"}; do
+    [ "$w" = "$1" ] && return 0
+  done
+  return 1
+}
 
 seats=()
 case "$scope" in
@@ -202,11 +242,21 @@ while IFS=$'\t' read -r number branch; do
     idle_s=
   fi
 
+  # Which workflows are in flight on this branch, by path, newest first. The
+  # count this used to take is not enough: it answered "a run" where the
+  # question is "a seat", and in this repository the runs on a seat branch are
+  # all tests.yml, so the count made the verdict turn on whether a test job
+  # happened to be alive in the second the line printed.
   if [ -n "$self" ] && [ "$branch" = "$self" ]; then
     run=self
-  elif live=$(gh run list --branch "$branch" --limit 20 --json status \
-       --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length' 2>/dev/null); then
-    [ "$live" -gt 0 ] && run=live || run=none
+  elif inflight=$(gh api "repos/{owner}/{repo}/actions/runs?branch=$branch&per_page=20" \
+       --jq '[.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .path] | join("\n")' 2>/dev/null); then
+    run=none
+    while IFS= read -r wf; do
+      [ -n "$wf" ] || continue
+      if is_seat_workflow "$wf"; then run=live; break; fi
+      run=ci
+    done <<<"$inflight"
   else
     run=unreadable
   fi
@@ -217,8 +267,12 @@ while IFS=$'\t' read -r number branch; do
   # An unreadable idle field can never reach this test, so a failed read still
   # counts as stranded — the cause rides with the value (L-A44), and the cheap
   # error here is one merge of waiting.
-  if [ "$run" = none ] && [ "$fresh_under_min" -gt 0 ] && [ -n "$idle_s" ] \
-     && [ "$idle_s" -lt $(( fresh_under_min * 60 )) ]; then
+  # `ci` reaches this test as well as `none`: a test job in flight is not a
+  # reason to excuse a draft, and it is not a reason to refuse it the excuse
+  # age would have given it either. The two readings print differently and are
+  # judged the same, and that is the whole of the fix.
+  if { [ "$run" = none ] || [ "$run" = ci ]; } && [ "$fresh_under_min" -gt 0 ] \
+     && [ -n "$idle_s" ] && [ "$idle_s" -lt $(( fresh_under_min * 60 )) ]; then
     run=fresh
   fi
 
@@ -244,6 +298,7 @@ done < <(gh pr list --state open --limit 100 --json number,headRefName,isDraft \
 read_note="$skipped out of scope"
 [ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge (under ${fresh_under_min}m)"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
+[ ${#declared_workflows[@]} -gt 0 ] || read_note="$read_note, no seat workflow declared (run=live unreachable)"
 
 if [ "$stranded" -gt 0 ]; then
   echo "check-draft-prs: $stranded of $checked draft(s) in scope are stranded ($read_note) — ready them, close them, or name the clause that keeps them drafts (L-A32)."
