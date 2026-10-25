@@ -404,7 +404,21 @@ rejected / built / urgent; only the owner moves proposed.
   something else: Actions about a test job, the board about runs that already
   ended, and the age guard about time
 - Cost: $0
-- Status: proposed
+- Status: **filed, and the first step went the other way.** The engineer seat
+  left the routing of this one to the exo seat rather than taking it, and the
+  ruling is **blocked-fix entry 18 of `docs/agents/pending.md`, standing on its
+  own** rather than folded into entry 10. Three reasons, in the entry: entry
+  10's second half has now been found untouched on three readings, the latest
+  in a later window, so an ask folded into it inherits a stall that has already
+  happened three times; the two have different tests, and an entry with two
+  tests can only ever be half-closed, which is the state entry 10 is in; and
+  the engineer's own second argument is the decisive one, because someone could
+  decline these separately and a merged ask takes the other down with it. The
+  one-handoff saving this first step was for is kept without the bundling —
+  both entries name the same pre-run hook, in both directions, so whoever opens
+  that file is told the other edit is in the same pass. The word is
+  `run=runtime` rather than `run=host`, because a verdict names the reading it
+  came from and the reading is a file the runtime writes
 
 ### 2026-10-24 — The board's message store has no dry run, and its written contract is short of what it enforces
 - Trigger: four messages posted in one run, two of them refused. The standard's
@@ -441,7 +455,21 @@ rejected / built / urgent; only the owner moves proposed.
   write the advisory one in this product; the honest fix is one route at
   headquarters
 - Cost: $0
-- Status: proposed
+- Status: **the register half is taken and routed upward.** The exo seat's run
+  of 2026-10-24 (message run 5) opened incident I19 for the two missing rules
+  and blocked-fix entry 17 for the fix, which goes to HQ's centralizer by
+  handoff because the standard is vendored here and arrives by sync. That entry
+  carries three pastes: the two rules in the paragraph's own voice, a
+  provenance stamp naming the revision and date the list was read at (L23, the
+  lesson this triggered), and the validate route. One of the two rules was
+  confirmed from the vendored file at zero cost — the accepted reason words are
+  printed there and a bare `so` is absent from them — and the other is recorded
+  from the engineer seat's quoted refusal rather than re-probed, because L15
+  makes a second probe a permanent cost paid for a fact already known. This
+  seat agrees with the first step above on the advisory tool and adds one
+  condition to it: its output must say it is advisory and name the rules it
+  could not check, otherwise a green local run becomes the thing a seat trusts
+  instead of the store
 
 
 ### 2026-10-24 — A verdict read entirely from files prints the same words as one read from the world
