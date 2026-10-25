@@ -7,9 +7,34 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+- **Three workflow-lane fixes with no eligible merger** (2026-10-25):
+  #11 (open since 2026-09-30, 25 days), #19 (since 2026-10-14, 11 days)
+  and #40 (since 2026-10-24, 1 day). All three touch
+  `.github/workflows/`, which this seat's own run instructions bar it
+  from touching even though docs/standards/pm.md §21 would otherwise
+  let a PM merge them. Already asked of the owner on the board
+  (message `92705a23`, 2026-10-24 22:24:51Z); no date set. Named again
+  rather than re-asked, per L-A34, since this sweep found nothing
+  changed.
+- **#65 (exo, draft)** — its tree is byte-identical to #62, which
+  merged this run (it also carried #58's commits, so GitHub marked #58
+  merged automatically). #65's own run was refused by a provider
+  capacity limit before it could do any work. The exo seat's own
+  run today (#68, draft, open) is already investigating this exact
+  case as an incident; not this seat's to close or merge out from
+  under that run.
 
 ## Owner-only actions
+
+**Suspended, not overdue, while Atelier sleeps (ADR-002, 2026-10-16;
+`company.yaml` still reads `posture: asleep` as of this run).** The
+Sprint 2/3/4 items below stay listed because the dates underneath them
+are real and the owner-only action each one names is still true; none
+of them is late, because the clock ADR-002 describes has no date until
+she wakes the product. The Supabase allowlist and the worthiness gate
+are not suspended — L-A20 clause 3 keeps a local law's preconditions
+alive across an override unless the override names them, and ADR-002
+names neither.
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
   the secret now exists in the pm-agent workflow env (it did not on the last
@@ -44,14 +69,22 @@ None as of 2026-09-24.
 
 ## Ledger items awaiting a verdict
 
-- **Atelier company mode** (2026-09-24): docs/ideas.md, status
-  `proposed`. Its own first step defers discovery until after the App
-  Store ship, so it needs no verdict yet. Flagged here so it does not go
-  stale unnoticed.
-- **Browser checks for what the node harness cannot reach** (2026-09-24):
-  docs/ideas.md, status `proposed`. Triggered by the password reset work
-  and the new `scripts/reset-page-test.mjs`. First step is to reuse it
-  for Sprint 2's account deletion item before generalizing.
+- **Atelier company mode** (proposed 2026-09-19, now 5+ weeks with no
+  verdict — over pm.md §4's two-week line): docs/ideas.md. Its own
+  first step defers discovery until after the App Store ship, which the
+  asleep posture has itself deferred, so there is nothing to lose by
+  leaving it `proposed`. Flagged per §4 rather than silently aging.
+- **Browser checks for what the node harness cannot reach** (proposed
+  2026-09-19, same 5+ week gap): docs/ideas.md. First step was to reuse
+  `scripts/reset-page-test.mjs` for Sprint 2's account deletion item,
+  which the asleep posture has also deferred.
+- **Everything proposed since 2026-10-24** (roughly twenty entries, all
+  from engineer and exo runs working the draft/ship-check/seat-surface
+  tooling): all under two weeks old, none yet due a §4 flag. Not listed
+  individually here; `docs/ideas.md` is current and this seat has not
+  groomed their order, since grooming backlog against `docs/vision.md`
+  is a ceremony duty and ADR-002 suspends the ceremony, not the ledger
+  itself.
 
 ## Blocked fixes (exo)
 
