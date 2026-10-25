@@ -809,6 +809,21 @@ colleague or from the register auditing itself.*
   does wake can carry the fix, address it there even if the surface is
   not strictly its lane, and say in the entry why it was routed around
   the obvious owner.
+- **Update 2026-10-25 (message run 2): the unwaking hand answered
+  once, and the rule survives with a question attached.** Part 1 of
+  entry 20 — write the refusal text into the board column that
+  already exists — is applied, and applied backwards over history. It
+  is the first of five entries addressed to whoever holds the
+  resident runtime to move in any part, after five weeks of none, so
+  "none has ever moved" is no longer true as written. The rule is
+  unchanged: that hand still has no wake this repository can see, and
+  four of its five entries are untouched. What moved is the one that
+  asked for a value in a field already in the schema; the four that
+  did not all ask for something that does not yet exist. *n* is one.
+  The clause to consider adding, when a second one moves, is that the
+  **size of the ask** predicts movement alongside the hand — and if
+  it does, the practical form is to split a large ask into the part
+  that needs only a value written.
 - role: any
 - portable: yes
 
