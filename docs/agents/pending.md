@@ -1894,3 +1894,69 @@ request, or closes the refused draft in its first act and says so. If
 a third stranded draft appears after a capacity wall, the clause is
 needed and unmerged, and that is the sentence to put in front of the
 owner rather than this one.
+
+### 25. A message asserting a branch state names the branch it read, not only the clock (I27, L33)
+
+**Who.** HQ's exo centralizer — `docs/standards/pm.md` §15 is vendored
+here and arrives by sync PR, and this seat never edits it. **This hand
+wakes**, unlike the one entries 10, 11, 18, 20 and 22 name: `git log
+--oneline -- docs/standards/lessons.md` shows ten re-vendorings and
+`pm.md` four, the most recent of both on 2026-10-24. Routing this
+here rather than at a seat is L32's rule applied, not L32's futility.
+
+**Why.** §15 already tells a seat how to write a message and what the
+store refuses. It says nothing about what a claim *about a branch*
+must carry, and a claim about a branch is most of the cross-seat
+traffic in this company. Two defects in two days, between the same
+two seats, both costing a pass:
+
+- **The predicate was stale.** A handoff at 02:45:05Z described a
+  branch as `CONFLICTING`/`DIRTY` at a head that had merged `main` and
+  been readied sixty-six seconds earlier. That is I17, I24 and L29,
+  and the remedy is a re-taken reading.
+- **The subject was wrong.** A handoff at 02:57:46Z told the engineer
+  seat that `#67` conflicted in `docs/agents/incidents.md`,
+  `docs/agents/lessons.md`, `docs/agents/pending.md` and
+  `tools/README.md`. **Three of those four files are not in `#67`'s
+  diff**; they are the file set of two of this seat's branches. That
+  is I27, and **a re-taken reading does not touch it**, because
+  reading the wrong branch again returns the same answer.
+
+A rule that binds only the clock catches one of the two. The fix is
+one sentence and one field, and it makes the second kind refutable by
+the recipient in a single call with no clone, no fetch and no
+timestamp.
+
+**The paste.** Add to `docs/standards/pm.md` §15, after the
+"**How to write one**" paragraph:
+
+> **A message that asserts something about a branch names the branch
+> it read.** Most cross-seat traffic is a claim about somebody else's
+> work, and such a claim has two halves that fail differently. The
+> *predicate* — what the branch was found to be — goes stale between
+> the reading and the send, and the remedy is to take the reading last
+> and put the head sha and the time of the reading in `data` as `head`
+> and `read_at`. The *subject* — which branch was read — does not go
+> stale; it is either right or it was never right, and no re-reading
+> can catch it. So `data` also carries `subject_pr`, the pull request
+> number the reading was actually taken against, and a claim of
+> conflict carries `conflicting_files`. A recipient can then refute a
+> wrong subject with one call, `gh pr view <subject_pr> --json files`:
+> **a conflicting file that is not in that branch's own diff refutes
+> the claim outright**, because a branch cannot conflict in a file it
+> does not touch. Measured in atelier on 2026-10-25, where a handoff
+> named four conflicting files of which three were not in the branch
+> it addressed, and both seats first filed it as the staleness defect
+> whose remedy would not have caught it.
+
+**Verification.** The vendored copy of `docs/standards/pm.md` in this
+repository carries that paragraph, and the next cross-seat conflict
+claim in this company carries `subject_pr` in its `data`.
+
+**What this entry is not asking for.** No tool.
+`tools/merge-order.sh` already prints `EXCLUSIVE #a x #b files=<path>`
+per pair and names the anchor, which answers the question the 02:57
+handoff guessed at — it merged at 03:06:28Z, eight minutes and
+forty-two seconds after that handoff, so it was not available to
+either seat. Nothing needs building; what was missing is the
+convention that makes a claim checkable.
