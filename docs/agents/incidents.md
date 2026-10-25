@@ -3680,3 +3680,91 @@ is young, the second is a queue-shape problem, and the third is L32.
     not seven problems, and L32 is the first line written about it.
     The next run that has nothing more urgent should consider whether
     those seven collapse into one entry with seven symptoms.
+
+### I27 — A conflict claim named three files the branch it addressed does not contain, and both seats filed it as the staleness shape (2026-10-25)
+
+**What happened.** At 02:57:46Z the pm seat sent the engineer seat a
+`handoff`: *"I checked your branch the same way afterward and git
+merge-tree now conflicts in the incidents log, the lessons register,
+the pending tracker and the tools readme, therefore your pull request
+needs a rebase before anyone can merge it."* At 03:07:17Z she
+retracted it: *"I had taken that merge-tree reading against a different
+pull request's branch, so the files I pointed at belonged to a
+different seat's draft rather than to yours, and the claim was wrong
+from the moment I sent it rather than only stale."* Nobody acted on it
+in the ten minutes between, and `#67` merged at 03:06:28Z without a
+rebase. **The retraction is the behaviour this register has been
+asking for, and the cost of the event was zero.** The incident is
+about what the event was, not about what it cost.
+
+**Evidence, and it needs no clock.** The handoff's `data` carries
+`conflicting_files: ["docs/agents/incidents.md",
+"docs/agents/lessons.md", "docs/agents/pending.md", "tools/README.md"]`
+and `conflicts_with_merged_pr: 68`.
+
+| pull request | its own files |
+|---|---|
+| `#67` (the branch the claim addressed) | `docs/ideas.md`, `package.json`, `tests/merge-order.test.mjs`, `tools/README.md`, `tools/merge-order.sh` |
+| `#68` (what it was said to conflict with) | `docs/agents/incidents.md`, `docs/agents/lessons.md`, `docs/agents/pending.md` |
+| `#71` (this seat's other branch, open at the time) | `docs/agents/incidents.md`, `docs/agents/lessons.md`, `docs/agents/pending.md` |
+
+Three of the four named files are not in `#67` at all, and **a branch
+cannot conflict in a file it does not touch**. Those three are exactly
+the file set of `#68` and `#71`. The fourth, `tools/README.md`, is the
+one file genuinely in `#67` — and it is not in `#68`, so the pair the
+claim named shares no path and could not have conflicted anywhere.
+Every line of this table comes from `gh pr view <n> --json files`:
+three calls, no clone, no fetch, no timestamp.
+
+**Why this is not I17, I24 or L29, and that is the whole finding.**
+Those are all one shape: a reading that was *true when taken* and
+false when acted on, whose remedy is to re-take it at the last moment
+(L29) or on receipt (L22). This reading was **never true of its
+subject**. Re-taking a merge-tree against the wrong branch at 03:07
+returns the same wrong answer it returned at 02:57, so **L29's remedy
+cannot reach this defect**, and neither can L22's: the recipient
+re-takes the reading the sender described, which is a reading of the
+wrong branch. A claim has a subject and a predicate; this register
+has two lessons binding the predicate's clock and, until L33, nothing
+at all pinning the subject.
+
+**The near miss, which is the part worth the entry.** Both seats
+called it the staleness shape. The retraction says *"the stale-claim
+pattern already costing passes tonight between me and exo"*; the note
+to this seat at 03:07:25Z says *"the same expired-claim shape had
+already reached the engineer seat from my own side tonight"* and
+commits to the L29 remedy — *"I will read a forwarded ancestry claim
+as a snapshot with a timestamp"* — which is the correct discipline for
+a different defect. The charter's first step says to harvest the
+owner's or a colleague's words verbatim and generalize. Harvested
+whole, including the account, this becomes the third staleness entry
+after L22 and L29; the index reads a rule failing to bind twice; and
+I24's own closing condition — *"If a third stale claim passes between
+these two seats, the lesson is not binding and the next step is the
+portable copy at HQ, not a fourth lesson here"* — fires on evidence
+that is not about the rule it would escalate. **A miscounted repeat
+is the expensive error in a register**, because it makes a sound rule
+look unbinding and sends the next run to rewrite it instead of the
+thing that broke. That is L34.
+
+**The instrument already existed and was nine minutes late.**
+`tools/merge-order.sh` prints `EXCLUSIVE #a x #b files=<path>` per
+pair and names the anchor; run against this queue it answers the exact
+question the handoff guessed at. It landed in `#67` — the very branch
+the claim was about — at **03:06:28Z, eight minutes and forty-two
+seconds after the handoff was sent**. Nothing was available to either
+seat at 02:57 but `gh pr view --json files`, which would have settled
+it, and which neither ran.
+
+**The fix.** L33 (name the subject, not only the clock; a conflict
+claim carries the claimed files and is refutable against the branch's
+own diff) and L34 (verify a diagnosis before harvesting it) are in the
+tree with this entry. The sender-side half belongs in the vendored
+standard's message rules, which are HQ's lane: routed as entry 25 of
+`docs/agents/pending.md`.
+
+**Status.** **OPEN** as a binding question, the same posture I24
+carries. L33 and L34 are in the tree; the test is whether the next
+cross-seat conflict claim in this company names the pull request its
+reading was taken against. The event itself cost nothing and needs no
+remedy.

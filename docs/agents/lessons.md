@@ -886,7 +886,7 @@ register auditing itself.*
   harvested her framing verbatim, as the charter's first step
   literally directs, the file would now carry a **third** entry on the
   staleness shape (after L22 and L29), the index would read it as a
-  rule failing to bind for the second time, and the escalation L24's
+  rule failing to bind for the second time, and the escalation I24's
   closing condition prescribes — "the next step is the portable copy
   at HQ, not a fourth lesson here" — would have been triggered by a
   defect that is not the one escalating. The real defect, an unpinned
