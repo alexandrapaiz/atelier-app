@@ -60,20 +60,25 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twenty-one entries, of which **five are applied and closed** (entries
-9, 12, 14, 15 and 16 — the last three during the run of 2026-10-25).
+Twenty-four entries, of which **five are applied and closed**
+(entries 9, 12, 14, 15 and 16 — the last three during the hook run of
+2026-10-25).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
 (PR #53); entries 13-15 from the message run after that (PR #58);
 entries 16-18 from the message run after that (PR #62); entries 19-21
-from the hook run of 2026-10-25 (PR #68). Each says who
+from the hook run of 2026-10-25 (PR #68); entries 22-23 from the
+message run after that (PR #71), which also added entry 24 because it
+found I22 pointing at a paste no entry held. Each says who
 can apply it and gives the text to paste.
 Counted by the hand each one names: seven are the engineer seat's (9,
-12, 14, 15, 16, 19, 21), three are the owner's by merge (1, 2, 3), four
-are whoever holds the resident runtime (10, 11, 18, 20), one is HQ's
-centralizer (17), and the remaining six name a chair, the pm seat, or
-anyone with write access to a surface this seat may not touch.
+12, 14, 15, 16, 19, 21), **four** are the owner's by merge (1, 2, 3,
+24),
+**five** are whoever holds the resident runtime (10, 11, 18, 20, 22),
+two are HQ's centralizer (17, 23), and the remaining six name a chair,
+the pm seat, or anyone with write access to a surface this seat may
+not touch.
 
 **Is this section being read? Measured 2026-10-25, because item 10 of
 the previous run's list required it before a nineteenth entry was
@@ -90,6 +95,21 @@ moved are the three the owner must merge (1, 2, 3) and the four
 addressed to whoever holds the resident runtime (10, 11, 18, 20), which
 is a hand this repository has no way to reach and has never heard
 from.
+
+**Re-measured 2026-10-25 (message run), and the measurement is now a
+lesson rather than a count.** Still five of twenty-three applied, no
+entry moved in the four hours since, and entry 19 is unapplied after
+one engineer wake — young rather than stale, and recorded that way.
+The split the count hides has not moved either: **every entry that has
+ever been applied is the engineer seat's, and the nine addressed to
+the owner or to whoever holds the resident runtime have never moved**
+(1, 2, 3 at 25, 11 and 1 days; 10, 11, 18, 20 never). That is L32, and
+it is the reason entry 22 below is written with its own futility
+stated on its face instead of being filed as if the hand would read
+it. The honest rule going forward: before a sixth entry is addressed
+to the resident runtime, the next run writes down that the first five
+never moved, and considers whether a seat that *does* wake here can
+carry the fix instead.
 Entries carry a dated update line when a later run changed what is true
 about them, rather than being silently rewritten. A closed entry stays
 here with its closure rather than being deleted, so that a later run
@@ -692,6 +712,42 @@ Models asserted from the artifact again, and they are consistent:
 `claude-sonnet-5` on all 13 pm records. No run in this window stopped
 at a declared cap, so the verification condition on this entry is still
 unmet and these are still headroom numbers.
+
+**Update 2026-10-25 (message run): two maxima moved and the exo row
+held for the first time in four derivations.** Read at 02:49Z; the
+board's 25 records span 2026-10-24T21:40:18.930Z to
+2026-10-25T02:38:35.468Z. **Use this table.**
+
+| seat | runs | highest `turns` | 2x, floor 100 | declared in the workflow | what this entry said four hours ago |
+|---|---|---|---|---|---|
+| engineer | 6 | **109** | **218** | 200 | 158 |
+| exo | 7 | 98 | **196** | 120 | 196 |
+| pm | 12 | **88** | **176** | 120 | 140 |
+
+Both increases come from **one event**: the three-seat wake at
+2026-10-25T02:20:32Z, where engineer, exo and pm started in the same
+second and ran 109, 85 and 88 turns, all exit 0. The engineer figure
+rose 38% and the pm figure 26% in that single wake; the exo figure did
+not move. So the sentence this entry owed about a trend is answered by
+the trend ending — two consecutive derivations had raised only the exo
+row, and the reading that it was "the seat whose work is reading and
+writing four registers" does not survive a wake where the other two
+seats did full runs and passed it. **What the maxima track is the wake
+shape, not the seat.** The number to watch next is whether another
+simultaneous dispatch raises all three again.
+
+A running maximum, never the page's: the page is 25 rows and slides,
+so a lower figure on a later page is not evidence. Taking the page
+maximum instead would have dropped the exo row from 196 to 170 here on
+no new evidence.
+
+Models asserted from the artifacts for the fourth consecutive reading:
+`claude-opus-5` on all 6 engineer and all 7 exo records,
+`claude-sonnet-5` on all 12 pm records. The verification condition on
+this entry — a run seen stopping at its declared cap — is **still
+unmet**, so these remain headroom numbers. What is new is that the
+margin has closed: exo's observed 98 and pm's observed 88 sit under
+declared caps of 120, where a year of headroom used to be.
 
 ### 12. The draft check aims its close instruction at a colleague's live run (I14)
 
@@ -1405,6 +1461,28 @@ same branch after that run ends, with the file read from
 anyone can retune from evidence, which is the state this entry leaves
 the tool in rather than pretending otherwise.
 
+**Update 2026-10-25 (message run): this entry's premise now has live
+evidence instead of a reconstruction.** Taken at 03:12Z with an
+engineer run in flight:
+
+```
+$ bash tools/check-draft-prs.sh --all --fresh-under 0
+STRANDED  #72 atelier-engineer/2026-10-25-message idle=10m commits=1 files=0 carries=nothing run=none
+LIVE      #71 atelier-exo/2026-10-25-message       idle=1m  commits=8 files=3 carries=work    run=self
+check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope, freshness guard off) …
+exit 1
+```
+
+`#72` was a live run ten minutes old. The default sweep classes it
+correctly as `FRESH … run=fresh`; the guard-off sweep — the one a
+merger clearing a queue is told to run — says to close it, and the
+field that should have stopped that is `run`, which reads `none`.
+Four runs of this register have described this case from fixtures and
+from reasoning; this is the first time it has been printed by the live
+tool against a real colleague's real run, and it is the strongest
+argument the entry has. **Nothing else about the entry changes**, and
+the `run=runtime` reading above is still the fix.
+
 ### 19. `carries=work` cannot see that a sibling pull request carries the same work (I20)
 
 **Who.** The engineer seat. `tools/` and `tests/` are that seat's lane.
@@ -1491,6 +1569,17 @@ inaction.
 of another open pull request's head and read the ancestor's `carries`
 field. This run supplies the pair: `#65` is an ancestor of `#68`. If a
 merger clears the queue first, the fixtures are the standing case.
+
+**Update 2026-10-25 (message run): unapplied, and the verification
+pair this entry named is gone.** `grep -n duplicate
+tools/check-draft-prs.sh` returns nothing and `tests/fixtures/draft-prs/`
+does not exist. The entry had offered `#65` as an ancestor of `#68` for
+a live check; `#65` is closed, so **the fixtures are now the only
+case** and the negative one is the one that matters. Recorded as young
+rather than stale: the engineer seat has had exactly one wake since
+this was written and spent it on a merge-order tool. If it is still
+unapplied after three wakes, the thing to write about is the routing
+and not the fixture.
 
 ### 20. The board has a `refusal` column and it was null on a proven refusal (I21)
 
@@ -1601,3 +1690,207 @@ disagreed would be worse than either.
 **Verification.** `bash tools/check-draft-prs.sh --all | tail -1` and
 read the verdict out of the line, with no access to `$?`. Today that
 is impossible; it is the whole point.
+
+### 22. The clone the runtime hands out makes `--force-with-lease` refuse instead of protect (I25)
+
+**Who.** Whoever holds the resident runtime — the fifth entry
+addressed to that hand, and **L32 says to write down that the first
+four never moved before adding a fifth, so: entries 10, 11, 18 and 20
+have never moved, and this entry is filed knowing that.** It is filed
+anyway for two reasons. It is one line of configuration rather than a
+feature, and unlike the other four it has a seat-side workaround that
+is already in the tree (L30), so nothing is blocked on it — only made
+sharper-edged than it needs to be.
+
+**Why.** Measured on this run's own first push, three commands:
+
+```
+$ git push --force-with-lease origin atelier-exo/2026-10-25-message
+ ! [rejected]  atelier-exo/2026-10-25-message -> ... (stale info)
+
+$ git fetch origin atelier-exo/2026-10-25-message   # succeeds, writes FETCH_HEAD only
+$ git push --force-with-lease origin atelier-exo/2026-10-25-message
+ ! [rejected]  atelier-exo/2026-10-25-message -> ... (stale info)
+
+$ git config --get remote.origin.fetch
++refs/heads/main:refs/remotes/origin/main
+```
+
+The refspec is mainline-only, so `refs/remotes/origin/<branch>` exists
+for `main` and for nothing else, and the bare lease form has no ref to
+lease against. It does not fall back to a safe default; it refuses the
+push. The seat is then one search away from plain `--force`, which is
+precisely the thing the lease exists to prevent — a safety flag whose
+failure mode teaches you to remove it.
+
+Every seat in this company works on this clone shape. It is the same
+narrow refspec the engineer seat used to reproduce I16 ("a clone
+shaped the way the runtime hands one out"), so this is the standard
+checkout and not an accident of one run.
+
+**The paste.** One line, wherever the runtime clones a product repo
+for a seat run. Either form works:
+
+```sh
+# at clone time
+git clone --filter=blob:none <url> <dir>            # keep whatever flags exist
+git -C <dir> config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+
+# or, equivalently, on an existing checkout before handing it to the seat
+git config --replace-all remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+git fetch origin
+```
+
+There is no cost at fetch time: nothing fetches more than it asks for,
+the refspec only decides where a fetched ref is written.
+
+**The seat-side form, which needs nobody** and is already L30: read
+the remote tip explicitly and lease against it.
+
+```sh
+remote_tip=$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)
+git push --force-with-lease="$BRANCH:$remote_tip" origin "$BRANCH"
+```
+
+**Verification.** `git config --get remote.origin.fetch` on a fresh
+seat checkout returns `+refs/heads/*:refs/remotes/origin/*`, and
+`git push --force-with-lease origin <branch>` after a rebase either
+succeeds or is rejected **naming the ref it leased against** rather
+than reporting `stale info`.
+
+### 23. The vendored standard teaches a filter test that now fires on a working filter (I26)
+
+**Who.** HQ's centralizer, `alexandra-systems`, `standards/pm.md` §15 —
+the same hand as entry 17, and the second entry to it. This is the
+authority copy; `docs/standards/pm.md` here is vendored and arrives by
+sync PR, so this seat does not edit it (charter step 3).
+
+**Why.** §15 currently teaches the diagnostic that caught the endpoint
+ignoring its filters:
+
+> Ursa's exo measured it: with no parameters the read returned 179
+> messages, with the addressee set it returned 207, and with a sender
+> that cannot exist it returned 179 again. A filter on an impossible
+> value returning the unfiltered count is the proof that nothing
+> filtered.
+
+Run against the live store at 02:49Z on 2026-10-25, the addressee half
+of that test now produces a false alarm, because broadcasts are
+unioned into every `to_seat` read by default:
+
+| query | rows | `saturated` |
+|---|---|---|
+| `limit=400` | 400 | **true** |
+| `to_seat=zzzznotaseat&limit=400` | **287** | false |
+| `to_seat=zzzznotaseat&everyone=0&limit=400` | **0** | false |
+| `to_seat=owner&limit=400` | 366 | false |
+| `to_seat=owner&everyone=0&limit=400` | **79** | false |
+| `to_seat=exo&to_company=atelier&limit=400` | 321 | false |
+| `to_seat=exo&to_company=atelier&everyone=0&limit=400` | **34** | false |
+| `from_seat=zzzznotaseat&limit=400` | 0 | false |
+
+A seat that cannot exist has 287 messages and the filter is exact. The
+`from_seat` half still behaves as the standard describes, because
+there is no broadcast analogue on the sender side — which is why the
+defect stays invisible until someone runs the addressee half, and why
+the paragraph reads as correct.
+
+**What the gap costs, in this register's own numbers.** Every count of
+the owner's queue published here is the `everyone=0` figure, and the
+raw one is four and a half times larger — 366 against 79. One run ago
+this register corrected "100 messages to the owner" to 77 by finding a
+page cap; the same sentence carried a second error the page-cap
+correction did not touch. A seat that publishes 366 is publishing the
+portfolio's broadcast volume and calling it her queue depth.
+
+**The paste.** Replace the last sentence of that passage and append
+two:
+
+```
+A filter on an impossible value returning the *unfiltered* count is
+the proof that nothing filtered — but take that comparison with
+`everyone=0`, because broadcasts are unioned into every `to_seat`
+read by default and an impossible seat will otherwise come back with
+every broadcast in the store. Measured 2026-10-25 against the live
+store: `to_seat=<impossible>` returns 287 rows and
+`to_seat=<impossible>&everyone=0` returns 0, which is the filter
+working. **Every count taken from this route carries `everyone=0`**,
+and a count without it is a count of broadcast volume with a few
+addressed messages in it: `to_seat=owner` returns 366 where the
+number that means anything is 79.
+```
+
+**Verification.** A sync PR lands the amended §15 in this repository's
+`docs/standards/pm.md`, and the next seat here that publishes a
+message count says whether it carried `everyone=0`. Until then, L31 is
+the local rule and this register states the parameter beside every
+number it takes from that route.
+
+### 24. The charter clause for a run that wakes because capacity returned (I22, L25)
+
+**Who.** The owner. Charter edits merge only by her hand, which is why
+this is a paste in this file and not a diff against
+`prompts/exo-agent.md`. Keeping it out of the diff also keeps this
+seat's weekly pull request docs-only and mergeable by a seat, so the
+register does not sit behind a decision.
+
+**Why this entry exists at all, and it is an admission.** I22 was
+written during the hook run of 2026-10-25 and its own text says the
+clause is "carried in entry 21 of `docs/agents/pending.md` with the
+exact text". It was not. Entry 21 is about printing exit statuses, and
+`grep -n "woken because capacity" docs/agents/pending.md` returned
+nothing until this entry. The incident recorded a routing that did not
+happen, which is the exact failure mode this register keeps naming in
+other people's work: an incident is closed when the fix is in the
+tree, and a fix routed to an entry number that does not hold it is not
+routed. Found by the next run reading its own predecessor's
+cross-references, and it is the cheapest audit in this file.
+
+**Why the clause.** One capacity wall at 23:22Z on 2026-10-24 cut two
+seats and refused three wakes at one turn each. The engineer seat
+resumed onto its own branch and its own pull request and finished the
+work. This seat was dispatched onto a new branch, obeyed the
+one-pull-request rule as written, and left `#65` behind — a draft
+whose tree was byte-identical to an open, ready sibling, idle three
+hours, the first genuinely stranded draft on this product's record.
+Both seats obeyed correctly. The charter says "One PR per run on
+branch `exo/YYYY-MM-DD`, draft-first" and says nothing about a run
+that is the second half of a cut one; read literally a resumed run is
+a new run and owes a new branch, and read by intent one wake's work
+should land once.
+
+**The paste.** Add to `prompts/exo-agent.md` under **Boundaries**,
+after the sentence beginning "One PR per run":
+
+```
+A run woken because capacity returned continues the refused run's
+branch and pull request rather than opening its own. The refused run
+left a draft; finishing it is this run's one pull request, and the
+one-per-run rule is satisfied by the pull request that already
+exists. If the branch cannot be reused — a name the dispatch fixed, a
+push that is refused — the new run's first act is to close the
+refused run's draft with a one-line reason naming the pull request
+that replaces it, so no stranded draft outlives the wake that made
+it.
+```
+
+The same three sentences apply verbatim to `prompts/pm-agent.md` and
+`prompts/engineer-agent.md`, which carry the same one-pull-request
+rule and the same silence about resumption; the engineer seat reached
+the right answer without the clause, so for that charter it is a
+confirmation rather than a change.
+
+**The half that needs nobody is already honoured.** The second
+sentence — close the refused draft first — was carried out by the hook
+run of 2026-10-25 against `#65`, and it is L25 in
+`docs/agents/lessons.md`, `portable: yes`. So the cost of this entry
+sitting unmerged is bounded: a future cut run will still be told by
+the lessons register to clean up after itself, it just will not be
+told by its charter.
+
+**Verification.** The next run of any seat here that is woken with a
+capacity-returned message either continues the refused run's pull
+request, or closes the refused draft in its first act and says so. If
+a third stranded draft appears after a capacity wall, the clause is
+needed and unmerged, and that is the sentence to put in front of the
+owner rather than this one.
