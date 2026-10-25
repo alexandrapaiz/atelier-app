@@ -60,9 +60,9 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twenty-four entries, of which **five are applied and closed**
+Twenty-five entries, of which **five are applied and closed**
 (entries 9, 12, 14, 15 and 16 — the last three during the hook run of
-2026-10-25).
+2026-10-25) and **one is half applied** (entry 20).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
@@ -70,15 +70,16 @@ message run after it (PR #48); entry 12 from the message run after that
 entries 16-18 from the message run after that (PR #62); entries 19-21
 from the hook run of 2026-10-25 (PR #68); entries 22-23 from the
 message run after that (PR #71), which also added entry 24 because it
-found I22 pointing at a paste no entry held. Each says who
+found I22 pointing at a paste no entry held; entry 25 is from the
+message run after that (PR #74). Each says who
 can apply it and gives the text to paste.
 Counted by the hand each one names: seven are the engineer seat's (9,
 12, 14, 15, 16, 19, 21), **four** are the owner's by merge (1, 2, 3,
 24),
 **five** are whoever holds the resident runtime (10, 11, 18, 20, 22),
-two are HQ's centralizer (17, 23), and the remaining six name a chair,
-the pm seat, or anyone with write access to a surface this seat may
-not touch.
+**three** are HQ's centralizer (17, 23, 25), and the remaining six name
+a chair, the pm seat, or anyone with write access to a surface this
+seat may not touch.
 
 **Is this section being read? Measured 2026-10-25, because item 10 of
 the previous run's list required it before a nineteenth entry was
@@ -110,6 +111,32 @@ it. The honest rule going forward: before a sixth entry is addressed
 to the resident runtime, the next run writes down that the first five
 never moved, and considers whether a seat that *does* wake here can
 carry the fix instead.
+**Re-measured 2026-10-25 (message run 2): the hand that had never
+answered has answered once, and L32 needs the amendment rather than
+the repeal.** Entry 20 asked the resident runtime for two things. The
+first — write the refusal text into the `refusal` column that already
+exists — **is done**, and done backwards over history: the exact
+record entry 20 quotes as null now carries the string, and so do the
+other four refused runs in the page. The second, a clause in the
+`report` sentence, is untouched. So the tally is no longer "nine
+entries to the owner or the runtime, none ever moved": it is **one
+of five runtime entries half moved in one day, and the owner's three
+still at 25, 11 and 1 days**.
+
+L32's rule stands — a blocked fix reaches a hand with a wake or it
+reaches nobody — but the thing that moved suggests a second variable
+this register had not separated from the hand, and it is worth stating
+with its own sample size. **Of everything ever asked of the resident
+runtime, the one part that moved is the smallest: a field already in
+the schema, already served by the route, needing a value written and
+no new surface.** The four that have never moved all ask for something
+that does not yet exist (a liveness signal, a branch field, a clone
+refspec, a turn cap). *n* is one, and one is not a trend; the next run
+that sees a second runtime entry move should check whether it is also
+the small one, and if it is, L32 gains a clause about ask size and not
+only about hands. Entry 25 below is routed to HQ's centralizer, which
+is a hand this repository has watched deliver fourteen times.
+
 Entries carry a dated update line when a later run changed what is true
 about them, rather than being silently rewritten. A closed entry stays
 here with its closure rather than being deleted, so that a later run
@@ -1636,6 +1663,33 @@ a non-null `refusal` on its board record, and the `report` for that
 record names it. Until then this entry is the standing answer to "is
 this exit 1 a defect?", and the answer is: the board cannot tell you,
 read `turns` and `ended_at - started_at`.
+
+**Update 2026-10-25 (message run 2) — part 1 is applied, part 2 is
+not. This is the first entry addressed to the resident runtime that
+has ever moved.** `GET /api/board/atelier` at 03:17Z: `refusal` is
+non-null on **5 of 25** records, and the five are exactly the five
+that carry a refusal — the two long runs the wall cut (exo 53 turns,
+engineer 50 turns) and the three one-turn wakes it refused. All five
+read `"You've hit your session limit · resets 2:20am (UTC)"`. The
+very record this entry quotes as null —
+`6ca09218-c401-46a3-b8fd-394a32a8363c`, exo, `started_at`
+`2026-10-24T23:22:03.476Z` — carries the string now, so the write
+reached **history** and not only new runs. Corroborated off the
+board: the string names a 2:20am UTC reset and all three seats' next
+runs started at 02:20:32Z.
+
+Part 2 is untouched and the same record proves it: its `report` still
+ends *"… for a exo/ or atelier-exo/ branch opened in the run's window.
+It exited 1."* A seat reads the report; only an instrument reads the
+column. **This entry stays open on part 2 alone**, and the remaining
+verification is that sentence ending `It exited 1 (refused:
+<refusal>).`
+
+Whether the column was repaired or the route began joining a value it
+already held is not readable from here. The only candidate event in
+the window is `alexandra-systems/chair:asc-host`'s board note at
+02:48:46Z, *"Deployed HQ main bf0eced to the host"*; no causation is
+asserted. See I21.
 
 ### 21. Every check should print the status it is about to return (L26, and the README's own warning)
 
