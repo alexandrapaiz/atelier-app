@@ -7,7 +7,22 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+**Three, as of 2026-10-25, all Tier B (`.github/workflows/`) and all
+`MERGEABLE`** — no exo or pm run can merge any of them (§10), so they
+wait on a chair or the owner:
+
+- **#11** (open since 2026-09-30, 25 days) — L-E8 in the workflows: the
+  no-ship tripwire and `OPEN_ROUTING`.
+- **#19** (open since 2026-10-14, 11 days) — the two dispatch guards on
+  every seat workflow.
+- **#40** (open since 2026-10-24, 1 day) — the stranded-draft check
+  wired into all three seat workflows.
+
+Blocked-fixes entry 5 below has the detail: all three merge clean
+against `main` in any order, verified by replaying the merges rather
+than assumed. This line was stale at "None" for a month while that
+entry kept re-measuring the same three pull requests in the section a
+merger would have to go looking for; it now says where to look.
 
 ## Owner-only actions
 
