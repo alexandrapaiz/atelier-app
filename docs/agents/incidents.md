@@ -3501,6 +3501,43 @@ and `package.json`, two touch `docs/agents/pending.md` (one also
 merge-or-close duty has nothing to do, and this line exists so the
 next run does not re-derive it from the queue.
 
+## What this run fixed rather than recorded (charter step 2)
+
+The charter's first law for this seat is that a register which only
+grows is a failure of it, so this is the short list, and two of the
+three are actions rather than files.
+
+1. **A rebase that would have rewritten this register's history was
+   refused on evidence, not on lane.** The pm seat's handoff asked for
+   it; `git merge-base --is-ancestor origin/main 780a75d` says there
+   is nothing to move. The answer went back in two places within six
+   minutes of the run starting. That is the whole of I24's cost
+   avoided, and it is the second time in two days that L22's shape has
+   saved a history rewrite.
+2. **I22's routing was broken and is repaired.** The incident said its
+   charter clause was "carried in entry 21 of
+   `docs/agents/pending.md`", and no entry carried it —
+   `grep -n "woken because capacity" docs/agents/pending.md` returned
+   nothing. The clause is now entry 24 with its exact paste, I22's
+   reference points at the file rather than at a number that shifts,
+   and the index line says so. A fix routed to an entry that does not
+   exist is not in the tree, which is this register's own standing
+   law turned on its own plumbing. **Found by reading the predecessor
+   run's cross-references**, which cost four commands and is worth
+   repeating: of the thirty `entry <n>` references in this file, this
+   was the one that pointed at the wrong thing.
+3. **Three defects measured today are routed with ready pastes** —
+   entries 22, 23 and 24 — and two of them (the clone refspec, the
+   standard's filter test) were unknown to this register this morning.
+   Entry 22 is filed with its own futility stated on its face, which
+   is what L32 requires of a fifth entry to a hand that has answered
+   none of the first four.
+
+What this run did **not** fix and should be read as owing: entry 19 is
+unapplied, I17's residual was unobservable, and nine entries addressed
+to the owner and to the resident runtime have never moved. The first
+is young, the second is a queue-shape problem, and the third is L32.
+
 ## Next run must check
 
 1. **Did the pm seat act on the note, and how?** The test is not
@@ -3552,12 +3589,20 @@ next run does not re-derive it from the queue.
      docs/agents/incidents.md
    ```
 
-   It read `1760 / 1326 / 3098` when this run began — 42.8% transcript,
-   against 41% at the end of the previous run and 38% at its start.
-   Three readings now trace 38 → 41 → 43. **The half-way line is the
-   trigger and it is about four runs away.** The split is this seat's
-   own lane; the reason to defer it is open pull requests on this
-   tail, and that reason expires when the tail is merged.
+   It read `1760 / 1326 / 3098` when this run began — 42.8% transcript
+   — and `1933 / 1674 / 3619` when it ended, **46.3%**. Four readings
+   now trace 38 → 41 → 43 → 46. The estimate this run first wrote
+   here, "about four runs away", was wrong before the run finished,
+   and the arithmetic says why: this run added **348 transcript lines
+   against 173 incident lines**, two to one the wrong way, because an
+   answered list and a caps table are both transcript and this seat
+   writes one of each every time. **At this run's own rate the
+   half-way line is crossed by the next one.** The split is this
+   seat's own lane and nobody's to approve; the reason to defer it is
+   open pull requests on this tail, and that reason expires the moment
+   `#68` and `#71` merge. A run that finds the tail merged and the
+   share over half should do the split before it writes anything
+   else.
 8. **Harvest, unchanged in order, corrected in one parameter.**
    `git fetch --unshallow`; `git log --all --no-merges
    --author=alexandrapaizdelgado@gmail.com --since=2026-09-28`; the
