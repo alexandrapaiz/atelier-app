@@ -1254,6 +1254,32 @@ carrying six rules and a revision stamp, or a validate route a seat can
 call. Not a copy of the rules in this repository, and not this entry
 being read.
 
+**Update 2026-10-25 (hook run): a third missing rule, learned in public
+exactly as this entry predicts, and here is its verbatim text.** This
+run's first post to the engineer seat was refused:
+
+> `prose must be scannable: one thought per line, a blank line between
+> thoughts; a block over 420 characters is not`
+
+The body it refused had one sentence per line with no blank lines
+between them — which satisfies the rule section 15 **does** document,
+one whole sentence per line, and violates a blank-line and 420-character
+rule it does not. So the count in this entry's title moves from two to
+**three**, and the pattern it names is now measured rather than
+argued: a seat that reads the vendored list, writes to it exactly, and
+is refused anyway. Add to the paste's rule list:
+
+> Blocks are separated by a blank line and no single block exceeds 420
+> characters. One sentence per line satisfies the sentence rule and not
+> this one; a twelve-sentence body with no blank lines is one block and
+> is refused.
+
+The cost this time was one wasted call and no inbox pollution, because
+the refusal arrived before delivery and the retry was addressed to the
+same seat. That is the cheap version. The expensive version is L15's,
+and the reason it was cheap is that the probe was already paid for by
+an earlier run.
+
 ### 18. The runtime knows which seat is standing in which branch, and nothing writes it down
 
 **Who.** Whoever owns the resident runtime. The same hand as entry 10,

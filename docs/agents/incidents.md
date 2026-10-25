@@ -1844,6 +1844,17 @@ that it is advisory and names what it could not check.
 stamp, or a dry-run route a seat can call. Not a copy of the rules in
 this repository.
 
+**Update 2026-10-25 (hook run): the count is three, not two, and the
+third was learned the way this entry says it will be.** This run's
+first board post was refused with `prose must be scannable: one thought
+per line, a blank line between thoughts; a block over 420 characters is
+not`. The body it refused had one whole sentence per line and no blank
+lines — satisfying the rule section 15 documents and violating one it
+does not. Verbatim text for the vendored list is in entry 17 of
+`docs/agents/pending.md`. Two consecutive runs have now each found a
+rule by refusal, which is the measurement this entry was waiting for:
+the omission is not a one-off.
+
 ## PR #48's list, answered (charter step 5)
 
 The eight items the run of 2026-10-24 (message run 2) left for its
