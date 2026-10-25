@@ -7,51 +7,89 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+Refreshed 2026-10-25 (message run, after PR #68 merged). `#68` is gone
+from this list because this run merged it directly under the merge
+rule — it was exo's, all three changed files were Tier A knowledge
+surfaces, `npm test` was green, and `git merge-tree` against `main`
+resolved clean with no conflict. What is left:
+
+- **#11, #19, #40** — the three workflow-lane pull requests on the
+  three seat workflow files. Pending.md's own blocked-fixes entry 5
+  measured these as merging clean against `main` in any order as of
+  2026-10-24, and that has not been re-measured stale since. Every pm
+  run tonight has declined to touch them, this one included: the task
+  that woke this run says, in its own words, never to touch workflows.
+  These wait for a chair or the owner, oldest first.
+- **#69, #70** — this seat's own two prior passes tonight. Both are
+  closed by this run as superseded: they edit the same section of this
+  file from two different, now-stale snapshots of `main`, and
+  `git merge-tree` between them conflicts on exactly that section, so
+  at most one could ever land. Their accurate content is folded into
+  this rewrite instead of left to a merger to referee. A PM's own pull
+  request waits for another merger regardless, so closing rather than
+  readying loses nothing a chair or the owner could have acted on.
+
+**Not an owner wait: #67.** The engineer's merge-order tool PR was
+clean when opened, but merging #68 moved `main` under it — `git
+merge-tree` now conflicts in `docs/agents/incidents.md`,
+`docs/agents/lessons.md`, `docs/agents/pending.md` and
+`tools/README.md`. Two of those four are the exo seat's lane under
+this seat's own charter, so this run is not the one to resolve it even
+where the diff is docs-only. Handed to the engineer seat on the board
+as a handoff: rebase onto current `main`.
 
 ## Owner-only actions
 
-- **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
-  the secret now exists in the pm-agent workflow env (it did not on the last
-  ceremony), but `gh api user` and `gh project item-list 5 --owner
-  alexandrapaiz` both return `403 Resource not accessible by integration`
-  under it. Per docs/standards/pm.md §2b, user-level Projects v2 needs a
-  **classic** PAT with the `project` scope — a fine-grained PAT or an
-  installation token gives exactly this error. Board mirroring stays
-  deferred (commands queued in PR #8) until the secret is replaced with a
-  classic PAT.
-- **Supabase redirect allowlist** (2026-09-24): the password reset page
-  shipped in PR #3, but the recovery link only works once Supabase Auth →
-  URL Configuration → Redirect URLs includes
-  `https://alexandrapaiz.github.io/atelier-app/reset.html`. Without it
-  the link lands on the app instead of `reset.html`. Engineer PR #3
-  called this out; it is dashboard/secrets territory, so it waits on
-  Alexandra.
-- **The worthiness gate** (2026-09-24): the $99 Apple Developer Program
-  enrollment waits on Alexandra judging the product worthy of deployment,
-  per SPRINTS.md and lessons.md L1. No date, no seat schedules it.
-- **On-device test on the real iPhone** (2026-09-24): SPRINTS.md Sprint
-  2, due Sep 27. Claude builds, Alexandra tests on the cable install.
-- **Google Calendar decision** (2026-09-24): SPRINTS.md Sprint 3, due
-  Sep 30. Google verification vs a "beta" label for v1.
-- **Privacy policy + App Privacy answers** (2026-09-24): SPRINTS.md
-  Sprint 3, due Oct 2. Claude drafts, Alexandra approves.
-- **Listing approval** (2026-09-24): SPRINTS.md Sprint 3, due Oct 4.
-  Claude drafts name, subtitle, keywords, description, screenshots;
-  Alexandra approves.
-- **Submit from App Store Connect** (2026-09-24): SPRINTS.md Sprint 4,
-  gated on the worthiness call plus enrollment and a TestFlight pass.
+Per ADR-002 (docs/decisions.md, L-A20 clause 3): the asleep posture
+suspends the sprint cadence and the build lane, but it names neither
+of the first two items below, so they stay owed rather than suspended.
+The five after them are Sprint 2–4 cards whose dates (Sep 27 – Oct 4)
+expired before the posture even began; they are not today's work for
+any seat while asleep, and are listed so they are not silently lost
+rather than as live asks.
+
+- **Supabase redirect allowlist** (owed since 2026-09-24, not
+  suspended): the password reset page shipped in PR #3, but the
+  recovery link only works once Supabase Auth → URL Configuration →
+  Redirect URLs includes
+  `https://alexandrapaiz.github.io/atelier-app/reset.html`. Dashboard
+  and secrets territory, so it waits on Alexandra.
+- **The worthiness gate** (owed since 2026-09-24, not suspended): the
+  $99 Apple Developer Program enrollment waits on Alexandra judging the
+  product worthy of deployment, per SPRINTS.md and lessons.md L1. No
+  date, no seat schedules it, and the asleep posture does not
+  substitute for it.
+- **PROJECTS_TOKEN is set but not working for the company board**
+  (2026-09-24, unverified since): `gh api user` and `gh project
+  item-list 5 --owner alexandrapaiz` returned `403` under it last time
+  this was checked. Per docs/standards/pm.md §2b, user-level Projects v2
+  needs a **classic** PAT with the `project` scope. Not re-checked this
+  run; flagged as stale rather than re-asserted.
+- **On-device test on the real iPhone** (Sprint 2, was due Sep 27 —
+  expired under the asleep posture, not an open ask today).
+- **Google Calendar decision** (Sprint 3, was due Sep 30 — same).
+- **Privacy policy + App Privacy answers** (Sprint 3, was due Oct 2 —
+  same).
+- **Listing approval** (Sprint 3, was due Oct 4 — same).
+- **Submit from App Store Connect** (Sprint 4, gated on the worthiness
+  call plus enrollment and a TestFlight pass — same).
 
 ## Ledger items awaiting a verdict
 
-- **Atelier company mode** (2026-09-24): docs/ideas.md, status
-  `proposed`. Its own first step defers discovery until after the App
-  Store ship, so it needs no verdict yet. Flagged here so it does not go
-  stale unnoticed.
-- **Browser checks for what the node harness cannot reach** (2026-09-24):
-  docs/ideas.md, status `proposed`. Triggered by the password reset work
-  and the new `scripts/reset-page-test.mjs`. First step is to reuse it
-  for Sprint 2's account deletion item before generalizing.
+- **Atelier company mode** (proposed 2026-09-24, five weeks stale):
+  docs/ideas.md. Its own first step defers discovery until after the
+  App Store ship, which the asleep posture has itself now also
+  suspended, so the deferral holds either way — but pm.md §4's
+  two-week flag is well past due, which is what this line is.
+- **Browser checks for what the node harness cannot reach** (proposed
+  2026-09-24, five weeks stale): docs/ideas.md. First step was to reuse
+  `scripts/reset-page-test.mjs` for Sprint 2's account deletion item,
+  and that sprint expired under the asleep posture before the reuse
+  happened.
+- Three `proposed` entries dated 2026-10-24 and 2026-10-25 in
+  docs/ideas.md (the ship-check, draft-prs and merge-order coverage
+  ideas from the engineer and exo seats) are a day old or less, not yet
+  stale, and not listed here for that reason.
 
 ## Blocked fixes (exo)
 
