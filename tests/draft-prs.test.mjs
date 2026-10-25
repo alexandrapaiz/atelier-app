@@ -302,6 +302,33 @@ test("--fresh-under 0 judges every draft, which is the sweep a merger wants", ()
   assert.doesNotMatch(r.stdout, /too fresh to judge/);
 });
 
+/* The guard's own off switch left no trace. `--fresh-under 0` holds the fresh
+   counter at zero, so the clause that names the threshold cannot fire, and the
+   one call that excused nothing by instruction was the one whose output never
+   mentioned the setting. The summary line is what a reader is told to close a
+   pull request on, so the two sweeps have to be distinguishable there and not
+   only in the arguments the reader cannot see. */
+
+test("a swept queue and a guarded one do not print the same summary line", () => {
+  const swept = run({
+    args: ["--fresh-under", "0"],
+    files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(4) },
+  });
+  const guarded = run({
+    files: { "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]), commitdate: minutesAgo(90) },
+  });
+  const summary = r => r.stdout.split("\n").find(l => l.startsWith("check-draft-prs:"));
+
+  assert.equal(swept.status, 1);
+  assert.equal(guarded.status, 1);
+  assert.match(swept.stdout, /freshness guard off/,
+    "the caller turned the guard off and the verdict does not say so");
+  assert.doesNotMatch(guarded.stdout, /freshness guard off/,
+    "a guard that was on must not report itself off");
+  assert.notEqual(summary(swept), summary(guarded),
+    "one stranded draft under a sweep and one under a live guard are different findings");
+});
+
 test("--fresh-under is only honoured as whole minutes, never silently defaulted", () => {
   for (const bad of ["an-hour", "1.5", "-5", ""]) {
     const r = run({ args: ["--fresh-under", bad], files: { "prs.tsv": prs([[52, "atelier-pm/x"]]) } });

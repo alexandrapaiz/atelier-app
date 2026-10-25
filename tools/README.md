@@ -108,7 +108,12 @@ from evidence without reverse-engineering an integer division, and
 `--fresh-under 0` turns the guard off and judges every draft, which is the
 sweep a merger wants rather than the sweep a seat wants. A `--fresh-under`
 value that is not a whole number of minutes exits 2: a threshold that silently
-became zero is a guard that is off reporting a clean queue.
+became zero is a guard that is off reporting a clean queue. When the guard is
+off the summary line says `freshness guard off`, because the clause that names
+the threshold counts what it excused and a sweep excuses nothing — without it a
+merger's deliberate sweep and a stranding judged by a live guard print the same
+sentence, and that sentence is the one this page tells a reader to close a pull
+request on.
 
 Why this reading and not the board: `docs/ideas.md` proposes a `run=board`
 reading, and the board cannot answer the question. Measured at 22:08:03Z on
