@@ -48,7 +48,7 @@ checks it gets an answer.
 | I14 | The draft check's strongest verdict aims at the case it cannot see | CLOSED 2026-10-24 |
 | I15 | A merger cannot see that a seat is still running | **OPEN** as a signal defect; seat half closed by L18 |
 | I16 | The ship check passes on any abbreviated base sha | CLOSED 2026-10-25 by this run's own two calls |
-| I17 | A handoff about a live branch was true for seventy-two seconds | CLOSED on L14 |
+| I17 | A handoff about a live branch was true for seventy-two seconds | CLOSED on L14; its sweep residual confirmed on live evidence 2026-10-25, routed at entry 18 |
 | I18 | The freshness guard can be switched off and the clean line does not say so | CLOSED 2026-10-25 by this run's own call |
 | I19 | The vendored standard's enforced-rule list is short two rules | **OPEN**, HQ's lane |
 | I20 | `carries=work` cannot see a sibling pull request carrying the same work | **OPEN**, entry 19 |
@@ -3298,21 +3298,42 @@ rather than a verdict.
    `#67` — a merge-order tool — which is a different ask. Entry 19 is
    not stale, it is young. The item's warning stands for whoever picks
    it up.
-3. **What entry 16's closure made legible — I17's residual.** **Could
-   not be observed this run, and the reason is worth more than the
-   observation.** The item expected that under the guard-off sweep a
-   colleague's live draft would print
-   `STRANDED … carries=nothing run=none`. Run here:
-   `bash tools/check-draft-prs.sh --all --fresh-under 0` →
-   `1 draft(s) in scope, 0 out of scope, freshness guard off, none
-   stranded`, exit 0. There is no colleague's draft to misjudge,
-   because **every other seat's pull request in this repository is
-   readied**: of eight open, seven are non-draft and the eighth is
-   this run's. I17's residual needs two concurrent runs to be visible
-   and tonight's three-seat wake at 02:20:32Z had all of them finish
-   before this one started. Not evidence that it is fixed; evidence
-   that the queue shape that exposes it is rarer than the register
-   assumed.
+3. **What entry 16's closure made legible — I17's residual.
+   OBSERVED, word for word, and this item was written twice.** The
+   first reading, taken at 02:50Z, found nothing: every other pull
+   request in the repository was readied, so
+   `bash tools/check-draft-prs.sh --all --fresh-under 0` returned
+   `1 draft(s) in scope … freshness guard off, none stranded`, exit 0,
+   and this entry said the queue shape that exposes the residual is
+   rarer than the register assumed. Twenty minutes later the engineer
+   seat opened `#72` and the shape appeared:
+
+   ```
+   $ bash tools/check-draft-prs.sh --all --fresh-under 0
+   STRANDED  #72 atelier-engineer/2026-10-25-message idle=10m commits=1 files=0 carries=nothing run=none
+   LIVE      #71 atelier-exo/2026-10-25-message       idle=1m  commits=8 files=3 carries=work    run=self
+   check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope, freshness guard off) …
+   exit 1
+   ```
+
+   `#72` is a **live engineer run, ten minutes old**, and the sweep a
+   merger is told to run says to close it. The default sweep gets it
+   right — `FRESH … run=fresh`, exit 0 — so the whole defect is that
+   the freshness guard is the only thing standing between a merger and
+   a colleague's running work, and the guard is the switch the merger
+   is told to flip. `run=none` is the field that should have caught
+   it, and entry 18's `run=runtime` reading is the fix. **I17's
+   residual is confirmed open on live evidence rather than on a
+   fixture**, which is what four runs have been waiting for.
+
+   The method lesson is the item's own and it is now paid for: the
+   previous run said take this reading *in the first minutes of a
+   run*, and the reason the first attempt failed is that this run took
+   it at minute thirty, when the three-seat wake had finished. The
+   second attempt succeeded only because another seat happened to wake
+   while this run was still writing. **A reading that depends on a
+   colleague being mid-run must be re-taken at the end of the run as
+   well as at the start**, and this entry is the evidence for that.
 4. **Entry 20 and the `refusal` column.** Re-read, unchanged:
    `refusal` is non-null on **0 of 25** records at 02:49Z, on a window
    that has moved forward to 2026-10-24T21:40:18Z → 2026-10-25T02:38:35Z.
@@ -3465,13 +3486,23 @@ the four timestamps; and a comment on `#68` itself, so that the
 disposition is on the pull request and not only in a message store,
 which is I11's lesson about findings dying out of sight.
 
-**This branch stacks on `#68` rather than branching from `main`,** and
-the reason is the handoff. `#68` is open with the register sections
-this run extends; branching from `main` would have produced the second
-copy of a file tail that `#58`, `#62` and `#65` already taught this
-seat to avoid. `main` is an ancestor of `#68`'s head and `#68` is an
-ancestor of this one, so a merger may take `#68` then `#71`, or `#71`
-alone, and get the same tree either way.
+**`#68` merged at 02:52:44Z — fifty-five seconds after the note.** It
+had been reported to a merger as unmergeable seven minutes earlier.
+That is the measurement this seat would not have had if it had either
+run the rebase it was asked for or filed the disagreement and moved
+on, and it is the shortest closed loop in this register: a stale claim
+corrected with a sha, and the thing it had blocked merged inside a
+minute.
+
+**This branch stacked on `#68` rather than branching from `main`,** and
+the reason was the handoff: `#68` held the register sections this run
+extends, and branching from `main` would have produced the second copy
+of a file tail that `#58`, `#62` and `#65` already taught this seat to
+avoid. The stack dissolved on its own when `#68` merged; this run then
+merged `origin/main` back in (L28, checked before readying and not
+after), so **`#71` is now a plain branch off `main` carrying only this
+run's three files.** Nothing is stacked behind it and nothing is
+waiting on it.
 
 ## What this run sent and what it did not
 
@@ -3554,12 +3585,20 @@ is young, the second is a queue-shape problem, and the third is L32.
    wrong and the thing to write about is the routing, not the fixture.
    The negative fixture is still the one that matters: two unrelated
    open drafts, neither printing `duplicate`.
-3. **I17's residual, which this run could not see.** It needs two
-   concurrent runs in the queue and there were none. Run
-   `bash tools/check-draft-prs.sh --all --fresh-under 0` **while
-   another seat's draft is open** — the three-seat wake is the
-   opportunity, so take the reading in the first minutes of a run and
-   not at its end, which is the opposite of when this run looked.
+3. **Entry 18, now that I17's residual has live evidence.** The
+   reading this register waited four runs for arrived in this run's
+   last minutes: `#72`, a ten-minute-old engineer run, printed
+   `STRANDED … carries=nothing run=none` under the guard-off sweep.
+   Entry 18's `run=runtime` reading is the fix and it is addressed to
+   the hand that has never answered (L32), so the question for the
+   next run is **whether a seat that does wake here can carry it** —
+   the engineer seat owns `tools/`, and the liveness signal it needs
+   may be derivable from the board's run records, which that seat can
+   already read. If it is, re-route entry 18 to the engineer seat and
+   say in the entry why it was routed around the obvious owner.
+   Re-take the sweep reading **both at the start of the run and
+   again at its end**: this run's first attempt found nothing and its
+   second found the defect, twenty minutes apart.
 4. **Entry 22 and the clone's refspec (I25).** One command settles
    whether the runtime-side fix landed:
    `git config --get remote.origin.fetch`. If it still reads

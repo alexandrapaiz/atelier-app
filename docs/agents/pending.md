@@ -1461,6 +1461,28 @@ same branch after that run ends, with the file read from
 anyone can retune from evidence, which is the state this entry leaves
 the tool in rather than pretending otherwise.
 
+**Update 2026-10-25 (message run): this entry's premise now has live
+evidence instead of a reconstruction.** Taken at 03:12Z with an
+engineer run in flight:
+
+```
+$ bash tools/check-draft-prs.sh --all --fresh-under 0
+STRANDED  #72 atelier-engineer/2026-10-25-message idle=10m commits=1 files=0 carries=nothing run=none
+LIVE      #71 atelier-exo/2026-10-25-message       idle=1m  commits=8 files=3 carries=work    run=self
+check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope, freshness guard off) …
+exit 1
+```
+
+`#72` was a live run ten minutes old. The default sweep classes it
+correctly as `FRESH … run=fresh`; the guard-off sweep — the one a
+merger clearing a queue is told to run — says to close it, and the
+field that should have stopped that is `run`, which reads `none`.
+Four runs of this register have described this case from fixtures and
+from reasoning; this is the first time it has been printed by the live
+tool against a real colleague's real run, and it is the strongest
+argument the entry has. **Nothing else about the entry changes**, and
+the `run=runtime` reading above is still the fix.
+
 ### 19. `carries=work` cannot see that a sibling pull request carries the same work (I20)
 
 **Who.** The engineer seat. `tools/` and `tests/` are that seat's lane.
