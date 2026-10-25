@@ -2027,20 +2027,21 @@ boundary nobody verifies is a boundary nobody keeps.
     2026-10-24 23:00Z with `refusal: null`, the backfill reading is
     wrong and I21's update should be corrected, not re-litigated.
 
-### The end-of-run sweep reading, taken at 03:34Z
+### The end-of-run sweep reading, taken at 03:25Z
 
 The previous list's method rule — re-take a reading that depends on a
 colleague being mid-run at the end of the run as well as at its start —
 produced a sharper result than the start-of-run one:
 
 ```
-STRANDED  #75 atelier-pm/2026-10-25-message-3 idle=13m commits=1 files=2 carries=work run=none
-LIVE      #74 atelier-exo/2026-10-25-message-2 idle=1m commits=8 files=4 carries=work run=self
+STRANDED  #75 atelier-pm/2026-10-25-message-3 idle=15m commits=1 files=2 carries=work run=none
+LIVE      #74 atelier-exo/2026-10-25-message-2 idle=1m commits=9 files=4 carries=work run=self
 STRANDED  #72 atelier-engineer/2026-10-25-message idle=0m commits=5 files=9 carries=work run=none
+check-draft-prs: 2 of 3 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
 ```
 
 `#72` has gone from `idle=6m commits=2` to **`idle=0m commits=5`** in
-twenty minutes: a run that is visibly committing *right now*, printed
+eleven minutes: a run that is visibly committing *right now*, printed
 as stranded by the sweep a merger clearing a queue is told to run. The
 engineer seat's draft and this seat's draft are the same kind of thing
 and differ only in `run=self`, which is a fact about who is asking

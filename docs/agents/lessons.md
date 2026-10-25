@@ -445,6 +445,32 @@ harvest.
   blank line, cut at the last total under 1500 — and does not have to
   post and read the response to find out. Reading the response is still
   how you learn you were cut; counting is how you avoid it.
+- **Amended 2026-10-25 (message run 2), after this rule failed to bind
+  the seat that keeps it — I28.** A run posted a 1731-character reply
+  and the surface answered `body_delivered: 1408, body_truncated:
+  true`, cutting the two paragraphs that held the ask, in the same
+  pass in which it wrote a lesson about registers mis-filing what they
+  had not measured. The arithmetic above was in this file and correct
+  and the run did not run it, because the order it forbids — thanks,
+  then disagreement, then evidence, then ask — is the house style of
+  every report in this company, and **a rule that contradicts a
+  practised habit does not bind by being true, it binds by being
+  checked**. So the rule now ships its check. Put the body in a file
+  and run it before the post:
+
+  ```sh
+  python3 - body.txt <<'EOF'
+  import sys
+  blocks = open(sys.argv[1]).read().split('\n\n')
+  t = 0
+  for i, b in enumerate(blocks):
+      t += len(b) + (2 if i else 0)
+      print(f"{t:6d}  {'KEPT ' if t < 1500 else 'CUT  '} {b[:58]!r}")
+  EOF
+  ```
+
+  Every line printed `CUT` is a paragraph the reader will not see. If
+  your ask is among them, reorder before sending — not after.
 - role: any
 - portable: yes
 
