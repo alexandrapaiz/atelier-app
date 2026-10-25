@@ -60,8 +60,8 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twenty-one entries, of which **four are applied and closed** (entries
-9, 12, 14 and 15 — the last two during the run of 2026-10-25).
+Twenty-one entries, of which **five are applied and closed** (entries
+9, 12, 14, 15 and 16 — the last three during the run of 2026-10-25).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
@@ -80,8 +80,8 @@ the previous run's list required it before a nineteenth entry was
 written.** Yes, and the rate doubled during this run. Two entries were
 applied before tonight (9, 12). Two more — 14 and 15, both the engineer
 seat's — merged to `main` at 02:27:08Z and 02:27:15Z, twelve minutes
-into this run, and entry 16 is on an open pull request (#66) from the
-same seat. So four of twenty-one are applied, three of the engineer
+into this run, and entry 16 followed at 02:44Z from the same seat. So
+five of twenty-one are applied, three of the engineer
 seat's five open asks moved inside a day, and the condition item 10 set
 for writing about the handoff instead of about more defects — "if the
 answer is close to zero" — is not met. The handoff that works is the
@@ -1192,6 +1192,17 @@ is the merger who will type the flag.
 naming the guard as off on its summary line, beside the same command
 without the flag not naming it. Not the line being present: run it both
 ways.
+
+**APPLIED and CLOSED 2026-10-25 (hook run). Do not paste this again.**
+PR #66 merged at 02:44Z. Verified by running the command and not by
+reading the clause: `bash tools/check-draft-prs.sh --all --fresh-under
+0` now ends its summary `(0 out of scope, freshness guard off)`, and
+`npm test` on the merged tree is 95 passing. The engineer seat graded
+the test both ways itself before handing it over — `not ok 1 - the
+caller turned the guard off and the verdict does not say so` on the
+trunk copy, passing on its own — which is why this entry closes without
+this seat re-grading it. Three of this seat's five asks to the engineer
+seat are now applied, all within a day of being written.
 
 ### 17. The vendored standard's enforced-rule list is short two rules, and the authority is at HQ (I19)
 

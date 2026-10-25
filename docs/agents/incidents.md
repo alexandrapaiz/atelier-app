@@ -12,8 +12,10 @@ incident stays open until its fix is in the tree.
 
 ## The index — read this before reading the file (added 2026-10-25, I23)
 
-Twenty-three entries, **fourteen open** — I4, I5, I6, I7, I10, I11, I13,
-I15, I18, I19, I20, I21, I22, I23. This file is ~3,000 lines, of
+Twenty-three entries, **thirteen open** — I4, I5, I6, I7, I10, I11, I13,
+I15, I19, I20, I21, I22, I23. Two closed during the run of 2026-10-25
+(I16, I18), both on the verification the entry itself demanded rather
+than on the fix's line being present. This file is ~3,000 lines, of
 which 1,226 are previous runs' homework — answered lists, caps tables
 and next-run lists, interleaved with the incidents rather than kept
 apart — so a memoryless run opening it top-down meets hundreds of lines
@@ -43,7 +45,7 @@ checks it gets an answer.
 | I15 | A merger cannot see that a seat is still running | **OPEN** as a signal defect; seat half closed by L18 |
 | I16 | The ship check passes on any abbreviated base sha | CLOSED 2026-10-25 by this run's own two calls |
 | I17 | A handoff about a live branch was true for seventy-two seconds | CLOSED on L14 |
-| I18 | The freshness guard can be switched off and the clean line does not say so | **OPEN**, fix on PR #66 |
+| I18 | The freshness guard can be switched off and the clean line does not say so | CLOSED 2026-10-25 by this run's own call |
 | I19 | The vendored standard's enforced-rule list is short two rules | **OPEN**, HQ's lane |
 | I20 | `carries=work` cannot see a sibling pull request carrying the same work | **OPEN**, entry 19 |
 | I21 | The field that tells a refusal from a defect was null on a proven refusal | **OPEN**, entry 20 |
@@ -1780,10 +1782,33 @@ command.
 **The fix.** Blocked fix 16: one line in the summary block, graded, in
 the engineer seat's lane. L24 is the rule.
 
-**Status.** OPEN, routed with a paste graded both ways against the
-file on `main`. Verification: `bash tools/check-draft-prs.sh --all
---fresh-under 0` naming the guard on its summary line. Not the line
-being present: run it.
+**Status.** **CLOSED 2026-10-25 (hook run), on the verification this
+entry demanded — the command run, not the line read.** PR #66 merged
+to `main` at 02:44Z, after this run had readied its own pull request;
+it un-readied, merged `origin/main` and re-measured:
+
+```
+$ bash tools/check-draft-prs.sh --all --fresh-under 0
+LIVE      #68 atelier-exo/2026-10-25-hook idle=1m commits=12 files=15 carries=work run=self
+STRANDED  #67 atelier-engineer/2026-10-25-hook idle=19m commits=1 files=0 carries=nothing run=none
+check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+exit=1
+```
+
+`freshness guard off` is on the summary line. `npm test` on the merged
+tree: 95 passing, 0 failing. Entry 16 of `docs/agents/pending.md` is
+APPLIED and must not be pasted again.
+
+**The residual, and it belongs to a different entry.** `#67` in that
+reading is a colleague's run that was live at the moment of the call —
+19 minutes old, and the engineer seat's hook run was still working —
+printing `STRANDED … carries=nothing run=none`, which is the most
+destructive instruction this tool can give. That is not this entry
+reopening: it is I17's named residual, visible precisely because I18's
+fix made the guard-off sweep legible, and the fix for it is a
+`run=runtime` reading from the file entry 18 asks the runtime to write.
+L17 is the rule that says to look here after fixing a false alarm, and
+this is the third run in which looking paid.
 
 ### I19 — The paragraph that exists so no seat learns a store rule by refusal is missing two of its rules (2026-10-24)
 
