@@ -27,6 +27,8 @@
 #   tools/merge-order.sh --prs FILE          serve the queue from a TSV instead
 #                                            of the forge
 #   tools/merge-order.sh --fetch             fetch the branch refs this needs
+#   tools/merge-order.sh --unshallow         deepen a shallow clone first, so
+#                                            every merge base is reachable
 #   tools/merge-order.sh --limit N           read at most N open pull requests
 #
 # One line per reading, then one verdict line. Fields stable enough to grep:
@@ -51,16 +53,30 @@
 #
 # Why each of these is a rule this repository already carries, not taste:
 #
-#   1. A shallow or single-branch clone exits 2 before any merge is attempted.
-#      This is the load-bearing line in the file. L-A55: "the clone a seat is
-#      given is shallow and single-branch: in it `git merge-base --is-ancestor`
-#      finds no base, exits non-zero, and that exit means *not contained* — the
-#      opposite of the truth — while `git merge-tree` exits fatal and a loop
-#      reads that as a conflict." A loop that reads fatal as conflict reports a
-#      whole queue as mutually exclusive and is most confident when it is most
-#      wrong. Measured in this repository on 2026-10-25: the clone a seat is
-#      handed carries .git/shallow with one commit on main, and
-#      `git merge-base main <a seat branch>` printed nothing at all.
+#   1. A shallow clone is reported on the verdict line, not refused. L-A55
+#      warns that in the shallow single-branch clone a seat is handed,
+#      `git merge-tree` "exits fatal and a loop reads that as a conflict", and
+#      the first draft of this file turned that into a blanket exit 2 before
+#      any pair was formed. That was wrong twice over, and both halves were
+#      measured rather than argued:
+#        - the seat's clone is *always* shallow, so a blanket refusal makes
+#          exit 2 the outcome of every ordinary run. L12: a check that degrades
+#          to a constant is worse than a missing check, because a constant
+#          teaches its readers to ignore it.
+#        - the fatality is conditional. With the true merge base inside the
+#          fetched depth, merge-tree answers and answers correctly — graded by
+#          removing the guard and getting the right pair out of a depth-1
+#          clone. With the base below the boundary, `git merge-base` prints
+#          nothing and merge-tree exits 128, "refusing to merge unrelated
+#          histories". It never guesses, so there is no silently wrong answer.
+#      128 is >1, so divergence 2 already classes it unreadable. The depth
+#      therefore prints as `clone=shallow|complete`, the INCONCLUSIVE
+#      diagnosis names it when a merge did come back unreadable, and
+#      `--unshallow` is the one flag that turns a partial answer into a full
+#      one. (Measured in this repository on 2026-10-25: the clone this run was
+#      handed carried .git/shallow with one commit on main, and
+#      `git merge-base main <a seat branch>` printed nothing at all — which is
+#      the second case, and the reason the warning exists.)
 #   2. `git merge-tree` exit 1 is a conflict and exit >1 is a failed reading,
 #      and the two never share a field (L-A50, L6). Only exit 1 produces
 #      EXCLUSIVE. Anything above it prints `unreadable` and forces
@@ -99,6 +115,7 @@ base=
 prs_file=
 limit=100
 do_fetch=0
+do_unshallow=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -106,7 +123,8 @@ while [ $# -gt 0 ]; do
     --prs)    prs_file="${2:-}"; shift 2 ;;
     --limit)  limit="${2:-}"; shift 2 ;;
     --fetch)  do_fetch=1; shift ;;
-    -h|--help) sed -n '2,98p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --unshallow) do_unshallow=1; do_fetch=1; shift ;;
+    -h|--help) sed -n '2,110p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "merge-order: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -119,17 +137,34 @@ esac
 
 git rev-parse --git-dir >/dev/null 2>&1 || die2 "not a git repository"
 
-# --- precondition: the clone has to be able to answer -----------------------
+# --- the clone's depth, reported rather than refused ------------------------
 #
-# Divergence 1. A shallow clone makes every merge fatal and a loop reads fatal
-# as conflict, so this is checked before any pair is formed and it is a 2.
-if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
-  echo "INCONCLUSIVE  reason=shallow-clone"
-  echo "merge-order: this clone is shallow, so no merge here can be trusted:" >&2
-  echo "  a shallow clone has no merge base for a seat branch, and git merge-tree" >&2
-  echo "  exits fatal rather than reporting a conflict (L-A55). Run:" >&2
-  echo "    git fetch --unshallow origin" >&2
-  exit 2
+# Divergence 1, and it is the line this file was most wrong about first. The
+# clone a seat is handed is shallow and single-branch, so a blanket refusal
+# here would make exit 2 the outcome of every ordinary run — a check that
+# degrades to a constant, which L12 calls worse than a missing check because a
+# constant teaches its readers to ignore it. What the refusal was defending
+# against is real but narrower, and both halves were measured on 2026-10-25
+# rather than reasoned about:
+#
+#   shallow clone, true merge base inside the fetched depth: `git merge-tree`
+#   answers, and answers correctly. Graded by removing this guard and getting
+#   the right EXCLUSIVE pair out of a depth-1 clone.
+#
+#   shallow clone, true merge base below the boundary: `git merge-base` prints
+#   nothing and `git merge-tree` exits 128, "refusing to merge unrelated
+#   histories". It does not guess, so there is no silently wrong answer to
+#   defend against — only an unreadable one.
+#
+# Exit 128 is >1, so merge_probe already returns unreadable rather than
+# conflict, which is the whole of L-A55's warning and is handled where the
+# merge happens. So depth is a field on the verdict instead of a veto, the
+# diagnosis names it when a merge did come back unreadable, and --unshallow is
+# the one flag that turns a partial answer into a full one.
+shallow=$(git rev-parse --is-shallow-repository)
+if [ "$shallow" = true ] && [ "$do_unshallow" = 1 ]; then
+  git fetch -q --unshallow origin 2>/dev/null || true
+  shallow=$(git rev-parse --is-shallow-repository)
 fi
 
 if [ -z "$base" ]; then
@@ -153,10 +188,7 @@ fi
 # verdict named `base=main` without saying which commit that was. Every number
 # in that run described a queue that no longer existed. A measurement of other
 # seats' branches perishes (L-A64), so this one carries its own clock.
-remote_base=
-if [ -z "$prs_file" ]; then
-  remote_base=$(git ls-remote --heads origin "$base" 2>/dev/null | awk '{print $1}' | head -1 || true)
-fi
+remote_base=$(git ls-remote --heads origin "$base" 2>/dev/null | awk '{print $1}' | head -1 || true)
 if [ -n "$remote_base" ] && [ "$remote_base" != "$base_sha" ]; then
   if [ "$do_fetch" = 1 ]; then
     git fetch -q origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null || true
@@ -223,12 +255,12 @@ done
 
 if [ "$n" -eq 0 ]; then
   if [ "$out_of_scope" -gt 0 ]; then
-    echo "INCONCLUSIVE  in-scope=0 out-of-scope=$out_of_scope base=$base_label"
+    echo "INCONCLUSIVE  in-scope=0 out-of-scope=$out_of_scope base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
     echo "merge-order: every open pull request's head is missing from this clone;" >&2
     echo "  re-run with --fetch to bring the branch refs in." >&2
     exit 2
   fi
-  echo "CLEAN  in-scope=0 out-of-scope=0 sequence=0/0 exclusive-pairs=0/0 base=$base_label"
+  echo "CLEAN  in-scope=0 out-of-scope=0 sequence=0/0 exclusive-pairs=0/0 base=$base_label clone=$(if [ "$shallow" = true ]; then echo shallow; else echo complete; fi)"
   echo "merge-order: no open pull requests against $base, so nothing is in contention." >&2
   exit 0
 fi
@@ -265,7 +297,13 @@ merge_probe() {
 
 declare -A blocks_pairs=()   # file -> pairs it makes exclusive
 declare -A blocks_prs=()     # file -> pull requests it appears in
+# A head this clone could not resolve means one member of the queue was never
+# measured, and a queue with an unmeasured member cannot be certified landable:
+# the verdict is withheld rather than published over the readable remainder
+# (L6 — a check that could not run is not a pass). `--fetch` is the way out, and
+# the UNREADABLE lines above already named which pull requests it would fetch.
 inconclusive=0
+if [ "$out_of_scope" -gt 0 ]; then inconclusive=1; fi
 
 # Sequential: carry the accumulated merge forward as a real merge commit, so
 # every later merge base is the one a merger would actually get. Divergence 5:
@@ -329,17 +367,25 @@ if [ "$anchor" != none ]; then
   echo "ANCHOR  $anchor pairs=$anchor_pairs prs=$anchor_prs"
 fi
 
+clone_label=complete
+if [ "$shallow" = true ]; then clone_label=shallow; fi
 tail="in-scope=$in_scope out-of-scope=$out_of_scope sequence=$seq_ok/$n exclusive-pairs=$excl/$pairs base=$base_label"
 
 if [ "$inconclusive" = 1 ]; then
-  echo "INCONCLUSIVE  $tail anchor=$anchor"
-  echo "merge-order: at least one merge could not be performed, so the queue got" >&2
-  echo "  no verdict. A fatal merge is not a conflict (L-A55)." >&2
+  echo "INCONCLUSIVE  $tail anchor=$anchor clone=$clone_label"
+  echo "merge-order: at least one reading could not be taken, so the queue got no" >&2
+  echo "  verdict. A fatal merge is not a conflict (L-A55)." >&2
+  if [ "$shallow" = true ]; then
+    echo "  This clone is shallow, which is the likeliest cause: a merge base below" >&2
+    echo "  the fetched depth makes git merge-tree exit 128 rather than report a" >&2
+    echo "  conflict. Re-run with --unshallow, or:" >&2
+    echo "    git fetch --unshallow origin" >&2
+  fi
   exit 2
 fi
 
 if [ "$seq_ok" -lt "$n" ] || [ "$excl" -gt 0 ]; then
-  echo "BLOCKED  $tail anchor=$anchor"
+  echo "BLOCKED  $tail anchor=$anchor clone=$clone_label"
   if [ "$anchor" != none ]; then
     echo "merge-order: $anchor blocks the most pairs. The fix is L-A48's file" >&2
     echo "  layout — a dated file per pass under a directory, or one writer on the" >&2
@@ -349,5 +395,5 @@ if [ "$seq_ok" -lt "$n" ] || [ "$excl" -gt 0 ]; then
   exit 1
 fi
 
-echo "CLEAN  $tail anchor=none"
+echo "CLEAN  $tail anchor=none clone=$clone_label"
 exit 0

@@ -6,7 +6,8 @@
     "test": "node --test tests/*.test.mjs",
     "drafts": "bash tools/check-draft-prs.sh",
     "surface": "bash tools/check-seat-surface.sh",
-    "shipped": "bash tools/check-shipped.sh"
+    "shipped": "bash tools/check-shipped.sh",
+    "merge-order": "bash tools/merge-order.sh"
   },
   "dependencies": {
     "@capacitor/cli": "^8.5.2",
