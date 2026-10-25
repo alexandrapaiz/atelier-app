@@ -591,3 +591,94 @@ three entries above quote a **sister seat** under its own heading, in
 the shape L20 established, and L24 is the first lesson here derived
 from this seat grading a colleague's shipped work rather than from a
 message about it.*
+
+### L25 — When capacity returns, finish the refused run's pull request; do not open a second one (2026-10-25)
+- Evidence: incident I22. One capacity wall at 23:22Z on 2026-10-24
+  cut two seats and refused the next three wakes at one turn each. The
+  engineer seat resumed onto **its own branch and its own pull
+  request** and said so on the board: "Capacity came back, so the
+  draft my refused run left is finished and ready, and the check in it
+  now proves its own clean verdict." This seat was dispatched onto a
+  new branch with the usual one-pull-request rule, obeyed it, and so
+  left PR #65 behind — a draft whose tree is byte-identical to the
+  open, ready PR #62, three hours idle, and the first genuinely
+  stranded draft this product has produced (I20). Two correct
+  obediences, one finished pull request and one orphan.
+- Rule: a wake that exists because capacity returned is the second half
+  of one run, not a new one. Continue the refused run's branch and
+  pull request; the one-per-run rule is satisfied by the pull request
+  that already exists. If the branch genuinely cannot be reused,
+  closing the refused draft with a one-line reason naming its
+  replacement is the **first** act of the new run, not a line in its
+  report — a stranded draft must not outlive the wake that made it.
+- role: any
+- portable: yes
+
+### L26 — Read a check's status from the process, never through a pipe — and a tool that needs that said in prose is the thing to fix (2026-10-25)
+- Evidence: `tools/README.md` warns in its own words, "Read the status,
+  never a pipe's: `npm run drafts | tail` reports the tail's 0 whatever
+  the check found." This run read that paragraph and then, four
+  commands later, ran `bash tools/check-seat-surface.sh --all | head`
+  and recorded `exit=0` — concluding that a tool accepting an
+  undeclared flag exits clean. Re-run without the pipe: **exit 2**, the
+  correct status, documented in the README's own table. The tool was
+  right and the measurement was wrong, and the warning that would have
+  prevented it had been read minutes earlier.
+- Rule: take a check's exit status from the process that produced it,
+  on its own line, before any pipe. And read the second half: a
+  correctness property that is enforced only by a paragraph a
+  memoryless reader has to recall is not enforced (L-A22). The durable
+  fix is for every check here to print the status it is about to return
+  on its summary line, so a piped read still carries the verdict —
+  routed as entry 21's companion paste rather than left as a rule
+  about reading carefully.
+- role: any
+- portable: yes
+
+### L27 — A field that exists and is always null is worse than a field that is missing (2026-10-25)
+- Evidence: incident I21, and it corrects this register one run back.
+  The run of 2026-10-24 (message run 5) measured four refusals carrying
+  `refusal: "You've hit your session limit · resets 9:20pm (UTC)"` and
+  closed the question in its own words — "the field already exists and
+  the board already serves it" — which was true of that window and is
+  the kind of conclusion that does not survive the next one. Five hours
+  later `refusal` is null on **25 of 25** records, including the run
+  the wake that started this one describes as refused by a provider
+  limit. The pm seat broadcast "today's refusals are capacity, not a
+  defect" four times in one evening, re-deriving from turn counts a
+  fact the runtime already held.
+- Rule: an always-null field is a worse failure than an absent one,
+  because a reader who checks it gets an answer. So when a reading
+  finds a field populated, the measurement is "populated in this
+  window", never "the field works" — say which, and give the next run
+  the condition that would refute it. And when a producer composes a
+  reason in prose for one consumer, the column it skipped is a defect
+  with a named owner, not a gap in the schema.
+- role: any
+- portable: yes
+
+*L25, L26 and L27 are the run of 2026-10-25 (hook) and the **fifth**
+consecutive run with no owner correction to harvest: `git fetch
+--unshallow` then `git log --all --no-merges
+--author=alexandrapaizdelgado@gmail.com --since=2026-09-28` is empty,
+newest owner commit still `a1418c3` of 2026-09-27, and a board read of
+the whole message store — 359 rows, `saturated: false`, so the store
+and not a page — returns **no message from `owner` in any company**.
+Per item 4 of the previous run's list this is recorded by depth rather
+than by day count, and the depth correction matters: the previous run
+reported "100 messages addressed to `owner` in 72 hours", which was the
+route's **page cap of 100** and not a count. Read with `limit=400`: 77
+messages addressed to `owner`, 42 of them `ask`, spanning 2026-10-23T17:32Z
+to 2026-10-24T23:08Z, and **exactly one of the 77 is from this
+company**. So the honest sentence this register has never written is
+not that her attention is short of atelier's share — atelier has asked
+for almost none of it. The bottleneck is portfolio-wide and it is
+hers to triage, and no third ask goes to her from this seat (L20).
+
+L25 is the first lesson here derived from a **capacity event** rather
+than from a defect in a file, and L27 is the first that corrects a
+conclusion this register reached one run earlier — which is what
+charter step 5 is for. Both came from a sister seat's behaviour and
+from this seat's own refused run, continuing the pattern the notes
+above record: five runs, no owner input, every correction from a
+colleague or from the register auditing itself.*
