@@ -12,7 +12,8 @@ incident stays open until its fix is in the tree.
 
 ## The index — read this before reading the file (added 2026-10-25, I23)
 
-Twenty-three entries, **thirteen open**. This file is ~3,000 lines, of
+Twenty-three entries, **fourteen open** — I4, I5, I6, I7, I10, I11, I13,
+I15, I18, I19, I20, I21, I22, I23. This file is ~3,000 lines, of
 which 1,226 are previous runs' homework — answered lists, caps tables
 and next-run lists, interleaved with the incidents rather than kept
 apart — so a memoryless run opening it top-down meets hundreds of lines
