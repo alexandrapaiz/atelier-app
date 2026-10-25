@@ -10,6 +10,43 @@ Format: number, one-line title, date. Then what happened with the
 evidence that shows it, the fix, and whether the fix has landed. An
 incident stays open until its fix is in the tree.
 
+## The index — read this before reading the file (added 2026-10-25, I23)
+
+Twenty-three entries, **thirteen open**. This file is 2,600 lines and
+half of it is previous runs' homework rather than incidents, so a
+memoryless run opening it top-down used to meet 1,200 lines of answered
+lists before learning what is still broken. One line per entry, newest
+last, status asserted from each entry's own `**Status.**` paragraph.
+**A run that changes a status updates this line in the same commit**;
+an index that drifts is worse than no index, because a reader who
+checks it gets an answer.
+
+| # | one line | status |
+|---|---|---|
+| I1 | Two charters claim `docs/agents/pending.md` | CLOSED 2026-09-19 |
+| I2 | ADR-015 open routing configured but not in effect | CLOSED 2026-09-19, reopened in substance by I5 |
+| I3 | The workflow prompt overrides the pm charter's branch name | CLOSED 2026-09-19 |
+| I4 | Every seat run for a month happened on a surface none of this repo's fixes reach | **OPEN** |
+| I5 | A step reported success while its own artifact said it failed | **OPEN** |
+| I6 | The branch-convention defect recurred on the surface that replaced I3's | **OPEN** |
+| I7 | The seat cannot tell the owner's comments from its own | **OPEN** (comments only; commits closed by I9) |
+| I8 | One pull request carried two merge tiers | CLOSED 2026-10-24 |
+| I9 | I7 claimed a distinction the surfaces do make | CLOSED 2026-10-24 |
+| I10 | The board is in every seat's environment; no seat workflow can be woken by it | **OPEN**, routed |
+| I11 | Four measured findings died when the pull request carrying them was closed | **OPEN** |
+| I12 | The draft check's false-positive guard cannot fire where the seats run | CLOSED 2026-10-24 |
+| I13 | This repository's fixes and this company's runs are on different surfaces | **OPEN** — the root of I4, I6, I10, I15 |
+| I14 | The draft check's strongest verdict aims at the case it cannot see | CLOSED 2026-10-24 |
+| I15 | A merger cannot see that a seat is still running | **OPEN** as a signal defect; seat half closed by L18 |
+| I16 | The ship check passes on any abbreviated base sha | CLOSED 2026-10-25 by this run's own two calls |
+| I17 | A handoff about a live branch was true for seventy-two seconds | CLOSED on L14 |
+| I18 | The freshness guard can be switched off and the clean line does not say so | **OPEN**, fix on PR #66 |
+| I19 | The vendored standard's enforced-rule list is short two rules | **OPEN**, HQ's lane |
+| I20 | `carries=work` cannot see a sibling pull request carrying the same work | **OPEN**, entry 19 |
+| I21 | The field that tells a refusal from a defect was null on a proven refusal | **OPEN**, entry 20 |
+| I22 | Two seats met one capacity wall and resumed two different ways | **OPEN** on the charter clause; draft half closed |
+| I23 | The registers this seat must read have outgrown the run that reads them | **OPEN**; the index below is its first fix |
+
 ### I1 — Two charters claim docs/agents/pending.md (2026-09-19)
 
 **What happened.** The pm seat's first supervised run (run
@@ -1597,9 +1634,33 @@ the cases that already pass and not only against the defect it
 targets; the paste in entry 14 is the version that is, at 74/74 before
 and after.
 
-**Status.** OPEN, routed to the engineer seat with a paste. Verification:
-the two calls above, made against one unchanged base, agreeing. Not the
-line being present: run it both ways.
+**Status.** **CLOSED 2026-10-25 (hook run), on the verification this
+entry demanded and not on the line being present.** The engineer seat's
+fix landed in PR #64, merged at 02:27:08Z — `1b306d8` "The ship check
+reads an abbreviated base tip as the same commit" and `4186958` for the
+README — twelve minutes into this run, which merged `origin/main` and
+re-measured rather than read line 202. Both calls, one unchanged base
+`fa7c2514e083e70572ff270513fddf4524e2cec1`, one commit made and not
+pushed:
+
+```
+$ bash tools/check-shipped.sh --base main --base-sha fa7c2514e083e70572ff270513fddf4524e2cec1
+- base before this run: fa7c2514...; base now: fa7c2514...
+ORPHANED   branch=atelier-exo/2026-10-25-hook source=remote-head origin/... is at 951862d but HEAD is 224ed48
+exit=1
+
+$ bash tools/check-shipped.sh --base main --base-sha fa7c251
+- base before this run: fa7c251; base now: fa7c2514e083e70572ff270513fddf4524e2cec1
+ORPHANED   branch=atelier-exo/2026-10-25-hook source=remote-head origin/... is at 951862d but HEAD is 224ed48
+exit=1
+```
+
+Same verdict, same exit, and the abbreviated call no longer appends
+`(advanced)` to a base that did not move — which was the whole defect.
+`npm test` on the merged tree: 0 failures. Four runs asked for this
+check; this is the one that could make it. Entry 14 of
+`docs/agents/pending.md` is marked APPLIED and must not be pasted
+again.
 
 ### I17 — A handoff about a live branch was true for seventy-two seconds, and the remedy it named would have rewritten this register (2026-10-24)
 
@@ -2388,3 +2449,223 @@ exists and the board already serves it.
     seat writes should be about the handoff rather than about another
     defect — because a register that only grows is the one failure this
     charter names by name.
+
+### I20 — `carries=work` cannot see that a sibling pull request carries the same work (2026-10-25)
+
+**What happened.** This run inherited the first genuinely stranded
+draft this product has produced, and the stranded-draft check named it
+correctly and then told a reader the one thing that keeps it stranded.
+Measured at 02:23Z, no pipe, status read from the process:
+
+```
+LIVE      #68 atelier-exo/2026-10-25-hook idle=0m commits=29 files=4 carries=work run=self
+FRESH     #67 atelier-engineer/2026-10-25-hook idle=1m commits=1 files=0 carries=nothing run=fresh
+STRANDED  #65 atelier-exo/2026-10-24-message-6 idle=3h commits=28 files=4 carries=work run=none
+check-draft-prs: 1 of 3 draft(s) in scope are stranded (0 out of scope, 1 too fresh to judge (under 60m)) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+exit=1
+```
+
+`#65` is this seat's own previous run, dead for three hours. The
+verdict is right. `carries=work` is wrong as a decision, and it is
+wrong in the direction that costs the most, because by this tool's own
+README `carries` exists to tell a reader whether closing a draft throws
+away a measurement. Closing `#65` throws away nothing:
+
+```
+git diff --stat origin/atelier-exo/2026-10-24-message-5 origin/atelier-exo/2026-10-24-message-6
+   (empty)
+```
+
+**Its tree is byte-identical to PR #62's, and #62 is open and ready.**
+`#65`'s 28 commits are `#62`'s 27 plus one empty draft-opener. Every
+insertion `carries=work` counted is also sitting in a sibling pull
+request that a merger can merge today.
+
+**Why this is not I17 again.** I17 is the loud verdict aimed at work
+that is alive. This is the quiet verdict aimed at work that is dead and
+duplicated, and the two fail in opposite directions from the same
+cause: `carries` is measured against the base and nothing else, so it
+answers "is this diff non-empty" when the question is "does this diff
+exist anywhere a merger can already reach". A draft that is the only
+copy of its work and a draft that is a redundant copy of a ready pull
+request print the same field, and the field is the one a merger reads
+before deciding whether closing is safe.
+
+**The asymmetry runs the other way from `carries=nothing`.** A wrong
+`carries=nothing` closes live work once, loudly, and a colleague
+notices. A wrong `carries=work` leaves a dead duplicate open forever,
+quietly, and the only evidence it was wrong is a `git diff --stat`
+nobody is told to run. This register has four seat pull requests open
+tonight and three of them are strict ancestors of the fourth; that is
+the state this field protects.
+
+**Fix.** Engineer's lane, `tools/check-draft-prs.sh`, in entry 19 of
+`docs/agents/pending.md` with ready-to-paste content: when a draft's
+head is an ancestor of another open pull request's head, print
+`carries=duplicate #<n>` instead of `carries=work`. `git merge-base
+--is-ancestor` answers it per pair, `gh pr list` already supplies the
+heads, and the pair count on this product has never exceeded single
+digits.
+
+**Status.** OPEN. Verification: run the check with two open drafts
+where one is an ancestor of the other and read the `carries` field of
+the ancestor. This run supplies that exact pair — `#65` is an ancestor
+of `#68` — so the case is reproducible until a merger clears it.
+
+### I21 — The field that tells a refusal from a defect was null on the one refusal this run can prove (2026-10-25)
+
+**What happened.** This run was woken with a sentence only the runtime
+could have written: *"capacity returned: the provider limit that
+refused your last run has reset."* So the runtime knows which run it
+refused and why. The board does not.
+
+**Evidence.** `GET /api/board/atelier`, read at 02:24Z, 25 run records
+spanning 2026-10-24T21:20:10.905Z to 2026-10-24T23:22:07.580Z.
+`refusal` is **non-null on 0 of 25**. Three of the 25 carry the exact
+signature of a refusal — one turn, zero minutes, exit 1, no pull
+request — inside ten seconds of each other:
+
+| seat | started_at | turns | min | exit | pr_url | refusal |
+|---|---|---|---|---|---|---|
+| pm | 23:21:58.269Z | 1 | 0 | 1 | null | **null** |
+| exo | 23:22:03.476Z | 1 | 0 | 1 | null | **null** |
+| pm | 23:22:07.580Z | 1 | 0 | 1 | null | **null** |
+
+The middle row is this seat's last run — the one the wake says a
+provider limit refused. Its `report` reads in full: *"Host window run
+of atelier-exo on message: 1 turns in 0 min, no pull request, looked
+for in GitHub's alexandrapaiz/atelier-app pull requests, newest 30,
+for a exo/ or atelier-exo/ branch opened in the run's window. It exited
+1."* A paragraph about where a pull request was looked for, and not one
+word about the refusal that made looking pointless.
+
+**This refutes a reading this register closed one run ago.** The run of
+2026-10-24 (message run 5) measured four refusals at 18:25 and found
+all four carrying `refusal: "You've hit your session limit · resets
+9:20pm (UTC)"`, and concluded, in its own words: *"That is worth one
+line in the register and no fix here: the field already exists and the
+board already serves it."* Five hours later the same field is empty on
+a refusal the runtime described in prose to the refused seat. So one of
+two things is true, and the ask is the same under both: either the
+field is written for only one class of refusal, or it stopped being
+written. A field that exists and is null is worse than a field that is
+missing, because a reader who checks it gets an answer.
+
+**What it costs, measured rather than argued.** The pm seat broadcast
+the same triage four times in one evening — 22:11:17, 22:12:55,
+22:13:20, 22:18:50, all variations of *"today's refusals are capacity,
+not a defect"*. That is a seat re-deriving from turn counts a fact the
+runtime already holds, four times, because the column that would have
+said it was empty. It is also the only distinction that matters for
+grading a seat: `exit: 1` is carried here by a run that never started
+and by two runs that worked for eleven and ten minutes and left pull
+requests #65 and #66.
+
+**Fix.** Entry 20 of `docs/agents/pending.md`, addressed to whoever
+holds the resident runtime: write the refusal text the wake already
+composes into the `refusal` column, and name it in the `report`
+sentence. Nothing in this repository can reach it.
+
+**Status.** OPEN. Verification: the next refusal of any seat in this
+company carries a non-null `refusal` on its board record.
+
+### I22 — Two seats met one capacity wall and resumed two different ways, and no rule says which is right (2026-10-25)
+
+**What happened.** The capacity wall of 2026-10-24 23:22Z cut two long
+runs and refused the next three wakes outright. The two cut seats then
+resumed, and they resumed differently.
+
+The engineer seat said so on the board at 21:36:06Z, about the earlier
+wall the same evening: *"Capacity came back, so the draft my refused
+run left is finished and ready, and the check in it now proves its own
+clean verdict."* It went back to **its own branch and its own pull
+request** and finished them.
+
+This seat was dispatched onto a new branch with the instruction to open
+exactly one pull request, so it opened `#68` and left `#65` where it
+lay — which is how `#65` became the stranded draft of I20, and how this
+seat came to have four pull requests open at once. Both seats obeyed
+what they were handed. One produced a finished pull request and no
+stranded draft; the other produced a stranded draft and a fourth open
+pull request on the same four files.
+
+**The gap is in the charter, not in either run.** `prompts/exo-agent.md`
+says "One PR per run on branch exo/YYYY-MM-DD, draft-first" and says
+nothing about a run that is the continuation of a refused one. Read
+literally, a resumed run is a new run and owes a new branch, which is
+what happened. Read by intent, the work of one wake that was cut in
+half should land as one pull request, which is what the engineer seat
+did. The charter does not distinguish them because until last night no
+run of this seat had ever been cut.
+
+**The fix is a charter clause, and charter edits merge only by the
+owner**, so it is written here as a proposal and carried in entry 21 of
+`docs/agents/pending.md` with the exact text:
+
+> A run woken because capacity returned continues the refused run's
+> branch and pull request rather than opening its own. The refused run
+> left a draft; finishing it is this run's one pull request, and the
+> one-per-run rule is satisfied by the pull request that already
+> exists. If the branch cannot be reused — a name the dispatch fixed,
+> a push that is refused — the new run's first act is to close the
+> refused run's draft with a one-line reason naming the pull request
+> that replaces it, so no stranded draft outlives the wake that made
+> it.
+
+The second sentence is the half this seat can honour without the
+owner's merge, and this run honours it: `#65` is closed by this run
+with that reason, which is recorded under "What this branch does with
+#58, #62 and #65" below.
+
+**Status.** OPEN on the charter clause, which needs the owner. The
+stranded-draft half is closed by this run's own action and by L25.
+
+### I23 — The registers this seat is told to read have outgrown the run that reads them (2026-10-25)
+
+**What happened.** This seat's previous run — PR #65, 23:10:40Z to
+23:22:03Z, 53 turns, exit 1 — made exactly one commit, and it was the
+empty draft-opener. Three handoffs from the engineer seat were
+delivered to it. None was answered. Fifty-three turns produced nothing
+that reached a file.
+
+**It had not been idle.** It was reading. The charter's five steps name
+four registers plus a vendored standard, and this is what they weigh on
+the tree this run merged:
+
+| file | lines | bytes |
+|---|---|---|
+| `docs/standards/lessons.md` | 4175 | 274,771 |
+| `docs/agents/incidents.md` | 2390 | 131,958 |
+| `docs/agents/pending.md` | 1326 | 66,072 |
+| `docs/agents/lessons.md` | 593 | 34,158 |
+| **total** | **8484** | **506,959** |
+
+Half a megabyte, before the charter, `ARCHITECTURE.md`, the three
+workflow files, the board, the queue and the inbox — all of which steps
+1 through 5 also require. The seat's declared turn cap is 120, the
+lowest of the three seats, and its observed maximum has risen twice in
+two days, 75 → 88 → 98, while no other seat's has moved.
+
+**The sharpest number is inside the incident register itself.** Its 23
+incident entries occupy lines 13–1192. Its per-run transcript
+sections — "PR #n's list, answered", "Turn caps", "Next run must
+check", nine of them — occupy lines 1193–2390. **Half of the incident
+register is not incidents.** A memoryless run that opens this file to
+find out what is open reads 1,198 lines of previous runs' homework
+first, and nothing tells it which of 23 entries is still open.
+
+**What this run shipped against it, in its own lane.** An index at the
+top of this file: every incident, one line, open or closed, with the
+heading to jump to. Twenty-five lines instead of twenty-four hundred,
+written where a run reading top-down hits it before anything else. It
+does not shrink the file and it is not the structural fix — the per-run
+sections belong in their own log, which is a diff this seat will not
+take while three of its own pull requests are open on this same file
+tail (I17's lesson, and item 8 of the list below). It makes the open
+set readable in one screen, which is the part a cut run needs.
+
+**Status.** OPEN. The index is in the tree; the split is not. The
+charter's own sentence is the verification: *"A register that only
+grows is a failure of this seat."* Two numbers settle whether the index
+helped — whether the next cut run answers its handoffs, and whether
+line 1192 stops moving.
