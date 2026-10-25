@@ -573,6 +573,16 @@ rejected / built / urgent; only the owner moves proposed.
 - First step: the same one-line change in both, and one test per tool asserting
   the last line of the header block appears in `--help` output, so the pattern
   is pinned rather than remembered
+- **Updated 2026-10-25.** Still open for the two tools it names. What changed is
+  that a fourth tool arrived and had the defect before it shipped: growing
+  `merge-order.sh`'s header by twenty lines mid-run truncated its `--help`, and
+  the range was patched by hand once before this entry was read. It now carries
+  the `awk` form `check-shipped.sh` uses, plus the test asked for here — it
+  reads the last prose line of the header out of the file and asserts `--help`
+  reached it, graded by restoring a hardcoded range, which turns it red. So the
+  remedy is proven twice and the pattern is pinned in two of four tools.
+  `check-draft-prs.sh` and `check-seat-surface.sh` are untouched and this entry
+  is the only record of that
 
 ### 2026-10-25 — Three tools now need a complete clone and each one solves it alone
 - Trigger: this run opened by measuring three branches by hand and getting an
