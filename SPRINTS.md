@@ -21,6 +21,19 @@ today owes the sprint.
 **Definition of done:** deployed or installed, verified on a real surface
 (preview, simulator, or phone), tests green, board card checked.
 
+## Posture — asleep (reconfirmed 2026-10-25)
+
+Atelier is asleep by HQ's decision (ADR-002, docs/decisions.md). Verified
+fresh this run, not recalled from an earlier pass: `company.yaml` on `main`
+still carries `posture: asleep` and `priority: 5`. While this holds, no
+retro and no next sprint get drafted here, and the engineer seat ships no
+product code — the sprints below are the plan the product was in when it
+went to sleep, not a live commitment. Picking the first milestone after the
+wake is the PM's job, not a seat's to schedule early. This section is
+updated in place when the posture changes, not appended to, so it stays
+current for every seat that reads this file; a run's own narrative belongs
+in docs/agents/pending.md, not here.
+
 ---
 
 ## Sprint 1 — *Hold it in your hand* · Sep 11 → Sun Sep 20
