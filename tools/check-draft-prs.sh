@@ -12,7 +12,8 @@
 #   tools/check-draft-prs.sh                 every seat named in company.yaml
 #   tools/check-draft-prs.sh --seat engineer one seat
 #   tools/check-draft-prs.sh --all           every open draft, seat or not
-#   tools/check-draft-prs.sh --fresh-under 0 judge every draft, however new
+#   tools/check-draft-prs.sh --fresh-under 0 judge every draft, however new;
+#                                            the summary says the guard was off
 #
 # One line per draft, fields stable enough to grep:
 #   STRANDED  #28 atelier-pm/2026-10-21-message idle=71h commits=2 files=3 carries=work run=none
@@ -296,6 +297,12 @@ done < <(gh pr list --state open --limit 100 --json number,headRefName,isDraft \
 # (L-A21). The out-of-scope count is the one that tells a reader their scope
 # missed the queue.
 read_note="$skipped out of scope"
+# The one call that excuses nothing by instruction is the one whose output
+# never mentioned the setting: with the guard at zero the clause below cannot
+# fire, so a merger's deliberate sweep and a stranding judged by a live guard
+# printed the same summary line character for character. A check whose
+# strictness its caller can change says which setting produced the verdict.
+[ "$fresh_under_min" -eq 0 ] && read_note="$read_note, freshness guard off"
 [ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge (under ${fresh_under_min}m)"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
 [ ${#declared_workflows[@]} -gt 0 ] || read_note="$read_note, no seat workflow declared (run=live unreachable)"
