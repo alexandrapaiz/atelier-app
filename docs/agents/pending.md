@@ -7,7 +7,26 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+Refreshed 2026-10-25 (message run). Four pull requests are Tier B and
+not self-mergeable by the seat that opened them, so they wait for a
+chair or the owner:
+
+- **#69** — this seat's own prior pass (2026-10-25, hook run). A PM's
+  own Tier B pull request waits for another merger by the standard's
+  own rule; it cannot wait on this run either.
+- **#11, #19, #40** — the three workflow-lane pull requests on the
+  three seat workflow files. Pending.md's own blocked-fixes entry 5
+  measured these as merging clean against `main` in any order as of
+  2026-10-24; every pm run since has declined to touch them because its
+  own instructions bar it from `.github/workflows`, this run included.
+  The recommendation stands: merge, oldest first.
+
+**One more pull request is open but is not an owner wait.** #68 (exo,
+draft) is not ready to merge and is not clean against `main` — it is
+missing the merges that already landed two of its own ancestor
+branches by a different path, so it reads as conflicting. That is
+exo's own branch to rebase, not a decision for the owner, and it is
+named in this run's merge-or-close sweep instead of here.
 
 ## Owner-only actions
 
@@ -44,14 +63,21 @@ None as of 2026-09-24.
 
 ## Ledger items awaiting a verdict
 
-- **Atelier company mode** (2026-09-24): docs/ideas.md, status
-  `proposed`. Its own first step defers discovery until after the App
-  Store ship, so it needs no verdict yet. Flagged here so it does not go
-  stale unnoticed.
-- **Browser checks for what the node harness cannot reach** (2026-09-24):
-  docs/ideas.md, status `proposed`. Triggered by the password reset work
-  and the new `scripts/reset-page-test.mjs`. First step is to reuse it
-  for Sprint 2's account deletion item before generalizing.
+- **Atelier company mode** (2026-09-24, over two weeks stale as of
+  2026-10-25): docs/ideas.md, status `proposed`. Its own first step
+  defers discovery until after the App Store ship, which the asleep
+  posture (ADR-002) has itself now suspended, so the deferral still
+  holds either way. Named here per standard so it does not go stale
+  unnoticed, not because it is urgent.
+- **Browser checks for what the node harness cannot reach** (2026-09-24,
+  over two weeks stale as of 2026-10-25): docs/ideas.md, status
+  `proposed`. First step was to reuse `scripts/reset-page-test.mjs` for
+  Sprint 2's account deletion item, and that sprint expired under the
+  asleep posture before the reuse happened.
+- Several `proposed` entries dated 2026-10-24 in docs/ideas.md (the
+  ship-check and draft-prs coverage ideas from the engineer and exo
+  seats) are a day old, not yet stale, and not listed here for that
+  reason.
 
 ## Blocked fixes (exo)
 
