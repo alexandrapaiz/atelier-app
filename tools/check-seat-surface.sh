@@ -103,49 +103,93 @@
 #      never downgraded to a 2 either, so 1 outranks 2: the actionable answer
 #      is the one the exit status carries.
 #
+# The last line this prints names the status it is about to return, as
+# `(exit N)`, including the argument and precondition refusals that exit before
+# any summary. The exit status is still the contract; the suffix is there
+# because a pipe destroys the status and not the text. `check-seat-surface.sh
+# --all | head` read exit 0 on 2026-10-25 and the tool had exited 2 — `--all`
+# is not a flag this command takes — and the finding recorded off that read was
+# the opposite of the truth. If you need the status itself out of a pipeline, it
+# is ${PIPESTATUS[0]}.
+#
 # Requires: git, gh (authenticated), curl, and BOARD_API_URL + BOARD_RUNTIME_TOKEN
 # in the environment (names only — this never prints a token, L-X5). No npm
 # dependencies, per this app's zero-framework ethos.
 
 set -euo pipefail
 
+# One call prints the status and returns it, so the number in the text and the
+# number in `$?` cannot drift apart. A summary that merely mentions a status
+# somebody typed is a second decision.
+verdict() { # status, line...
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status"
+  exit "$status"
+}
+refuse() { # status, line...  — the argument and precondition paths, on stderr
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status" >&2
+  exit "$status"
+}
+
+
+# A flag typed without its value is a question nobody asked, and until
+# 2026-10-25 none of the three tools in here said so. Two shapes, both wrong in
+# the direction that matters. `--seat` and `--base` died inside `shift 2`,
+# which fails on one remaining argument, and `set -e` turns a failed shift into
+# exit 1 — the status that means a finding. `--company` and `--fixture` read as
+# the empty string, and empty is this code's "not given", so the tool silently
+# answered the live question instead of the one on the command line. Both are
+# L6: the third outcome is could-not-run, and a caller error is never either of
+# the other two.
+need_value() { # flag, $# at the point of the match
+  [ "$2" -ge 2 ] || refuse 2 "check-seat-surface: $1 needs a value"
+}
 scope=seats
 seat=
 company=
 fixture=
 while [ $# -gt 0 ]; do
   case "$1" in
-    --seat)    scope=one; seat="${2:-}"; shift 2 ;;
-    --company) company="${2:-}"; shift 2 ;;
-    --fixture) fixture="${2:-}"; shift 2 ;;
-    -h|--help) sed -n '2,99p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "check-seat-surface: unknown argument: $1" >&2; exit 2 ;;
+    # `shift 2` with one argument left fails, and `set -e` turns a failed shift
+    # into exit 1 — the status that means a seat was found running off its
+    # declaration. So `--seat` with nothing after it reported a finding instead
+    # of reaching the refusal below it. Shift what is there (L6).
+    --seat)    need_value --seat $#;    scope=one; seat="$2"; shift 2 ;;
+    --company) need_value --company $#; company="$2"; shift 2 ;;
+    --fixture) need_value --fixture $#; fixture="$2"; shift 2 ;;
+    # The whole leading comment block, found by where the comments stop. The
+    # range this replaces was `2,99p`, and the header had grown past 99 lines,
+    # so --help was already cutting off inside the exit-status table it exists
+    # to print — the defect the other two tools in here carry a comment about.
+    -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
+    *) refuse 2 "check-seat-surface: unknown argument: $1" ;;
   esac
 done
-[ "$scope" = one ] && [ -z "$seat" ] && { echo "check-seat-surface: --seat needs a name" >&2; exit 2; }
+[ "$scope" = one ] && [ -z "$seat" ] && refuse 2 "check-seat-surface: --seat needs a name"
 
 if [ -n "$fixture" ]; then
-  [ -d "$fixture" ] || { echo "check-seat-surface: --fixture $fixture is not a directory" >&2; exit 2; }
+  [ -d "$fixture" ] || refuse 2 "check-seat-surface: --fixture $fixture is not a directory"
 else
-  command -v gh >/dev/null 2>&1 || { echo "check-seat-surface: gh is not installed" >&2; exit 2; }
-  command -v curl >/dev/null 2>&1 || { echo "check-seat-surface: curl is not installed" >&2; exit 2; }
-  gh auth status >/dev/null 2>&1 || { echo "check-seat-surface: gh is not authenticated" >&2; exit 2; }
+  command -v gh >/dev/null 2>&1 || refuse 2 "check-seat-surface: gh is not installed"
+  command -v curl >/dev/null 2>&1 || refuse 2 "check-seat-surface: curl is not installed"
+  gh auth status >/dev/null 2>&1 || refuse 2 "check-seat-surface: gh is not authenticated"
 fi
-git rev-parse --git-dir >/dev/null 2>&1 || { echo "check-seat-surface: not a git repository" >&2; exit 2; }
+git rev-parse --git-dir >/dev/null 2>&1 || refuse 2 "check-seat-surface: not a git repository"
 
 root=$(git rev-parse --show-toplevel)
 manifest="$root/company.yaml"
 # A fixture may bring its own manifest. It falls back to the repository's so that
 # a case which only varies the readings does not have to restate the seats.
 [ -n "$fixture" ] && [ -f "$fixture/company.yaml" ] && manifest="$fixture/company.yaml"
-[ -f "$manifest" ] || { echo "check-seat-surface: no company.yaml, so this product declares no seats" >&2; exit 2; }
+[ -f "$manifest" ] || refuse 2 "check-seat-surface: no company.yaml, so this product declares no seats"
 
 # The board's company name is the product name, not the repository name: this
 # repo is atelier-app and its board company is atelier (standards/pm.md §14
 # lists the names, and they are the repo names everywhere except here). Read it
 # off the manifest rather than off the remote, and let --company override.
 [ -n "$company" ] || company=$(sed -n 's/^product: *\([a-z0-9-]*\).*/\1/p' "$manifest")
-[ -n "$company" ] || { echo "check-seat-surface: company.yaml names no product; pass --company" >&2; exit 2; }
+[ -n "$company" ] || refuse 2 "check-seat-surface: company.yaml names no product; pass --company"
 
 board_read=yes
 if [ -n "$fixture" ]; then
@@ -159,22 +203,21 @@ if [ -n "$fixture" ]; then
 else
   # Names only. Neither value is ever printed, and the absence of one is reported
   # as an inability to look rather than as a clean run (L-X5, L-A80).
-  [ -n "${BOARD_API_URL:-}" ] || { echo "check-seat-surface: BOARD_API_URL is not set, so the actual surface cannot be read" >&2; exit 2; }
-  [ -n "${BOARD_RUNTIME_TOKEN:-}" ] || { echo "check-seat-surface: BOARD_RUNTIME_TOKEN is not set, so the actual surface cannot be read" >&2; exit 2; }
+  [ -n "${BOARD_API_URL:-}" ] || refuse 2 "check-seat-surface: BOARD_API_URL is not set, so the actual surface cannot be read"
+  [ -n "${BOARD_RUNTIME_TOKEN:-}" ] || refuse 2 "check-seat-surface: BOARD_RUNTIME_TOKEN is not set, so the actual surface cannot be read"
 
   # One board read for every seat, because the endpoint returns the whole roster
   # of recent runs and a read per seat would just page the same rows again.
   if ! board=$(curl -sS --fail-with-body -m 30 \
         -H "Authorization: Bearer $BOARD_RUNTIME_TOKEN" \
         "$BOARD_API_URL/api/board/$company" 2>&1); then
-    echo "check-seat-surface: could not read the board for '$company'" >&2
-    exit 2
+    refuse 2 "check-seat-surface: could not read the board for '$company'"
   fi
 fi
 # An empty runs array is a reading; a body that is not the board at all is not.
 if [ "$board_read" = yes ]; then
   echo "$board" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const b=JSON.parse(s);if(!Array.isArray(b.runs))process.exit(1)})' 2>/dev/null || {
-    echo "check-seat-surface: the board answered for '$company' without a runs array" >&2; exit 2; }
+    refuse 2 "check-seat-surface: the board answered for '$company' without a runs array"; }
 fi
 
 seats=()
@@ -182,7 +225,7 @@ case "$scope" in
   one)   seats=("$seat") ;;
   seats) while IFS= read -r line; do seats+=("$line"); done < <(
            sed -n 's/^  - *{ *name: *\([a-z0-9-]*\).*/\1/p' "$manifest")
-         [ ${#seats[@]} -eq 0 ] && { echo "check-seat-surface: company.yaml named no seats" >&2; exit 2; } ;;
+         [ ${#seats[@]} -eq 0 ] && refuse 2 "check-seat-surface: company.yaml named no seats" ;;
 esac
 
 # The workflow file the manifest names for a seat. A seat declared without one
@@ -415,12 +458,9 @@ done
 # seat was quiet would hide the finding behind the weaker one. Both counts are
 # always printed, so a 1 never conceals that something was also unreadable.
 if [ "$elsewhere" -gt 0 ]; then
-  echo "check-seat-surface: $elsewhere of $checked seat(s) run somewhere company.yaml does not name — an edit to the declared workflow reaches nothing (L-A16). $unclear unclear."
-  exit 1
+  verdict 1 "check-seat-surface: $elsewhere of $checked seat(s) run somewhere company.yaml does not name — an edit to the declared workflow reaches nothing (L-A16). $unclear unclear."
 fi
 if [ "$unclear" -gt 0 ]; then
-  echo "check-seat-surface: $unclear of $checked seat(s) could not be read or have never run anywhere. That is not a pass."
-  exit 2
+  verdict 2 "check-seat-surface: $unclear of $checked seat(s) could not be read or have never run anywhere. That is not a pass."
 fi
-echo "check-seat-surface: $checked seat(s) in scope, each last run by the surface it declares."
-exit 0
+verdict 0 "check-seat-surface: $checked seat(s) in scope, each last run by the surface it declares."

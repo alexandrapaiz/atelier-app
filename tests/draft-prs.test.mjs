@@ -561,8 +561,10 @@ test("the summary line names the status it is about to return", () => {
 });
 
 test("the argument error paths name their status too, which is where the lost measurement happened", () => {
-  for (const args of [["--nonesuch"], ["--seat", "enginer"], ["--fresh-under", "1.5"], ["--seat"]]) {
+  for (const args of [["--nonesuch"], ["--seat", "enginer"], ["--fresh-under", "1.5"],
+                      ["--seat"], ["--fresh-under"]]) {
     const r = run({ args, files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]) } });
+    assert.notEqual(r.status, 1, `${args.join(" ")} is a caller error, not a stranded draft`);
     assert.equal(r.status, 2, `${args.join(" ")} must be an unasked question`);
     assert.match(r.stderr.trimEnd().split("\n").pop(), /\(exit 2\)$/,
       `${args.join(" ")} exits before any summary and still owes the reader its status`);

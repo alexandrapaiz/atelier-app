@@ -140,6 +140,19 @@ refuse() { # status, line...  — the argument and precondition paths, on stderr
 # reading a merger sweeping the queue wants.
 fresh_under_min=60
 
+
+# A flag typed without its value is a question nobody asked, and until
+# 2026-10-25 none of the three tools in here said so. Two shapes, both wrong in
+# the direction that matters. `--seat` and `--base` died inside `shift 2`,
+# which fails on one remaining argument, and `set -e` turns a failed shift into
+# exit 1 — the status that means a finding. `--company` and `--fixture` read as
+# the empty string, and empty is this code's "not given", so the tool silently
+# answered the live question instead of the one on the command line. Both are
+# L6: the third outcome is could-not-run, and a caller error is never either of
+# the other two.
+need_value() { # flag, $# at the point of the match
+  [ "$2" -ge 2 ] || refuse 2 "check-draft-prs: $1 needs a value"
+}
 scope=seats
 seat=
 while [ $# -gt 0 ]; do
@@ -150,16 +163,17 @@ while [ $# -gt 0 ]; do
     # were found. So a bare `--seat` reported a finding instead of reaching the
     # "needs a name" refusal three lines below, and `npm run drafts --seat`
     # read as a queue with work stranded in it. Shift what is there (L6).
-    --seat)  scope=one; seat="${2:-}"; shift $(( $# > 1 ? 2 : 1 )) ;;
+    --seat)  need_value --seat $#; scope=one; seat="$2"; shift 2 ;;
     # A threshold that silently became 0 would turn the guard off and read as a
     # clean sweep, so a value that is not a whole number of minutes is an
     # unasked question (exit 2) rather than a default quietly restored.
     --fresh-under)
-      fresh_under_min="${2:-}"
+      need_value --fresh-under $#
+      fresh_under_min="$2"
       case "$fresh_under_min" in
         ''|*[!0-9]*) refuse 2 "check-draft-prs: --fresh-under needs a whole number of minutes, got: ${2:-<nothing>}" ;;
       esac
-      shift $(( $# > 1 ? 2 : 1 )) ;;
+      shift 2 ;;
     # The whole leading comment block, however long it grows: a line range
     # here silently truncates the help the next time this header is edited.
     -h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"; exit 0 ;;

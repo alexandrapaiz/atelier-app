@@ -446,3 +446,48 @@ test('on a real clone, a short base tip does not pass a run that pushed nothing'
   assert.equal(full.code, abbreviated.code, full.out);
   assert.match(full.out, /^UNPUSHED {3}/m);
 });
+
+// --- the status in the text (blocked-fix entry 21, 2026-10-25) --------------
+//
+// A seat read tools/README.md's warning about pipes and then, four commands
+// later, ran a check through `| head`, read the pipe's 0, and recorded the
+// opposite of what the tool had returned. The warning was right and its
+// placement was the defect: a correctness property enforced only by a paragraph
+// a memoryless reader has to recall is not enforced (L-A22). So every exit path
+// prints its own status as the last thing it says, where a pipe cannot reach it.
+//
+// Every fixture, not a sample. The whole argument for the suffix is that a
+// quoted line carries its verdict with it, and a path that forgot the suffix
+// would be exactly the path whose output somebody pastes into a register.
+
+test('every verdict names the status it returns, on every fixture in the table', () => {
+  const cases = fs.readdirSync(path.join(root, 'tests/fixtures/shipped')).sort();
+  assert.ok(cases.length >= 12, `the table shrank to ${cases.length} cases`);
+  for (const fixture of cases) {
+    const { code, out } = shipped(fixture);
+    const last = out.trimEnd().split('\n').pop();
+    assert.match(last, new RegExp(`\\(exit ${code}\\)$`),
+      `${fixture} returned ${code} and its last line said: ${last}`);
+  }
+});
+
+test('the argument refusals name their status too, which is the path that misled a run', () => {
+  for (const args of [['--nonsense'], ['--fixture', 'tests/nope'], ['--base-sha', 'main'], ['--base']]) {
+    const r = spawnSync('bash', ['tools/check-shipped.sh', ...args], { cwd: root, encoding: 'utf8' });
+    assert.equal(r.status, 2, `${args.join(' ')} is a caller error, not a finding about the run`);
+    const last = `${r.stdout}${r.stderr}`.trimEnd().split('\n').pop();
+    assert.match(last, /\(exit 2\)$/, `${args.join(' ')} said: ${last}`);
+  }
+});
+
+// `--base` with nothing after it used to die inside `shift 2`, and `set -e`
+// turns a failed shift into exit 1 — which in this tool is the status that
+// means this run's work is not safe. A flag typed without its value reported a
+// loss that had not happened, which is the subject matter of the file it is in.
+test('a flag given without its value is a caller error, never a finding', () => {
+  for (const flag of ['--base', '--fixture']) {
+    const r = spawnSync('bash', ['tools/check-shipped.sh', flag], { cwd: root, encoding: 'utf8' });
+    assert.notEqual(r.status, 1, `${flag} alone must not read as unsafe work`);
+    assert.equal(r.status, 2);
+  }
+});
