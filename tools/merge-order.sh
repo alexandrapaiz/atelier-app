@@ -124,7 +124,12 @@ while [ $# -gt 0 ]; do
     --limit)  limit="${2:-}"; shift 2 ;;
     --fetch)  do_fetch=1; shift ;;
     --unshallow) do_unshallow=1; do_fetch=1; shift ;;
-    -h|--help) sed -n '2,110p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # The range is found rather than hardcoded: growing this header by twenty
+    # lines mid-run already truncated this help text once, which is the defect
+    # docs/ideas.md names for two other tools here and check-shipped.sh fixed
+    # on main. The contract a reader is sent to must not be shortenable by a
+    # documentation edit.
+    -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
     *) echo "merge-order: unknown argument: $1" >&2; exit 2 ;;
   esac
 done

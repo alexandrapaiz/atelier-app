@@ -402,8 +402,37 @@ rejected / built / urgent; only the owner moves proposed.
   land in the same caller and arguing them separately spends two handoffs on
   one edit. Until then `run=fresh` is the honest ceiling and the threshold
   stays a number anyone can retune from evidence
+- Measured later the same evening, and it strengthens the case rather than
+  changing it: the Actions reading is not merely blind to a host window, it
+  answers for a different workflow. `tests.yml` fires on `pull_request`, so
+  every push into an open draft starts a job whose head branch is the seat
+  branch, and the old reading counted any in-flight run as a live seat. 26
+  such runs on seat branches that evening, every one `tests`, each alive 17 to
+  30 seconds, so a draft read live for twenty seconds after each push and
+  stranded a minute later with nothing about the work having changed. The
+  reading has been split — `run=live` for a declared seat workflow, `run=ci`
+  for anything else, and only the first decides anything — which makes the
+  verdict stop flickering without inventing a fact nobody has. It does not
+  give anyone the reading this entry asks for. Three surfaces have now been
+  asked whether a seat is standing in a branch, and all three answered about
+  something else: Actions about a test job, the board about runs that already
+  ended, and the age guard about time
 - Cost: $0
-- Status: proposed
+- Status: **filed, and the first step went the other way.** The engineer seat
+  left the routing of this one to the exo seat rather than taking it, and the
+  ruling is **blocked-fix entry 18 of `docs/agents/pending.md`, standing on its
+  own** rather than folded into entry 10. Three reasons, in the entry: entry
+  10's second half has now been found untouched on three readings, the latest
+  in a later window, so an ask folded into it inherits a stall that has already
+  happened three times; the two have different tests, and an entry with two
+  tests can only ever be half-closed, which is the state entry 10 is in; and
+  the engineer's own second argument is the decisive one, because someone could
+  decline these separately and a merged ask takes the other down with it. The
+  one-handoff saving this first step was for is kept without the bundling —
+  both entries name the same pre-run hook, in both directions, so whoever opens
+  that file is told the other edit is in the same pass. The word is
+  `run=runtime` rather than `run=host`, because a verdict names the reading it
+  came from and the reading is a file the runtime writes
 
 ### 2026-10-24 — The board's message store has no dry run, and its written contract is short of what it enforces
 - Trigger: four messages posted in one run, two of them refused. The standard's
@@ -440,8 +469,110 @@ rejected / built / urgent; only the owner moves proposed.
   write the advisory one in this product; the honest fix is one route at
   headquarters
 - Cost: $0
+- Status: **the register half is taken and routed upward.** The exo seat's run
+  of 2026-10-24 (message run 5) opened incident I19 for the two missing rules
+  and blocked-fix entry 17 for the fix, which goes to HQ's centralizer by
+  handoff because the standard is vendored here and arrives by sync. That entry
+  carries three pastes: the two rules in the paragraph's own voice, a
+  provenance stamp naming the revision and date the list was read at (L23, the
+  lesson this triggered), and the validate route. One of the two rules was
+  confirmed from the vendored file at zero cost — the accepted reason words are
+  printed there and a bare `so` is absent from them — and the other is recorded
+  from the engineer seat's quoted refusal rather than re-probed, because L15
+  makes a second probe a permanent cost paid for a fact already known. This
+  seat agrees with the first step above on the advisory tool and adds one
+  condition to it: its output must say it is advisory and name the rules it
+  could not check, otherwise a green local run becomes the thing a seat trusts
+  instead of the store
+
+
+### 2026-10-24 — A verdict read entirely from files prints the same words as one read from the world
+- Trigger: the freshness guard's off switch left no trace on the summary line,
+  which was one line to fix because the clause that names the threshold was
+  already there and only needed a case for zero. The same question asked of the
+  other two tools has a worse answer. `--fixture DIR` makes
+  `tools/check-shipped.sh` and `tools/check-seat-surface.sh` take *every*
+  reading from files — no remote, no board, no credential — and neither says so
+  anywhere in its output. Measured here: five files in a scratch directory,
+  invented by hand, and the tool printed `SHIPPED branch=atelier-engineer/x
+  source=remote-head sha=abc123 pr=none` and exited 0, byte-identical in shape
+  to the verdict it gives after really asking a remote
+- What: the setting that changed the reading belongs on the line that carries
+  the verdict, which is the whole of the rule the summary clause above was
+  written for. A fixture is a stronger case than a threshold, not a weaker one:
+  a threshold still reads the world and only moves where it draws the line,
+  while a fixture replaces the world. These two verdicts are also the ones that
+  travel — a ship verdict is quoted into run reports and a seat-surface verdict
+  into handoffs — so the quoted line is the one that has to carry its own
+  provenance. One field, `source=fixture:<dir>` on the verdict line or a
+  `(read from <dir>, not from the world)` clause on the summary, in both tools
+- First step: one test per tool, written before the field, asserting that a
+  fixture run and a real run do not produce the same verdict line — the shape
+  that made this run's own test able to fail, since the easy version of it
+  passed on the file it existed to change. The tests for both tools already run
+  almost entirely in fixture mode, so the assertion has fixtures waiting and
+  costs a line each
+- Cost: $0
 - Status: proposed
 
+### 2026-10-24 — The base-tip comparison can only catch a mis-spelled sha, not a wrong one
+- Trigger: the short-sha fix in `tools/check-shipped.sh` this run. With both
+  tips in one normal form, every way of spelling one commit now reads as that
+  commit, which closes the case a caller actually hits. What stays open is the
+  case the normal form cannot see: `--base-sha dead` against a base at
+  `0bd865dd…` reads as the base having advanced and exits 0, measured on a
+  scratch clone during the fix. A hex string that is not this base's tip and is
+  not its prefix is indistinguishable, lexically, from a tip that moved
+- What: the only reading that answers the real question is ancestry — the base
+  advanced when the pre-run tip is an ancestor of the tip now and not equal to
+  it, which `git merge-base --is-ancestor` answers in one call. It would also
+  turn the verdict from weak into strong, because an ancestor relationship rules
+  out the concurrent merge the line currently warns about
+- First step: measure before building, because this is exactly the surface the
+  first draft of the fix broke. Ancestry needs both objects in the checkout, and
+  the self-merge case `--base-sha` exists for is a shallow clone whose pre-run
+  base tip is not an object it holds. So the shape is: try ancestry, and where
+  either object is missing say which reading was taken rather than falling back
+  silently — a verdict names the reading it came from (L-E11). The measurement
+  that decides it is one `git cat-file -e` against the resident runtime's own
+  clone of this repository, on the tip it captured before a run
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — Every fixture agreed on one side of the comparison that broke
+- Trigger: the same fix. All eleven fixtures in `tests/fixtures/shipped/` set
+  the caller's base tip and the tool's own reading to *different* commits, so
+  all eleven exercised `base-advanced` being right and not one could reach it
+  being wrong. The defect lived in the one branch the fixture set could not
+  construct, and it was found by a sister seat calling the command on itself
+- What: a coverage assertion the suite can make about itself — for a tool whose
+  verdict is a decision table, every `source=` value it can print has at least
+  one fixture that reaches it, and every comparison has a fixture on each side.
+  `check-shipped.sh` prints nine distinct `source=` values and the test file
+  names them one at a time, so the list and the fixtures can drift without
+  anything failing
+- First step: cheap version first, in `tests/shipped.test.mjs`: grep the
+  `source=` values out of `tools/check-shipped.sh`, run every fixture
+  directory, and assert the set of values produced covers the set printed — the
+  same shape as the seat-surface check's eleven readings over eleven fixtures,
+  which is the pattern this repository already trusts. It fails loudly the next
+  time a verdict is added without a fixture, which is the drift it exists for
+- Cost: $0
+- Status: proposed
+
+### 2026-10-24 — Two of the three tools cut their own `--help` at a line number
+- Trigger: growing the header of `tools/check-shipped.sh` by six lines this run
+  silently truncated its `--help`, which was `sed -n '2,81p' "$0"`. It now
+  prints the comment block by finding where the comments stop, so a
+  documentation edit cannot cut the help text mid-sentence
+- What: `tools/check-draft-prs.sh` and `tools/check-seat-surface.sh` carry the
+  same hardcoded-range pattern, and the failure is invisible: the help text
+  still prints, just short, and nothing tests its last line. A tool whose
+  `--help` is its documented contract (the README sends readers to it for the
+  field meanings) should not have a contract that a paragraph edit can shorten
+- First step: the same one-line change in both, and one test per tool asserting
+  the last line of the header block appears in `--help` output, so the pattern
+  is pinned rather than remembered
 
 ### 2026-10-25 — Three tools now need a complete clone and each one solves it alone
 - Trigger: this run opened by measuring three branches by hand and getting an

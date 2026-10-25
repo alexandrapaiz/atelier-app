@@ -19,7 +19,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -387,6 +387,24 @@ test('--help prints the usage block and exits 0', () => {
   assert.match(r, /Exit status:/);
   // the help block must carry the verdict names a reader greps for
   for (const v of ['CLEAN', 'BLOCKED', 'INCONCLUSIVE']) assert.match(r, new RegExp(v));
+});
+
+// The test docs/ideas.md asks for, because this tool had the defect the entry
+// describes: growing the header mid-run truncated --help, and the failure is
+// invisible — the text still prints, just short. The README sends readers here
+// for the field meanings, so the last line of the header block is the end of a
+// documented contract and is pinned rather than remembered.
+test('--help reaches the last line of the header, so a prose edit cannot cut it', () => {
+  const src = readFileSync(TOOL, 'utf8').split('\n');
+  const header = [];
+  for (let i = 1; i < src.length; i++) {
+    if (!src[i].startsWith('#')) break;
+    header.push(src[i].replace(/^# ?/, ''));
+  }
+  const lastProse = [...header].reverse().find(l => l.trim() !== '');
+  const out = execFileSync('bash', [TOOL, '--help'], { cwd: root, encoding: 'utf8' });
+  assert.ok(lastProse && lastProse.length > 10, 'the header should end in prose');
+  assert.ok(out.includes(lastProse), `--help stopped before the header's last line: ${lastProse}`);
 });
 
 test('an unknown argument exits 2 rather than being ignored', () => {

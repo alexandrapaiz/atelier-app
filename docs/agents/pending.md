@@ -60,11 +60,19 @@ not edit or reorder this section. Each entry carries exact
 ready-to-paste content so the owner or a seat with the right surface
 can apply it without rediscovering it.
 
-Twelve entries, of which **one is applied and closed** (entry 9).
+Eighteen entries, of which **two are applied and closed** (entries 9
+and 12).
 Entries 1-5 are from the run of 2026-10-24 (PR #40); entries 6-9 from
 the later hook run the same day (PR #45); entries 10-11 from the
 message run after it (PR #48); entry 12 from the message run after that
-(PR #53). Each says who can apply it and gives the text to paste.
+(PR #53); entries 13-15 from the message run after that (PR #58);
+entries 16-18 from the message run after that (PR #62). Each says who
+can apply it and gives the text to paste.
+Counted by the hand each one names: five are the engineer seat's (9,
+12, 14, 15, 16), three are the owner's by merge (1, 2, 3), three are
+whoever holds the resident runtime (10, 11, 18), one is HQ's
+centralizer (17), and the remaining six name a chair, the pm seat, or
+anyone with write access to a surface this seat may not touch.
 Entries carry a dated update line when a later run changed what is true
 about them, rather than being silently rewritten. A closed entry stays
 here with its closure rather than being deleted, so that a later run
@@ -537,6 +545,55 @@ something calls it, this entry stays open, because a tool nothing calls
 is not a check — and the next run's test is not whether `#52` merged
 but whether anything calls what it added.
 
+**Update 2026-10-24 (message run 4): the first half is on `main`, and
+the remaining ask is now one exact line.** PR #52 merged at 22:24Z.
+Nothing calls it: 0 of 25 board run reports mention a ship verdict and
+the report template has no slot for one.
+
+**What to add to the post-run step, for whoever owns the runtime.**
+Capture the base tip *before* dispatching the seat, then after the run,
+in the seat's checkout:
+
+```sh
+base_before=$(git ls-remote --heads origin main | cut -f1)   # BEFORE the run
+...
+bash tools/check-shipped.sh --base main --base-sha "$base_before"
+```
+
+and put the last two lines of its output into the run report. Exit 0 is
+shipped, 1 is lost work, 2 is a reading that failed and is not a pass.
+
+Three conditions on that line, each measured rather than assumed.
+`git ls-remote` and not `git rev-parse --short`: with an abbreviated
+sha the tool reports every run as shipped, which is I16, and **entry 14
+must land before this line is worth writing**. The capture has to
+happen before the run or the Tier A self-merge path reads as a run that
+did nothing. And the tool must be called from the seat's own checkout,
+because it asks the remote about the branch that checkout is standing
+on; it writes nothing and fetches nothing, so it is safe to call in
+somebody else's tree.
+
+**What this run can now vouch for that no previous run could.** The
+tool was called by hand twice on the resident runtime, on a
+committed-and-unpushed HEAD and again after the push, and read
+`ORPHANED` with both shas and then `SHIPPED source=remote-head`
+through a mainline-only clone — the exact condition that broke the
+workflow version. So the remaining risk in this entry is not whether
+the tool works on the surface. It is that nothing calls it, and one
+defect in how it will be called.
+
+**Update 2026-10-24 (message run 5): re-measured in a later window,
+unchanged, and the liveness file is deliberately *not* folded in
+here.** The board's 25 records at 22:52Z span 18:07:24 to 22:38:18 --
+an entirely later window than the one this entry was last measured
+against -- and **0 of 25 carry a ship verdict** in any field. The
+report template still has no slot for one. That is the third
+consecutive measurement finding the second half of option 1 untouched,
+and it is the fact that decides the question the engineer seat put to
+this seat tonight: see **entry 18**, which stands on its own rather
+than being appended here, and which names this entry's pre-run hook so
+that whoever edits one edits both in a single pass.
+
 ### 11. The turn caps the evidence now asks for, for whoever owns the runtime
 
 **Who.** Whoever owns the resident runtime's per-seat turn budget. The
@@ -591,6 +648,33 @@ still capped at 25 rows with no truncation flag, so the window is ~20
 hours and every maximum can still only rise. Models asserted from the
 artifact: `claude-opus-5` on every engineer and exo record,
 `claude-sonnet-5` on every pm record.
+
+**Update 2026-10-24 (message run 5): the exo maximum moved again, by
+ten turns, in under an hour.** Read at 22:52Z; the board's 25 records
+now span 18:07:24 to 22:38:18 on 2026-10-24, a 4.5-hour window, which
+is the page filling faster as the night goes on. **Use this table.**
+
+| seat | runs | highest `turns` | 2x, floor 100 | what this entry said an hour ago |
+|---|---|---|---|---|
+| engineer | 6 | 79 | **158** | 158 |
+| exo | 6 | **98** | **196** | 176 |
+| pm | 13 | 70 | **140** | 140 (clean: 126) |
+
+Only one number changed and it is the same number that changed last
+time: the exo maximum, now this seat's 22:25:23-22:48:09 run at 98
+turns. Two consecutive re-derivations have raised it and no other, by
+26 then 10, which is a pattern rather than noise -- it is the seat
+whose work is reading and writing four registers, and it is the seat
+whose declared cap is the lowest of the three (120). The "clean"
+qualifier is retired for the pm row in this window: the only pm runs
+that exited 1 in it are four session-limit refusals at `turns=1`, so
+the highest pm run and the highest clean pm run are the same run.
+
+Models asserted from the artifact again, and they are consistent:
+`claude-opus-5` on all 6 engineer and all 6 exo records,
+`claude-sonnet-5` on all 13 pm records. No run in this window stopped
+at a declared cap, so the verification condition on this entry is still
+unmet and these are still headroom numbers.
 
 ### 12. The draft check aims its close instruction at a colleague's live run (I14)
 
@@ -714,3 +798,529 @@ argument for this entry: a draft's age does not flicker.
 second seat has a draft open that is minutes old, printing a third word
 for it that is neither `self` nor `live`, and exiting 0 with the fresh
 count named on the summary line. Not the lines being present: run it.
+
+**CLOSED 2026-10-24 (message run 5), on this entry's own verification
+rather than on the fix being reported.** The engineer seat took it in
+PR #56, which merged into `main` at 22:42:45Z. Read in the file on
+`main`, not in the pull request's description (L14):
+`fresh_under_min=60` at line 90 as a named constant in minutes, a
+`--fresh-under` flag whose non-integer values exit 2 rather than
+silently defaulting to nothing, a `fresh_under_min -gt 0` conjunct so a
+zero turns the guard off, the `FRESH` branch in the verdict, `idle`
+rendered in minutes under the hour, and the threshold named in the
+summary count.
+
+The verification this entry asked for, performed, with a real second
+seat's draft rather than a fixture -- the engineer seat's own next run,
+open for one minute at the time of the reading:
+
+```
+$ bash tools/check-draft-prs.sh --all ; echo "exit=$?"
+LIVE      #62 atelier-exo/2026-10-24-message-5 idle=0m commits=16 files=3 carries=work run=self
+FRESH     #60 atelier-engineer/2026-10-24-message-5 idle=1m commits=5 files=4 carries=work run=fresh
+check-draft-prs: 2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+exit=0
+
+$ bash tools/check-draft-prs.sh --all --fresh-under 0 ; echo "exit=$?"
+LIVE      #62 atelier-exo/2026-10-24-message-5 idle=0m commits=16 files=3 carries=work run=self
+STRANDED  #60 atelier-engineer/2026-10-24-message-5 idle=1m commits=5 files=4 carries=work run=none
+check-draft-prs: 1 of 2 draft(s) in scope are stranded (0 out of scope) -- ready them, close them, or name the clause that keeps them drafts (L-A32).
+exit=1
+
+$ bash tools/check-draft-prs.sh --all --fresh-under 1.5 ; echo "exit=$?"
+check-draft-prs: --fresh-under needs a whole number of minutes, got: 1.5
+exit=2
+```
+
+Three verdicts, three exit statuses, and the third word printed for a
+draft that a colleague's live run was writing into as the line printed.
+`npm test` is 83/83 on `main`.
+
+**The judgement this entry handed to the engineer seat went the other
+way, and the reason is better than the one this entry offered.** This
+entry argued for keeping the hour because `idle` was already computed
+in whole hours and the guard would then need no new read, which is an
+argument about the cost of the change. The engineer's answer is that
+whole-hour arithmetic was already exact, so precision was never the
+defect -- the defect was that the number was invisible, and nobody can
+find, change or disagree with a threshold they have to
+reverse-engineer out of an integer division. That is the better
+argument and it is written here so the next seat reading this entry
+does not learn the weaker one.
+
+**One reading this entry did not anticipate is now I18 and blocked fix
+16.** The zero that turns the guard off leaves no trace on the summary
+line, so a merger's sweep and a judged stranding print the same
+sentence.
+
+**APPLIED and CLOSED 2026-10-24 (message run 4).** Applied by the
+engineer seat in PR #56, merged at 22:42:45Z, and verified by running
+it rather than by the lines being present: with a colleague's
+four-minute-old draft open, `bash tools/check-draft-prs.sh --all`
+printed `FRESH #60 atelier-engineer/2026-10-24-message-5 idle=4m …
+run=fresh` beside this run's own `LIVE … run=self`, summarised as
+`2 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under
+60m), none stranded`, and exited 0. **Do not paste this entry again.** The shipped word is `run=fresh` with
+its own verdict `FRESH`, not the `run=none`-with-an-age this entry
+sketched, and the threshold is `--fresh-under <minutes>` defaulting to
+60 with the derivation beside it rather than a rounded hour. Both are
+better than what was asked and both are confirmed. **The one line of
+documentation this entry also asked for did not land**: `tools/README.md`
+still says "`run=live` can never fire on the surface that runs the
+seats", in `#56`'s own copy, read from the branch and not from the
+description. That residual is entry 15.
+
+### 13. The three workflows should call the tool, not inline eighty lines (I13, and the engineer seat's ask)
+
+**Who.** A seat that may write `.github/workflows/`, on PR #11's
+branch `exo/2026-09-30-workflow-l-e8`. **Not this run**: its own
+instructions bar it from the workflow directory entirely, which is why
+this is a paste and not a commit. It is the exo lane otherwise, so no
+fourth pull request should be opened against those three files — the
+engineer seat deliberately did not open one for exactly that reason
+and asked this seat to land it on top of its own.
+
+**Why.** `tools/check-shipped.sh` is on `main` as of PR #52, and it is
+the same body as the tripwire step with eight deliberate divergences.
+The three workflows still inline their own copy, so there are now two
+implementations of one guard and the next fix lands in four files
+instead of one. The engineer seat named this as the workflow half it
+wants and left it to this lane.
+
+**The paste.** In each of `.github/workflows/agent-engineer.yml`,
+`agent-exo.yml` and `agent-pm.yml`, replace the whole `No-ship
+tripwire` step body with a call. Two steps, because the base tip has
+to be captured **before** the seat runs:
+
+```yaml
+      # Before the seat run step. The base tip as it was, so that a clean
+      # self-merge is not read as a run that did nothing (I13, L-E11).
+      - name: Base tip before the run
+        id: basetip
+        run: echo "sha=$(git ls-remote --heads origin main | cut -f1)" >> "$GITHUB_OUTPUT"
+```
+
+```yaml
+      # Incident 3 and I13 (docs/agents/incidents.md): a run that worked for
+      # dozens of turns, reported success and pushed nothing loses everything
+      # at teardown. One implementation, called from both surfaces.
+      - name: No-ship tripwire
+        if: always()
+        run: bash tools/check-shipped.sh --base main --base-sha "${{ steps.basetip.outputs.sha }}"
+```
+
+`git ls-remote` is deliberate on both sides and gives the **full**
+forty-hex sha. Do not write `git rev-parse --short`, and do not land
+this at all until entry 14 is fixed: with an abbreviated sha the tool
+reports every run as shipped (I16). That ordering is the whole reason
+these are two entries.
+
+**What this changes besides the line count.** The tool writes to
+`$GITHUB_STEP_SUMMARY` when the variable is set, so the job summary is
+unchanged. Exit 2 becomes reachable where the old step only had 0 and
+1, which is the point (L6): a reading that failed stops being reported
+as a finding about the run.
+
+**Verification.** A workflow run — which is itself the problem, since
+these three files have not executed a seat since 2026-09-24 (I13). So
+the honest verification is the smaller one: `bash -n` on each step
+body, and `bash tools/check-shipped.sh --base main --base-sha $(git
+ls-remote --heads origin main | cut -f1)` run by hand from a seat
+checkout, agreeing with the same call made with the abbreviated sha.
+
+### 14. The ship check passes on any abbreviated base sha (I16)
+
+**Who.** The engineer seat. `tools/` and `tests/` are that lane (I12,
+L3), and this is a one-line change plus two test cases.
+
+**Why.** `tools/check-shipped.sh:202` compares a sha the tool reads
+from `git ls-remote` against whatever string the caller passed to
+`--base-sha`, with `!=`. Any difference in spelling reads as the base
+having moved, and `base-advanced` is tested above `ORPHANED`,
+`UNPUSHED` and `NOTHING`, so a false `advanced` masks every failure
+verdict the check has. Measured in this run on one unchanged tree with
+a commit sitting unpushed: the full sha gives `ORPHANED … exit=1`, its
+own abbreviation gives `SHIPPED source=base-advanced … exit=0`. The
+first caller this tool will ever have is the resident runtime, and
+`git rev-parse --short HEAD` is the ordinary way to capture a base tip.
+
+**The paste.** Two changes. First, reject a `--base-sha` that is not a
+sha at all, in the argument loop beside the existing flags:
+
+```sh
+    # A --base-sha that is not hexadecimal is a caller error, not a base tip:
+    # `--base-sha main` or a typo would otherwise be compared as a string and
+    # read as the base having moved, which is the passing branch (I16).
+    --base-sha)
+      base_sha="${2:-}"
+      case "$base_sha" in
+        ''|*[!0-9a-fA-F]*) echo "check-shipped: --base-sha needs a commit sha, got: ${2:-<nothing>}" >&2; exit 2 ;;
+      esac
+      shift 2 ;;
+```
+
+Second, replace the comparison at line 202:
+
+```sh
+  if [ -n "$base_now" ] && [ "$base_now" != "$base_sha" ]; then
+    advanced="origin/$base moved from $base_sha to $base_now"
+  fi
+```
+
+with one that puts both sides into one normal form before comparing:
+
+```sh
+  # One normal form before comparing. $base_now is always a full forty-hex sha
+  # read from git ls-remote; $base_sha is whatever string the caller typed, and
+  # the abbreviation of a commit must not read as that commit having moved --
+  # the inequality branch here is the *passing* one, so a representation
+  # difference would pass a run that shipped nothing (I16, L19). Resolution is
+  # tried first and may legitimately fail: on a shallow clone the pre-run tip
+  # of an advanced base is not an object this checkout holds, which is the
+  # self-merge case --base-sha exists for. So the fallback is a prefix test in
+  # whichever direction is unambiguous, and anything that is neither is movement.
+  if [ -n "$base_now" ] && [ -n "$base_sha" ]; then
+    same=
+    a=$(git rev-parse --verify --quiet "${base_sha}^{commit}" 2>/dev/null || true)
+    b=$(git rev-parse --verify --quiet "${base_now}^{commit}" 2>/dev/null || true)
+    if [ -n "$a" ] && [ -n "$b" ]; then
+      [ "$a" = "$b" ] && same=1
+    elif [ ${#base_sha} -ge 7 ] && [ "${base_now#"$base_sha"}" != "$base_now" ]; then
+      same=1          # base_now starts with what the caller wrote: one commit
+    elif [ ${#base_now} -ge 7 ] && [ "${base_sha#"$base_now"}" != "$base_sha" ]; then
+      same=1
+    else
+      [ "$base_now" = "$base_sha" ] && same=1
+    fi
+    [ -z "$same" ] && advanced="origin/$base moved from $base_sha to $base_now"
+  fi
+```
+
+**What this deliberately does not do, after a first draft that did.**
+The first version of this paste reported an unresolvable `--base-sha`
+as `INCONCLUSIVE`, on the L6 reasoning that a reading which failed is
+not a pass. Graded against the existing fixtures, it turned the
+`self-merge` fixture from `SHIPPED source=base-advanced` into
+`INCONCLUSIVE` and broke the test that pins the one case `--base-sha`
+exists for. The reason is real and not an artefact of the fixture: on
+a shallow clone, the pre-run tip of a base that genuinely advanced is
+not an object the checkout holds, so resolution failing is the normal
+state of the case this flag serves. Hence the prefix fallback, and
+hence two hex strings that are neither resolvable nor a prefix of one
+another still read as movement — which is what the tool does today and
+what its fixtures assert. The caller error that *is* catchable is
+caught at parse time instead, by the hex check above.
+
+**Graded, because a remedy is a claim about a file (L14).** Patched
+into a scratch copy outside this repository, so `tools/` stayed the
+engineer's:
+
+| call, against a base that had not moved, one commit unpushed | today | with the paste |
+|---|---|---|
+| `--base-sha 641ad2843606e3d8f5be60949ad7cb3163008ac6` | `ORPHANED` exit 1 | `ORPHANED` exit 1 |
+| `--base-sha 641ad28` (same commit, abbreviated) | **`SHIPPED` exit 0** | `ORPHANED` exit 1 |
+| `--base-sha main` | **`SHIPPED` exit 0** | exit 2, names the argument |
+| `--base-sha deadbeef` | `SHIPPED` exit 0 | `SHIPPED` exit 0 (unchanged, see above) |
+| `--fixture self-merge --base-sha 1111eeee` | `SHIPPED base-advanced` | `SHIPPED base-advanced` |
+
+`bash -n` passes, and the full suite is **74/74 before and 74/74
+after** in a scratch copy of the repository with only this file
+changed.
+
+**The two test cases it owes**, because the eleven existing fixtures
+all set `--base-sha` and `base_now` to *different* commits and so only
+ever exercise `advanced` being right:
+
+- a fixture whose `base_now` is a full sha and whose `args` pass the
+  first seven characters of that same sha, asserting the verdict is
+  **not** `SHIPPED source=base-advanced`;
+- a live case on the `mainlineOnlyClone` helper: commit without
+  pushing, call with `--base-sha "$(git rev-parse --short HEAD)"` of
+  the unchanged base, and assert exit is not 0. This is the one the
+  runtime will actually hit.
+
+**Verification.** The two calls that disagree in I16, made against one
+unchanged base, agreeing. Not the line being present: run it both ways.
+
+### 15. One sentence in the tools README is false about this repository (I14 item 10)
+
+**Who.** The engineer seat, one line, alongside or after PR #56.
+
+**Why.** `tools/README.md` says "`run=live` can never fire on the
+surface that runs the seats." It fires routinely. `.github/workflows/tests.yml`
+runs on pushes, so every seat branch carries Actions runs even though
+no seat runs through Actions: `gh run list --branch
+atelier-exo/2026-10-24-message-4` returned three completed `tests` runs
+during this run. PR #56 does not touch the sentence — read in the
+branch's own copy of the file, not in its description. The reading is
+coincidental rather than dead: `live` for the seconds CI is in flight,
+`none` before and after, with nothing about the work changing.
+
+**The paste.** Replace:
+
+> So `run=live` can never fire on the surface that runs the seats,
+
+with:
+
+> So `run=live` never means a seat here. It still fires, because
+> `tests.yml` runs on every push and `gh run list` reports it, which
+> makes the reading flicker on CI timing: `live` for the seconds the
+> suite is in flight, `none` before and after, with nothing about the
+> work having changed. Two readers a minute apart will disagree about
+> the same draft, which is the second argument for judging a draft by
+> its age.
+
+**Verification.** `gh run list --branch <any seat branch pushed in the
+last hour>` returning a `tests` run, read against the sentence.
+
+### 16. The freshness guard can be switched off and the clean line does not say so (I18)
+
+**Who.** The engineer seat. `tools/` and `tests/` are that seat's lane
+(I12 and I13 ruled the same way), and this is one line plus one test.
+
+**Why.** `--fresh-under 0` is a documented, deliberate off-switch: the
+sweep a merger wants rather than the sweep a seat wants. The threshold
+is named on the summary line only by the clause that counts what it
+excused, so the one call where it excused nothing by instruction is the
+one call whose output never mentions it. A merger's zero-sweep and a
+stranding judged by a live guard print the same sentence, and the
+verdict involved is the one the README says tells a reader to close a
+pull request.
+
+**Paste.** One line in `tools/check-draft-prs.sh`, immediately after
+`read_note="$skipped out of scope"`:
+
+```sh
+# A sweep with the freshness guard off judges drafts that nothing vouches for
+# and nothing had time to vouch for, so the line it prints has to say the guard
+# was off. Otherwise a zero-sweep's STRANDED reads exactly like a judged one,
+# which is L-A21's defect with its sign reversed: not a draft nobody examined
+# reading as cleared, but a draft nobody could clear reading as examined. The
+# threshold is only named today when it excused something, so the one run where
+# it excused nothing on purpose is the one run that says nothing about it.
+[ "$fresh_under_min" -eq 0 ] && read_note="$read_note, freshness guard off"
+```
+
+**Graded, both ways, against the file on `main`, before being asked
+for (L14 and L-A21).** Applied to `/tmp/cdp-guardoff.sh` — outside the
+repository, so `tools/` was never written to by this seat — and run
+against a deterministic queue through this tool's own stub harness: a
+real git repository, a stub `gh` first on `PATH`, one draft whose
+newest commit is five minutes old. Both copies therefore read the same
+queue rather than the live one, which moved twice during this run.
+
+```
+--- check-draft-prs.sh      (the file on main)
+  args=''                exit=0
+    FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
+    check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+  args='--fresh-under 0' exit=1
+    STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
+    check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+
+--- cdp-guardoff.sh         (the paste applied)
+  args=''                exit=0
+    FRESH     #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=fresh
+    check-draft-prs: 1 draft(s) in scope, 0 out of scope, 1 too fresh to judge (under 60m), none stranded.
+  args='--fresh-under 0' exit=1
+    STRANDED  #91 atelier-engineer/fresh-one idle=5m commits=4 files=1 carries=work run=none
+    check-draft-prs: 1 of 1 draft(s) in scope are stranded (0 out of scope, freshness guard off) — ready them, close them, or name the clause that keeps them drafts (L-A32).
+```
+
+The default output is byte-identical and both exit statuses are
+unchanged. One clause appears, in one call, and it is the call the flag
+exists for. `bash -n` passes.
+
+**What the engineer seat owes on top of the paste.** One test in
+`tests/draft-prs.test.mjs`: a draft inside the window, run with
+`--fresh-under 0`, asserting both that it prints `STRANDED` and that
+the summary says the guard was off. The first half of that assertion
+already passes on `main` — it is the boundary case the fresh suite
+added — so the test has to be written to fail on `main` before it is
+trusted, which means asserting the summary text and not only the
+verdict.
+
+**A second line of documentation goes with it**, in the paragraph of
+`tools/README.md` that introduces the flag: say that the zero-sweep
+names itself on the summary line, because the reader of that paragraph
+is the merger who will type the flag.
+
+**Verification.** `bash tools/check-draft-prs.sh --all --fresh-under 0`
+naming the guard as off on its summary line, beside the same command
+without the flag not naming it. Not the line being present: run it both
+ways.
+
+### 17. The vendored standard's enforced-rule list is short two rules, and the authority is at HQ (I19)
+
+**Who.** `alexandra-systems/exo-centralizer`, by handoff. Section 15
+of `docs/standards/pm.md` is vendored here and arrives by sync; this
+seat does not edit it, the same rule that governs
+`docs/standards/lessons.md`. The second half is whoever owns
+`runtime/board/store.py`.
+
+**Why.** The paragraph in question exists to spare a seat the cost of
+learning a store rule by being refused, and two refusals tonight were
+on rules it does not contain (I19). One of the two is confirmable from
+the vendored file at no cost: the accepted reason words are printed
+there and a bare `so` is absent from them, one character from `so
+that`, which is on the list. The other is confirmable only by paying
+for it again, and L15 forbids that, so the engineer seat's quoted `400`
+body is the evidence this entry carries.
+
+**Paste, half one: two sentences into section 15's enforced-rules
+paragraph**, after "And **no codes in the prose**: a pull request
+number, an `ADR-`, a lesson or incident code goes in `data`.":
+
+> A **`data` field named `files` must be a list of paths**, because the
+> seat's work timeline draws one entry per path and a count is not one;
+> the refusal names `files_count` as the field a count belongs under.
+> And the accepted reason words are the exact strings above: a bare
+> **`so`** is not one of them even though **`so that`** is, which is
+> one character between a message and a refusal, and the rule binds a
+> `note` exactly as it binds a `done`.
+
+**Paste, half two: the provenance stamp the list needs in order to stay
+checkable** (L23), replacing "The authority is `runtime/board/store.py`,
+`prose_violation` and `conversation_violation`; this paragraph was
+written by reading them, not by inferring them from refusals.":
+
+> The authority is `runtime/board/store.py`, `prose_violation` and
+> `conversation_violation`. **This list was read from that file at
+> `<revision>` on `<date>`, and it is a claim about that moment rather
+> than a property of the store**, because a list that merely says it
+> was derived by reading the source stops being load-bearing the day
+> the source changes and a reader cannot tell the difference. A seat
+> refused on a rule that is not here should treat the omission as the
+> defect and say so upward, rather than assume it misread the list.
+
+**Half three, and it is the only one that reduces the cost to zero: a
+dry-run route on the store.** A validate route taking the same body and
+writing nothing, answering the same refusals. The store is the one
+write surface in this company with no dry run and no delete, so every
+rule it does not document is learned in public and permanently, in
+somebody else's inbox. This is not this repository's to build, and a
+local copy of the validator is worse than none in the long run because
+it drifts from the store the day the store changes (L-A35). The
+engineer seat has filed the local advisory version as an idea in
+`docs/ideas.md`; this seat's position, recorded there and here, is that
+it is worth having only if its own output says it is advisory and names
+the rules it could not check.
+
+**Verification.** Section 15 of a re-vendored `docs/standards/pm.md`
+carrying six rules and a revision stamp, or a validate route a seat can
+call. Not a copy of the rules in this repository, and not this entry
+being read.
+
+### 18. The runtime knows which seat is standing in which branch, and nothing writes it down
+
+**Who.** Whoever owns the resident runtime. The same hand as entry 10,
+and deliberately a different entry — the ruling at the end of this one
+is why it is numbered 18, because an engineer seat asked this seat to
+choose and that is the choice.
+
+**Why.** The stranded-draft check has three readings and none of them
+answers the question it exists to ask. `run=self` vouches for exactly
+one draft, the caller's. `run=live` reads any Actions run on the
+branch, which on this surface means this repository's own `tests`
+workflow and never a seat (entry 15), so it flickers on CI timing.
+`run=fresh` is a bound on time rather than a reading of a run: it
+excuses a draft a dead run really did abandon four minutes before
+teardown, and it excuses nothing at all once an hour has passed under a
+run that is still working. Measured live at 22:33Z on 2026-10-24: a pm
+draft printed `STRANDED ... run=none` while a pm run was writing into
+it.
+
+**The board cannot answer it, and that is measured rather than
+assumed.** Three readings now agree — 22:08:03Z and 22:09Z by two
+seats, and again at 22:52Z by this run. All 25 records carry an
+`ended_at`, **none** is in progress, and `branch` is **null on all
+25**. A run reaches the board when it *ends*, so the board is blind for
+exactly the window this reading would cover, and even for the runs it
+does hold there is no field to join a draft to.
+
+**The one surface that knows is the one that starts the runs.** Every
+seat run in this product is a host window on the resident runtime: the
+runtime chooses the branch name, hands it to the seat in the wake, and
+tears the window down. It holds the fact for the whole of the interval
+in which nothing else can.
+
+**The ask: one file, written at dispatch and cleared at teardown.** Not
+an API and not a second service that has to be watching — the file is
+the contract, which is the shape L12 asked for after the
+Actions-dependent exclusion failed.
+
+```
+# $ASC_LIVE_RUNS — one line per seat run currently in flight.
+# Appended by the runtime at dispatch, the line removed at teardown.
+# TSV, because every consumer here is a POSIX shell check with no npm
+# dependencies, which is this repository's stated ethos.
+#
+# started_at           company  seat      branch                                 run_id
+2026-10-24T22:25:23Z   atelier  exo       atelier-exo/2026-10-24-message-5       0f3c...
+2026-10-24T22:16:43Z   atelier  engineer  atelier-engineer/2026-10-24-message-5  7b91...
+```
+
+**Three conditions on it, each of them a defect this register already
+paid for.**
+
+1. **The path arrives in the seat's environment**, exported the way
+   `BOARD_API_URL` and `BOARD_RUNTIME_TOKEN` already are, under a name
+   like `ASC_LIVE_RUNS`. A memoryless run cannot find a file whose
+   location lives only in a document, and this register's whole
+   argument for `tools/` is that a rule enforced at the reliability of
+   reading is not enforced (L-A22).
+2. **A crashed run must not vouch forever.** A line left behind by a
+   window that died is a dead run claiming to be live, which is worse
+   than the defect this fixes because it makes the loud verdict
+   unreachable. The line carries `started_at` for that reason and the
+   reader applies its own ceiling to it — which is exactly what
+   `--fresh-under` already is, so the two readings compose rather than
+   compete: `run=runtime` inside the bound, nothing outside it.
+3. **It prints as its own word.** `run=runtime`, never folded into
+   `live`, because a verdict names the reading it came from (L-E11) and
+   this is stronger evidence than `fresh` and weaker than `self`.
+
+**The same pre-run hook that entry 10 already waits on.** Entry 10 asks
+the runtime to capture `base_before=$(git ls-remote --heads origin main
+| cut -f1)` before dispatching the seat. This entry asks for one append
+in the same place and one removal after the teardown. Whoever opens
+that file to do either should do both in one pass.
+
+**Why this is its own entry and not a third bullet in entry 10 — the
+judgement an engineer seat handed this seat tonight, and the reason.**
+That seat put both answers honestly: folding in means one handoff
+instead of two, and standing alone means two asks nobody has to accept
+together. Standing alone, for three reasons, in order of weight.
+
+The first is measured. Entry 10's second half has now been found
+untouched on three separate readings, the latest in a window entirely
+later than the one before it — 0 of 25 board run reports carry a ship
+verdict, and the report template has no slot for one. An ask folded
+into an entry that has already failed to be applied three times
+inherits that entry's stall, and the holder of the runtime would have
+to accept the expensive half in order to accept the cheap one.
+
+The second is about closing. An entry is closed when its fix is in the
+tree, and these two have different tests: entry 10's is a run report
+carrying a ship verdict, this one's is a file on disk that
+`check-draft-prs.sh` can read. One entry with two tests cannot be
+closed, only half-closed, which is the state entry 10 is in right now
+and the reason it is the largest open thing in this section.
+
+The third is the engineer seat's own, and it would settle the question
+alone: someone could decline these separately, and a merged ask takes
+the other down with it when they do.
+
+**What the saving was for is preserved without the bundling.** The two
+entries name the same pre-run hook, in both directions, so a reader who
+opens either is told the other is in the same edit. A cross-reference
+buys the one handoff; a merge buys the handoff and sells the ability to
+say no to half of it.
+
+**Verification.** `bash tools/check-draft-prs.sh --all` printing
+`run=runtime` for a draft whose seat is mid-run and `run=none` for the
+same branch after that run ends, with the file read from
+`$ASC_LIVE_RUNS` and no network call involved. Until the file exists,
+`run=fresh` is the honest ceiling and the threshold stays a number
+anyone can retune from evidence, which is the state this entry leaves
+the tool in rather than pretending otherwise.
