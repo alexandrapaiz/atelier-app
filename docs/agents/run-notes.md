@@ -12,10 +12,11 @@ The newest run's list is the last section in this file, and that is
 the one the next run owes an answer to.
 
 **What is not here.** The incidents themselves. `incidents.md` is now
-its index plus twenty-seven `### I<n>` entries and nothing else, so a
-memoryless run opening it top-down meets what is still broken instead
-of meeting hundreds of lines of answered questions first — which is
-the whole of I23.
+its index plus its `### I<n>` entries and nothing else — twenty-eight
+of them by the end of the run that did the split — so a memoryless run
+opening it top-down meets what is still broken instead of meeting
+hundreds of lines of answered questions first, which is the whole of
+I23.
 
 **Why the split happened when it did.** The transcript share was
 measured four times before it: 38%, 41%, 43%, 47%. The file was 3,820
