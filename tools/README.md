@@ -33,19 +33,56 @@ counted: that is the run you are standing in, not a stranded one. Two readings
 reach that verdict and they print as different words, because they are
 different facts. `run=self` means this is the branch the calling run is
 standing on, read from `git rev-parse --abbrev-ref HEAD`. `run=live` means the
-Actions API reports a queued or in-progress run on the branch.
+Actions API reports a queued or in-progress run on the branch **whose workflow
+is one of the seat workflows `company.yaml` declares**, so a seat really is
+executing there.
+
+**A run on the branch is not a seat on the branch, and the difference is a
+word.** `run=ci` is the Actions API reporting a queued or in-progress run on
+the branch that belongs to no declared seat workflow. The reading covers *any*
+run on the branch, and in this repository it means `tests.yml` and never a
+seat. `tests.yml` triggers on `pull_request`, so every push into an open draft
+starts a job whose head branch is the seat branch, and the job is in flight for
+about twenty seconds afterwards. Measured 2026-10-24 over the evening's queue:
+26 runs on seat branches, every one `workflowName=tests` and
+`event=pull_request`, each alive between 17 and 30 seconds. **`run=ci` does not
+keep a draft off the stranded list**, because a push in the last twenty seconds
+is not evidence that anybody is working, and `idle` already carries that
+question in a form that does not flicker. A declared seat workflow in the same
+list outranks it, so a seat genuinely executing on the forge still reads
+`run=live`.
+
+Where you will actually see the word: on a draft old enough to be judged, whose
+tests are in flight, which prints `STRANDED … run=ci`. On a draft young enough
+for the age guard, `run=fresh` wins the field, because the test job is alive
+precisely *because* somebody just pushed, and letting `ci` win would make the
+field flicker a minute later on a draft whose verdict never moved. The verdict
+is what must hold still; the field names the strongest reading that bears on
+it.
 
 **`run=self` is the reading that works here.** Every seat run in this product
 is a host window on the resident runtime, and the Actions API cannot see one.
 Read on 2026-10-24, the last run of any of the three seat workflows was the
 project manager's on 2026-09-24, and the engineer's and the exo's were both
-2026-09-19. So `run=live` can never fire on the surface that runs the seats,
-and before `run=self` existed the
+2026-09-19. So `run=live` fires on no run this product is actually having, and
+before `run=self` existed the
 check named the caller's own minutes-old draft as stranded and exited 1 on
 every run — which made exit 1 the normal result of running at all, and a
 number that is always 1 is a number readers learn to skip. The one thing
 `run=self` cannot vouch for is another seat's pass running in the same minute
 on its own branch, and that case is what `FRESH` below is for.
+
+Until 2026-10-24 this file said instead that the Actions reading "can never
+fire on the surface that runs the seats", and the check had one word for both
+kinds of run. Both were wrong in the same place. The exo seat watched the
+Actions reading fire on a test job that evening and measured the cause, which
+is that the trigger is the pull request rather than the seat, so a draft read
+`LIVE` for twenty seconds after each push and `STRANDED` a minute later with
+nothing about the work having changed. A verdict that turns on when the tests
+happened to run is a verdict two readers a minute apart disagree about, and the
+close instruction this check can print is the most destructive sentence it has.
+Hence the split above: the two facts print as two words, and only the one that
+means a seat decides anything.
 
 **`FRESH` is the third verdict, and it is a statement about time rather than
 about a run.** A draft younger than `--fresh-under` minutes prints `FRESH …
