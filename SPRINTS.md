@@ -21,6 +21,14 @@ today owes the sprint.
 **Definition of done:** deployed or installed, verified on a real surface
 (preview, simulator, or phone), tests green, board card checked.
 
+**Posture: asleep (ADR-002, since 2026-10-16, docs/decisions.md).**
+Nothing below is live work for any seat until the owner wakes the
+product and the pm seat names the first real milestone. The sprints
+below are the state the board was in when it fell asleep, kept as the
+historical record ADR-001 already made SPRINTS.md; they are not a
+retro or a plan for right now. Read company.yaml's `posture` field to
+check whether this is still true.
+
 ---
 
 ## Sprint 1 — *Hold it in your hand* · Sep 11 → Sun Sep 20

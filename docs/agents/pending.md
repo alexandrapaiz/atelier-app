@@ -7,19 +7,42 @@ instead of a silent delete.
 
 ## Open PRs awaiting the owner
 
-None as of 2026-09-24.
+Re-measured 2026-10-25 (message run 6); the line above was stale by a
+month and said "none" while three were open the whole time.
+
+- **#11** (`exo/2026-09-30-workflow-l-e8`, open 26 days) and **#19**
+  (`exo-centralizer/2026-10-14-dispatch-guards`, open 12 days): both
+  Tier B (`.github/workflows/`), both measured clean against `main` in
+  either order (blocked-fixes entry 5 above). Recommendation: **merge**,
+  by a chair or the owner — no pm or exo run can touch `.github/`.
+- **#40** (`atelier-exo/2026-10-24-message`, open 2 days): the third of
+  the same stack, same recommendation, same blocker.
+- **#78** (`atelier-exo/2026-10-25-message-3`, draft): the exo seat's
+  own open draft, stacked on its own ready #74. Named here for
+  visibility; not this seat's to ready, close, or merge.
 
 ## Owner-only actions
 
-- **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
-  the secret now exists in the pm-agent workflow env (it did not on the last
-  ceremony), but `gh api user` and `gh project item-list 5 --owner
-  alexandrapaiz` both return `403 Resource not accessible by integration`
-  under it. Per docs/standards/pm.md §2b, user-level Projects v2 needs a
-  **classic** PAT with the `project` scope — a fine-grained PAT or an
-  installation token gives exactly this error. Board mirroring stays
-  deferred (commands queued in PR #8) until the secret is replaced with a
-  classic PAT.
+- **The product is asleep (ADR-002, since 2026-10-16)** (2026-10-25):
+  this is the actual blocker behind every item below. Nothing in
+  Sprints 2-4 is live work for any seat until the owner wakes the
+  product; the items stay recorded because sleeping does not clear
+  them (docs/decisions.md ADR-002), not because they are due.
+- **PROJECTS_TOKEN / GitHub Projects board mirroring — superseded, not
+  fixed** (re-measured 2026-10-25): the company board moved off GitHub
+  Projects to `board.libraryofalexandria.dev` (pm.md §14, replacing §2b),
+  reached with `BOARD_API_URL`/`BOARD_RUNTIME_TOKEN`. Both are present
+  and working this run: `GET /api/board/atelier` answered with the real
+  sprint ("Asleep by decision") and run history. There is nothing to
+  mirror onto it right now — `items: []`, because the sprint is empty
+  while asleep — so this stops being an owner-only action until the
+  product wakes and the pm seat has sprint items to write. The
+  `gh project item-list 5` / classic-PAT problem below this line is the
+  old mechanism and no longer applies to anything; left struck rather
+  than deleted per this file's own stale-line rule.
+  ~~`gh api user` and `gh project item-list 5 --owner alexandrapaiz` both
+  returned `403 Resource not accessible by integration`; needs a classic
+  PAT with the `project` scope.~~
 - **Supabase redirect allowlist** (2026-09-24): the password reset page
   shipped in PR #3, but the recovery link only works once Supabase Auth →
   URL Configuration → Redirect URLs includes
@@ -44,14 +67,20 @@ None as of 2026-09-24.
 
 ## Ledger items awaiting a verdict
 
-- **Atelier company mode** (2026-09-24): docs/ideas.md, status
-  `proposed`. Its own first step defers discovery until after the App
-  Store ship, so it needs no verdict yet. Flagged here so it does not go
-  stale unnoticed.
-- **Browser checks for what the node harness cannot reach** (2026-09-24):
-  docs/ideas.md, status `proposed`. Triggered by the password reset work
-  and the new `scripts/reset-page-test.mjs`. First step is to reuse it
-  for Sprint 2's account deletion item before generalizing.
+- **Atelier company mode** (2026-09-19, re-flagged 2026-10-25): docs/ideas.md,
+  status `proposed` for five weeks. Its own first step defers discovery
+  until after the App Store ship, so the lack of a verdict has cost
+  nothing yet — flagged again because five weeks without one is the
+  threshold docs/standards/pm.md §2 names, not because it is urgent.
+- **Browser checks for what the node harness cannot reach** (2026-09-19,
+  re-flagged 2026-10-25): docs/ideas.md, status `proposed` for five
+  weeks, same reason. First step is still to reuse
+  `scripts/reset-page-test.mjs` for the account-deletion item once the
+  product wakes and that item is live again.
+- The dozen-plus ideas.md entries dated 2026-10-24 and 2026-10-25 (tool
+  fixtures, the merge-order sweep, the liveness file, etc.) are all
+  under two weeks old and not flagged here yet; §2's threshold hasn't
+  run on them.
 
 ## Blocked fixes (exo)
 
