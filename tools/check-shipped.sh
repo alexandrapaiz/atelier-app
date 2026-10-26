@@ -83,17 +83,54 @@
 #      the warning that those changes are lost at teardown and then exited zero
 #      one screen below it, and that loss is what incident I3 is about.
 #
+# The last line this prints names the status it is about to return, as
+# `(exit N)`, the argument refusals included. The exit status is still the
+# contract; the suffix is there because a pipe destroys the status and not the
+# text, and a verdict line pasted into a register loses its status on the way.
+# If you need the status itself out of a pipeline, it is ${PIPESTATUS[0]}.
+#
 # Requires: git. gh only for the pull request field, which degrades to
 # unreadable without it. No npm dependencies, by this product's ethos.
 
 set -euo pipefail
 
+# One call prints the status and returns it, so the number in the text and the
+# number in `$?` cannot drift apart. A summary that merely mentions a status
+# somebody typed is a second decision that can drift from the first.
+verdict() { # status, line...
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status"
+  exit "$status"
+}
+refuse() { # status, line...  — the argument paths, on stderr
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status" >&2
+  exit "$status"
+}
+
+
+# A flag typed without its value is a question nobody asked, and until
+# 2026-10-25 none of the three tools in here said so. Two shapes, both wrong in
+# the direction that matters. `--seat` and `--base` died inside `shift 2`,
+# which fails on one remaining argument, and `set -e` turns a failed shift into
+# exit 1 — the status that means a finding. `--company` and `--fixture` read as
+# the empty string, and empty is this code's "not given", so the tool silently
+# answered the live question instead of the one on the command line. Both are
+# L6: the third outcome is could-not-run, and a caller error is never either of
+# the other two.
+need_value() { # flag, $# at the point of the match
+  [ "$2" -ge 2 ] || refuse 2 "check-shipped: $1 needs a value"
+}
 base=
 base_sha=
 fixture=
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base)     base="${2:-}"; shift 2 ;;
+    # `shift 2` with one argument left fails, and `set -e` turns a failed shift
+    # into exit 1 — the status that means this run's work is not safe. So
+    # `--base` with nothing after it reported a loss that had not happened,
+    # which is this file's own subject matter. Shift what is there (L6).
+    --base)     need_value --base $#; base="$2"; shift 2 ;;
     # A --base-sha that is not a commit sha is a caller error and not a base
     # tip. `--base-sha main`, or a typo, would otherwise be compared against
     # the sha the tool reads and read as the base having moved — which is the
@@ -103,30 +140,30 @@ while [ $# -gt 0 ]; do
     # the lower bound matters because anything shorter could collide with a
     # real tip by chance and so must never reach the comparison at all.
     --base-sha)
-      base_sha="${2:-}"
+      need_value --base-sha $#
+      base_sha="$2"
       base_sha_ok=yes
       case "$base_sha" in ''|*[!0-9a-fA-F]*) base_sha_ok=no ;; esac
       if [ "${#base_sha}" -lt 4 ] || [ "${#base_sha}" -gt 40 ]; then
         base_sha_ok=no
       fi
       if [ "$base_sha_ok" = no ]; then
-        echo "check-shipped: --base-sha needs a commit sha of 4 to 40 hex characters, got: ${2:-<nothing>}" >&2
-        exit 2
+        refuse 2 "check-shipped: --base-sha needs a commit sha of 4 to 40 hex characters, got: ${2:-<nothing>}"
       fi
       shift 2 ;;
-    --fixture)  fixture="${2:-}"; shift 2 ;;
+    --fixture)  need_value --fixture $#; fixture="$2"; shift 2 ;;
     # The whole header block, found by where the comments stop rather than by a
     # line number: this run grew the header by six lines, and a hardcoded range
     # would have silently cut --help off mid-sentence.
     -h|--help)  awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
-    *) echo "check-shipped: unknown argument: $1" >&2; exit 2 ;;
+    *) refuse 2 "check-shipped: unknown argument: $1" ;;
   esac
 done
 
 if [ -n "$fixture" ]; then
-  [ -d "$fixture" ] || { echo "check-shipped: --fixture $fixture is not a directory" >&2; exit 2; }
+  [ -d "$fixture" ] || refuse 2 "check-shipped: --fixture $fixture is not a directory"
 else
-  git rev-parse --git-dir >/dev/null 2>&1 || { echo "check-shipped: not a git repository" >&2; exit 2; }
+  git rev-parse --git-dir >/dev/null 2>&1 || refuse 2 "check-shipped: not a git repository"
 fi
 
 # Every reading is taken through one of these, so the fixture serves the same
@@ -299,46 +336,39 @@ fi
 # that an unreadable input can never reach a verdict that needs it.
 
 if [ -n "$pushed" ]; then
-  echo "SHIPPED    branch=$branch source=remote-head sha=$head_sha pr=${pr:-none}"
-  exit 0
+  verdict 0 "SHIPPED    branch=$branch source=remote-head sha=$head_sha pr=${pr:-none}"
 fi
 
 if [ -n "$advanced" ]; then
   # Weak on purpose, and the line says so: the base moving cannot tell this
   # run's merge from a concurrent one. It is still the only signal a Tier A
   # self-merge leaves, and the alternative is the six false failures at HQ.
-  echo "SHIPPED    branch=$branch source=base-advanced $advanced (weak: a concurrent merge reads the same)"
-  exit 0
+  verdict 0 "SHIPPED    branch=$branch source=base-advanced $advanced (weak: a concurrent merge reads the same)"
 fi
 
 if [ -n "$unasked" ]; then
   echo "INCONCLUSIVE  branch=$branch source=remote-unreadable $unasked"
-  echo "check-shipped: the remote could not be asked whether it has this run's work. A check that could not run is not a pass, and for a ship check the conservative answer is to fail loudly."
-  exit 2
+  verdict 2 "check-shipped: the remote could not be asked whether it has this run's work. A check that could not run is not a pass, and for a ship check the conservative answer is to fail loudly."
 fi
 
 if [ -n "$stale" ]; then
   echo "ORPHANED   branch=$branch source=remote-head $stale"
-  echo "check-shipped: the remote holds $branch but not this run's HEAD, so every commit above the remote tip dies with the sandbox. Push again."
-  exit 1
+  verdict 1 "check-shipped: the remote holds $branch but not this run's HEAD, so every commit above the remote tip dies with the sandbox. Push again."
 fi
 
 if [ "$commits" = unreadable ]; then
   echo "INCONCLUSIVE  branch=$branch source=commits-unreadable (origin/$base could not be counted against)"
-  echo "check-shipped: this run's commit count could not be read, so neither UNPUSHED nor NOTHING is a verdict this check has earned."
-  exit 2
+  verdict 2 "check-shipped: this run's commit count could not be read, so neither UNPUSHED nor NOTHING is a verdict this check has earned."
 fi
 
 if [ "$commits" != 0 ]; then
   echo "UNPUSHED   branch=$branch source=remote-head commits=$commits"
-  echo "check-shipped: this run made $commits commit(s) that were never pushed, so the work dies with the sandbox. See incident 3 in docs/agents/incidents.md and the 'Ship first, then work' rule in the seat charters."
-  exit 1
+  verdict 1 "check-shipped: this run made $commits commit(s) that were never pushed, so the work dies with the sandbox. See incident 3 in docs/agents/incidents.md and the 'Ship first, then work' rule in the seat charters."
 fi
 
 if [ "$pr" = unreadable ]; then
   echo "INCONCLUSIVE  branch=$branch source=pr-unreadable commits=0"
-  echo "check-shipped: no commits and no readable pull request field, which is not the same finding as a run that produced nothing."
-  exit 2
+  verdict 2 "check-shipped: no commits and no readable pull request field, which is not the same finding as a run that produced nothing."
 fi
 
 if [ -z "$pr" ]; then
@@ -348,25 +378,21 @@ if [ -z "$pr" ]; then
     # as an uncommitted diff in a sandbox being torn down is the exact loss
     # incident I3 is about, so it is not a pass.
     echo "UNPUSHED   branch=$branch source=uncommitted-only commits=0 pr=none"
-    echo "check-shipped: this run's only product is uncommitted changes, which are lost at teardown. Commit and push them."
-    exit 1
+    verdict 1 "check-shipped: this run's only product is uncommitted changes, which are lost at teardown. Commit and push them."
   fi
   if [ -z "$base_sha" ]; then
     # L-E11's measurement clause: report the smallest true thing. Without the
     # pre-run base tip, a clean self-merge and a run that did nothing leave the
     # identical wreckage, and this check will not call one of them the other.
     echo "INCONCLUSIVE  branch=$branch source=no-pre-run-state commits=0 pr=none"
-    echo "check-shipped: nothing was found on any signal this check can read after the fact, and without --base-sha a Tier A self-merge looks exactly like this. Pass the base tip captured before the run to get a verdict."
-    exit 2
+    verdict 2 "check-shipped: nothing was found on any signal this check can read after the fact, and without --base-sha a Tier A self-merge looks exactly like this. Pass the base tip captured before the run to get a verdict."
   fi
   echo "NOTHING    branch=$branch source=base-unmoved commits=0 pr=none dirty=none"
-  echo "check-shipped: this run produced nothing at all: no commit, no seat branch, no pull request, and $base did not move. A green model step is not evidence of work; read the seat run step's own outcome."
-  exit 1
+  verdict 1 "check-shipped: this run produced nothing at all: no commit, no seat branch, no pull request, and $base did not move. A green model step is not evidence of work; read the seat run step's own outcome."
 fi
 
 # A pull request exists and this run added nothing on top of the base. Weak,
 # and named weak: the work is in the forge from some run, not necessarily this
 # one. It is the step's own reading of this state and there is no stronger one
 # available after the fact.
-echo "SHIPPED    branch=$branch source=pull-request pr=$pr commits=0 (weak: the pull request may predate this run)"
-exit 0
+verdict 0 "SHIPPED    branch=$branch source=pull-request pr=$pr commits=0 (weak: the pull request may predate this run)"

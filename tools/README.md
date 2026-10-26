@@ -8,13 +8,15 @@ zero-framework ethos.
 
 | Command | Question | Exit 0 | Exit 1 | Exit 2 |
 |---|---|---|---|---|
-| `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope — any that were too new to judge are counted on the summary line | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare, a `--fresh-under` that is not whole minutes) |
-| `tools/check-seat-surface.sh` | Does the surface `company.yaml` declares for a seat still execute that seat? | Every seat in scope last ran on its declared workflow | A seat ran more recently somewhere the declaration does not name, so an edit to that file reaches nothing | No seat is `ELSEWHERE`, and at least one could not be read or has never run anywhere |
-| `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published; or the call itself was wrong (a `--base-sha` that is not a commit sha) |
-| `tools/merge-order.sh` | Can this product's open pull requests actually be landed, and which file blocks the most of them? | `CLEAN` — every open pull request merges in sequence and no pair is mutually exclusive | `BLOCKED` — one cannot be merged after its predecessors, or a pair cannot coexist; the `ANCHOR` line names the file responsible for the most pairs | `INCONCLUSIVE` — a merge the verdict needed could not be performed (a head missing from the clone, a merge base below a shallow boundary), so no verdict was published |
+| `tools/check-draft-prs.sh` | Is any of this product's seat work sitting where no merger can reach it? | No stranded drafts in scope — any that were too new to judge are counted on the summary line | One or more open drafts with no live run behind them, named on stdout | The check could not run (no `gh`, no auth, not a repo, a `--seat` name `company.yaml` does not declare, a `--fresh-under` that is not whole minutes, a flag given without its value) |
+| `tools/check-seat-surface.sh` | Does the surface `company.yaml` declares for a seat still execute that seat? | Every seat in scope last ran on its declared workflow | A seat ran more recently somewhere the declaration does not name, so an edit to that file reaches nothing | No seat is `ELSEWHERE`, and at least one could not be read or has never run anywhere; or the call itself was wrong (an undeclared flag, a flag given without its value) |
+| `tools/check-shipped.sh` | Did the seat run that just ended leave its work anywhere but the sandbox? | `SHIPPED` — the remote holds this HEAD, or the base advanced past the tip captured before the run | `ORPHANED`, `UNPUSHED` or `NOTHING` — the work is not safe, and the line says which of the three | `INCONCLUSIVE` — a reading the verdict needed came back unreadable, so no verdict was published; or the call itself was wrong (a `--base-sha` that is not a commit sha, a flag given without its value) |
+| `tools/merge-order.sh` | Can this product's open pull requests actually be landed, and which file blocks the most of them? | `CLEAN` — every open pull request merges in sequence and no pair is mutually exclusive | `BLOCKED` — one cannot be merged after its predecessors, or a pair cannot coexist; the `ANCHOR` line names the file responsible for the most pairs | `INCONCLUSIVE` — a merge the verdict needed could not be performed (a head missing from the clone, a merge base below a shallow boundary), so no verdict was published; or the call itself was wrong (a `--limit` that is not a number, a flag given without its value) |
 
 `npm run merge-order` is the fourth, and it is the only one that answers a
-question about the queue as a whole rather than about one seat or one run.
+question about the queue as a whole rather than about one seat or one run. Its
+advice lines go to stderr and its verdict to stdout, so the verdict is the last
+thing on stdout and the status rides on it.
 
 `npm run drafts` is the same check, this seat's and every other seat's, from the
 repo root. Scope it with `--seat engineer`, widen it with `--all`, judge even
@@ -23,9 +25,42 @@ the newest drafts with `--fresh-under 0`, read the field meanings with
 same way with `--seat`, and `--company` overrides the board company name the
 manifest implies.
 
-Read the status, never a pipe's: `npm run drafts | tail` reports the tail's 0
-whatever the check found, so pipe either command and you want
-`${PIPESTATUS[0]}`.
+**Every check names the status it is about to return, in the text, as `(exit
+N)`** — on the last line it writes to stdout, and on the one line a refusal
+writes to stderr. The exit status is still the contract. The suffix is there
+because a pipe destroys the status and not the text, and piping is the normal
+way a seat captures output it wants to quote:
+
+```
+$ bash tools/check-seat-surface.sh --all | head
+check-seat-surface: unknown argument: --all (exit 2)
+$ echo $?
+0
+```
+
+Both readings of that are now available to whoever took it. Before 2026-10-25
+only the 0 was, and a seat read it, concluded the tool accepts an undeclared
+flag and exits clean, and recorded the opposite of the truth — four commands
+after reading the paragraph this one replaces, which said to use
+`${PIPESTATUS[0]}` and was correct. A correctness property enforced only by a
+paragraph a memoryless reader has to recall is not enforced (L-A22), and the
+warning was in the wrong place rather than wrong. If you need the status itself
+out of a pipeline it is still `${PIPESTATUS[0]}`.
+
+The suffix is printed and returned by one call inside each tool, so the number
+in the text and the number in `$?` cannot drift apart; a line that merely
+mentioned a status somebody typed would be a second decision, and a tool whose
+text and status disagreed would be worse than either alone.
+
+**A flag typed without its value is exit 2 in all four, and used to be
+neither.** `--seat` and `--base` died inside `shift 2`, which fails on one
+remaining argument, and `set -e` turns a failed shift into exit 1 — the status
+that means a finding, so `npm run drafts --seat` read as a queue with stranded
+work in it and `check-shipped.sh --base` reported a loss that had not happened.
+`--company`, `--fixture`, `--prs` and `--limit` read as the empty string, and
+empty is each tool's own "not given", so the command silently answered a
+different question from the one typed. Both shapes are L6: the third outcome is
+could-not-run, and a caller error is never either of the other two.
 
 Both commands only read. `check-seat-surface.sh` in particular runs `GET` against
 the board and `gh run list` / `gh pr list` against the forge, and touches no ref,
@@ -147,6 +182,51 @@ the draft still counts as stranded (L-A44: the cause rides with the value).
 `carries=nothing` is the one answer that tells a reader to close a pull
 request, so a failed read must never be able to produce it. The cheap error
 here is one merge of waiting; the expensive one is closing work that exists.
+
+**`carries=duplicate#N` is the second answer that licenses a close, and it
+names what to merge instead.** `carries` was computed against the default
+branch and against nothing else, so it answered "is this diff non-empty" where
+the question a merger asks before closing is "does this work exist anywhere I
+can already reach". Measured on 2026-10-25 against the first genuinely stranded
+draft this product produced: `#65` printed `carries=work`, and its head tree was
+`34f0c07f43c7da0e58ba72ba2e11d68a07f381e0` — the same tree as `#62`, which was
+open and ready at the time of the reading. Closing `#65` cost nothing, and the
+field a merger reads before closing said it would cost work. A wrong
+`carries=nothing` closes live work once, loudly, and a colleague notices within
+the hour; a wrong `carries=work` leaves a dead duplicate open forever, quietly.
+
+It prints its own word rather than folding into `nothing`, because `nothing`
+means the diff is empty and `duplicate#N` means the diff exists somewhere a
+merger can already reach: `nothing` licenses an inaction, `duplicate#N` names
+an action. No space inside the field — the line is space-delimited and `carries=
+duplicate #62` would shift every field after it.
+
+Two things decide which relation the reading uses, and both are measured rather
+than assumed:
+
+**Tree identity, not commit ancestry.** The natural way to write this is
+`git merge-base --is-ancestor <this head> <that head>`, and that relation is
+false of the exact pair the finding is about — `#62`'s head is an *ancestor* of
+`#65`'s, not the reverse, so an ancestry reading would have printed
+`carries=work` on the draft it was written for. `carries` counts files, so its
+containment reading is asked of files too. The remaining case ancestry would
+catch and this does not is a stack whose trees differ, and it is named in
+`docs/ideas.md` with its cost rather than built on a guess.
+
+**Only a pull request that is not a draft counts.** The forge refuses to merge a
+draft at all, so "reachable" has to mean reachable by the person deciding
+whether to close, and pointing each of two equal-tree drafts at the other is an
+instruction to close both and lose the work twice.
+
+The tree is read with `gh api repos/{owner}/{repo}/commits/<ref>`, once per open
+pull request and memoised, which takes a ref and needs no local object. That
+matters more than it looks: a seat clone here fetches
+`+refs/heads/main:refs/remotes/origin/main` alone, so `origin/<seat branch>`
+does not exist and no fetch creates it, and any reading built on local refs
+would be dead code on the surface the seats actually run on (L4, L-E12). A
+duplicate the check could not look for is named on the summary line — `mergeable
+siblings unreadable` or `N head tree(s) unreadable` — because the field reads
+`work` either way and that is not the same answer (L6).
 
 `check-seat-surface.sh --fixture DIR` serves every input from a file —
 `company.yaml`, `board.json`, `declared.tsv`, `prs.json`, `live.tsv` — and makes

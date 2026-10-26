@@ -14,15 +14,26 @@ import { join, resolve } from "node:path";
 
 const TOOL = resolve("tools/check-draft-prs.sh");
 
-/* The stub answers the six calls the script makes, from files, so a test says
-   what GitHub said. A fixture value of "fail" makes that call exit non-zero,
-   which is how the unreadable readings are reached.
+/* The stub answers the calls the script makes, from files, so a test says what
+   GitHub said. A fixture value of "fail" makes that call exit non-zero, which
+   is how the unreadable readings are reached.
 
    There is deliberately no case for `gh run list`. The liveness reading moved
    to the Actions runs API on 2026-10-24 to get each in-flight run's workflow
    path, and a stub that still answered the old call would let a revert to the
    count pass green. With the case gone, a revert reaches `*)` and every
    liveness test fails loudly. */
+/* The two `gh pr list` calls take the same --json fields and are told apart by
+   their --jq, which is the only thing that differs: the drafts the check judges
+   (`select(.isDraft)`) and the ready pull requests a merger could merge instead
+   (`select(.isDraft | not)`). Matching on the jq is deliberate rather than
+   convenient — change either filter and the call falls through to `*)` and the
+   suite says so, where a looser pattern would quietly serve the wrong list.
+
+   `commits/<ref>` is the tree reading and `commits?sha=` is the commit date.
+   A ref with no row in the `trees` fixture answers with a tree derived from its
+   own name, so the default across unrelated branches is "every tree differs",
+   which is the case a containment check must not fire on. */
 const STUB = `#!/usr/bin/env bash
 F="$GH_FIXTURE"
 emit() { # fixture file; "fail" means the call itself failed
@@ -32,12 +43,20 @@ emit() { # fixture file; "fail" means the call itself failed
 }
 all="$*"
 case "$all" in
-  "auth status"*) exit 0 ;;
-  "repo view"*)   emit base ;;
-  "pr list"*)     emit prs.tsv ;;
-  *actions/runs*) emit runs ;;
-  *compare*)      emit compare ;;
-  *commits*)      emit commitdate ;;
+  "auth status"*)      exit 0 ;;
+  "repo view"*)        emit base ;;
+  *"isDraft | not"*)   emit siblings.tsv ;;
+  "pr list"*)          emit prs.tsv ;;
+  *actions/runs*)      emit runs ;;
+  *compare*)           emit compare ;;
+  *commits/*)
+    ref="\${all#*commits/}"; ref="\${ref%% *}"
+    t=""
+    [ -f "$F/trees" ] && t=$(awk -F'\t' -v r="$ref" '$1 == r { print $2; exit }' "$F/trees")
+    [ "$t" = fail ] && exit 7
+    [ -n "$t" ] || t="tree-of-$ref"
+    echo "$t" ;;
+  *commits*)           emit commitdate ;;
   *) echo "stub gh: no fixture for: $all" >&2; exit 9 ;;
 esac
 `;
@@ -67,7 +86,10 @@ function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args 
   /* `runs` is the workflow path of every run in flight on the branch, one per
      line, which is what the script's own --jq produces. Empty means nothing is
      in flight; absent means the call failed. */
-  const defaults = { base: "main", "prs.tsv": "", runs: "", compare: "4\t1", commitdate: minutesAgo(25 * 60) };
+  /* `siblings.tsv` empty is a reading — the queue holds no ready pull request —
+     and "fail" is the read itself failing. The two must not print the same
+     thing, which is why it is a default rather than an absence. */
+  const defaults = { base: "main", "prs.tsv": "", "siblings.tsv": "", runs: "", compare: "4\t1", commitdate: minutesAgo(25 * 60) };
   for (const [name, body] of Object.entries({ ...defaults, ...files })) {
     writeFileSync(join(fixture, name), body);
   }
@@ -104,6 +126,11 @@ function run({ files = {}, branch = "atelier-engineer/2026-10-24-message", args 
 }
 
 const prs = rows => rows.map(([n, b]) => `${n}\t${b}`).join("\n") + "\n";
+/* The ready pull requests, same shape, and the ref -> tree table the stub
+   serves. A branch absent from `trees` gets a tree of its own, so a pair only
+   collides when a test says it does. */
+const siblings = prs;
+const trees = rows => rows.map(([ref, t]) => `${ref}\t${t}`).join("\n") + "\n";
 
 test("the branch this run is standing in reads live, not stranded", () => {
   const r = run({ files: { "prs.tsv": prs([[47, "atelier-engineer/2026-10-24-message"]]) } });
@@ -386,4 +413,176 @@ test("--help prints the whole header, including the fields a reader greps", () =
   assert.match(r.stdout, /run=fresh/, "the help does not document the third verdict");
   assert.match(r.stdout, /--fresh-under/, "the help does not document the threshold flag");
   assert.match(r.stdout, /Requires: git, gh/, "the help truncated before its last line");
+});
+
+/* The duplicate reading, 2026-10-25 (I20). `carries` is computed against the
+   base and against nothing else, so it answers "is this diff non-empty" where
+   the question a merger asks before closing is "does this work exist anywhere I
+   can already reach". Measured on the first genuinely stranded draft this
+   product produced: #65 printed `carries=work`, and its head tree was
+   34f0c07f43c7da0e58ba72ba2e11d68a07f381e0 — the same tree as #62, which was
+   open and ready at that moment. Closing #65 cost nothing and the field a
+   merger reads before closing said it would cost work.
+
+   The relation is tree identity and not commit ancestry, which is the other way
+   to write this and the way that does not work here: #62's head is an *ancestor*
+   of #65's, so "is this draft's head contained in another open head" is false of
+   the exact pair the finding is about. `carries` counts files, so its containment
+   reading is asked of files too. */
+
+test("a draft whose tree a ready pull request already holds carries a duplicate, not work", () => {
+  const r = run({
+    files: {
+      "prs.tsv": prs([[65, "atelier-exo/2026-10-24-message-6"]]),
+      "siblings.tsv": siblings([[62, "atelier-exo/2026-10-24-message-5"]]),
+      trees: trees([
+        ["atelier-exo/2026-10-24-message-6", "34f0c07f"],
+        ["atelier-exo/2026-10-24-message-5", "34f0c07f"],
+      ]),
+    },
+  });
+  assert.match(r.stdout, /^STRANDED +#65 .*carries=duplicate#62 run=none/m);
+  assert.doesNotMatch(r.stdout, /carries=work/,
+    "the work is reachable through #62, so calling it unfinished work is the defect");
+  assert.equal(r.status, 1, "a reachable duplicate is still a draft nobody can merge");
+});
+
+/* The negative case, and the one that matters. Eleven fixtures behind the
+   previous entry in this file all passed for three runs while the clause they
+   covered was wrong, so a containment check is graded on what it declines to
+   say: one that fires on everything is the same defect as one that fires on
+   nothing. */
+test("two unrelated open drafts: neither carries a duplicate of the other", () => {
+  const r = run({
+    args: ["--all"],
+    files: {
+      "prs.tsv": prs([[40, "atelier-exo/2026-10-24-message"], [28, "atelier-pm/2026-10-21-message"]]),
+      "siblings.tsv": siblings([[67, "atelier-engineer/2026-10-25-hook"]]),
+    },
+  });
+  assert.match(r.stdout, /^STRANDED +#40 .*carries=work /m);
+  assert.match(r.stdout, /^STRANDED +#28 .*carries=work /m);
+  assert.doesNotMatch(r.stdout, /duplicate/, "no two of these three branches share a tree");
+  assert.equal(r.status, 1);
+});
+
+test("a ready sibling with a different tree is not a duplicate", () => {
+  const r = run({
+    files: {
+      "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]),
+      "siblings.tsv": siblings([[62, "atelier-exo/2026-10-24-message-5"]]),
+      trees: trees([
+        ["atelier-pm/2026-10-21-message", "aaaa1111"],
+        ["atelier-exo/2026-10-24-message-5", "bbbb2222"],
+      ]),
+    },
+  });
+  assert.match(r.stdout, /^STRANDED +#28 .*carries=work /m);
+  assert.equal(r.status, 1);
+});
+
+/* Two drafts with one tree is the case where firing would be the defect. The
+   forge refuses to merge a draft at all, so "reachable" has to mean reachable
+   by the person deciding whether to close, and pointing each of a pair at the
+   other invites a reader to close both and lose the work twice. */
+test("a draft sharing its tree with another draft is not a duplicate, because nobody can merge a draft", () => {
+  const r = run({
+    args: ["--all"],
+    files: {
+      "prs.tsv": prs([[65, "atelier-exo/a"], [66, "atelier-exo/b"]]),
+      "siblings.tsv": "",
+      trees: trees([["atelier-exo/a", "same0000"], ["atelier-exo/b", "same0000"]]),
+    },
+  });
+  assert.match(r.stdout, /^STRANDED +#65 .*carries=work /m);
+  assert.match(r.stdout, /^STRANDED +#66 .*carries=work /m);
+  assert.doesNotMatch(r.stdout, /duplicate/,
+    "either of a pair of drafts pointing at the other is an instruction to lose the work");
+  assert.equal(r.status, 1);
+});
+
+test("carries=nothing is never upgraded to a duplicate: an empty diff is a different fact", () => {
+  const r = run({
+    files: {
+      "prs.tsv": prs([[52, "atelier-pm/2026-10-24-message-2"]]),
+      "siblings.tsv": siblings([[62, "atelier-exo/2026-10-24-message-5"]]),
+      compare: "1\t0",
+      trees: trees([
+        ["atelier-pm/2026-10-24-message-2", "cccc3333"],
+        ["atelier-exo/2026-10-24-message-5", "cccc3333"],
+      ]),
+    },
+  });
+  assert.match(r.stdout, /^STRANDED +#52 .*carries=nothing /m);
+  assert.equal(r.status, 1);
+});
+
+test("a duplicate reading nobody could take is named on the summary line, not assumed absent", () => {
+  const unreadable = run({
+    files: {
+      "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]),
+      "siblings.tsv": "fail",
+    },
+  });
+  assert.match(unreadable.stdout, /^STRANDED +#28 .*carries=work /m);
+  assert.match(unreadable.stdout, /mergeable siblings unreadable \(no duplicate reading\)/,
+    "a duplicate this check could not look for is not a draft with no duplicate");
+  assert.equal(unreadable.status, 1);
+
+  const partial = run({
+    files: {
+      "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]),
+      "siblings.tsv": siblings([[62, "atelier-exo/2026-10-24-message-5"]]),
+      trees: trees([["atelier-exo/2026-10-24-message-5", "fail"]]),
+    },
+  });
+  assert.match(partial.stdout, /1 head tree\(s\) unreadable \(a duplicate could be missed\)/);
+  assert.equal(partial.status, 1);
+});
+
+/* Entry 21, 2026-10-25. The exo seat read this file's own warning about pipes
+   and then four commands later ran `check-seat-surface.sh --all | head`, read
+   exit 0 out of the pipe, and recorded that the tool accepts an undeclared
+   flag. Unpiped it exits 2, as the header says. The warning was right and its
+   placement was the defect: a correctness property enforced only by a paragraph
+   a memoryless reader has to recall is not enforced. So the status is in the
+   text of the last line, where a pipe cannot reach it. */
+
+test("the summary line names the status it is about to return", () => {
+  const stranded = run({ files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]) } });
+  assert.equal(stranded.status, 1);
+  assert.match(stranded.stdout, /none stranded|are stranded/);
+  assert.match(stranded.stdout.trimEnd().split("\n").pop(), /\(exit 1\)$/,
+    "a reader who piped the output has only the text to read");
+
+  const clean = run({ args: ["--seat", "engineer"], files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]) } });
+  assert.equal(clean.status, 0);
+  assert.match(clean.stdout.trimEnd().split("\n").pop(), /\(exit 0\)$/);
+});
+
+test("the argument error paths name their status too, which is where the lost measurement happened", () => {
+  for (const args of [["--nonesuch"], ["--seat", "enginer"], ["--fresh-under", "1.5"],
+                      ["--seat"], ["--fresh-under"]]) {
+    const r = run({ args, files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]) } });
+    assert.notEqual(r.status, 1, `${args.join(" ")} is a caller error, not a stranded draft`);
+    assert.equal(r.status, 2, `${args.join(" ")} must be an unasked question`);
+    assert.match(r.stderr.trimEnd().split("\n").pop(), /\(exit 2\)$/,
+      `${args.join(" ")} exits before any summary and still owes the reader its status`);
+  }
+});
+
+test("the status in the text is the status returned, on every path this suite can reach", () => {
+  const cases = [
+    { files: { "prs.tsv": prs([[28, "atelier-pm/2026-10-21-message"]]) } },
+    { files: { "prs.tsv": prs([[47, "atelier-engineer/2026-10-24-message"]]) } },
+    { files: { "prs.tsv": prs([[52, "atelier-pm/x"]]), commitdate: minutesAgo(4) } },
+    { args: ["--fresh-under", "0"], files: { "prs.tsv": prs([[52, "atelier-pm/x"]]), commitdate: minutesAgo(4) } },
+    { args: ["--all"], files: { "prs.tsv": "" } },
+  ];
+  for (const c of cases) {
+    const r = run(c);
+    const last = `${r.stdout}${r.stderr ?? ""}`.trimEnd().split("\n").pop();
+    assert.match(last, new RegExp(`\\(exit ${r.status}\\)$`),
+      `the line said something other than ${r.status}: ${last}`);
+  }
 });

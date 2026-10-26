@@ -644,3 +644,77 @@ rejected / built / urgent; only the owner moves proposed.
   as the ship check — see the 2026-10-24 entry on exactly that
 - Cost: $0
 - Status: proposed
+
+### 2026-10-25 — The duplicate reading catches identical trees and not stacks, and the gap has a price
+- Trigger: blocked-fix entry 19 asked for `git merge-base --is-ancestor
+  origin/<this head> origin/<that head>` and it is false of the pair the entry
+  is about. Measured on the two heads: `8686197` (#62) is an ancestor of
+  `5b8bf75` (#65), not the reverse, so an ancestry reading would have printed
+  `carries=work` on the one draft in this product's record that was safe to
+  close. Both heads carry tree `34f0c07f43c7da0e58ba72ba2e11d68a07f381e0`, which
+  is why the shipped reading is tree identity
+- What: ancestry is not wrong, it is a *second* sufficient condition, and it
+  covers a case tree identity does not — a stack where this draft's head is an
+  ancestor of a ready sibling's and the trees differ, so this draft's diff is a
+  strict subset of one a merger can already merge. That is the "land the stack"
+  situation L-E10 names, and `carries=work` is the right-ish answer for it only
+  by accident. The reason it is not shipped is cost, measured rather than
+  guessed: tree identity is one `gh api .../commits/<ref>` per open pull request,
+  memoised, so N calls for the whole invocation. Ancestry has no such
+  factorisation — `compare/<this>...<other>` is a call per *pair*, D x (N-1),
+  which on tonight's six-deep queue is up to fifteen extra calls per run — and
+  the cheap alternative, reading the first hundred ancestor shas of each head,
+  is a capped reading that silently under-answers past a hundred commits and so
+  needs a third field value to say the window ran out
+- First step: before building it, ask whether a stack with differing trees has
+  ever actually sat in this queue. `gh pr list --state open` plus one
+  `merge-base --is-ancestor` per pair over the last month of closed pull requests
+  answers it from the record, and if the answer is never, the right outcome is a
+  sentence in `tools/README.md` saying so rather than fifteen API calls a run
+  (L16 — a ledger entry that names a mechanism owes one read of the surface
+  first). The conservative direction is already the safe one: a missed duplicate
+  prints `work` and keeps a draft open
+- Cost: $0
+- Status: proposed
+
+### 2026-10-25 — The negative case of a containment check is only verifiable in fixtures
+- Trigger: entry 19's own verification clause reads "run the check with a draft
+  whose head is an ancestor of another open pull request's head", and then
+  "if a merger clears the queue first, the fixtures are the standing case". A
+  merger did clear it — #65 was closed by the seat that wrote the entry, hours
+  before this run read it — so the live positive was gone before the fix
+  existed, and the only way to get another is to manufacture a pull request,
+  which is the junk this register complains about elsewhere
+- What: the negative is the case entry 19 says matters most, and it is the one
+  a live run *can* check, because it is a statement about the whole queue: no
+  two of the open heads share a tree. This run verified it by hand — six open
+  pull requests, six distinct trees, printed as a table — and the tool itself
+  cannot show that table. So the reading a reader can confirm is the reading
+  the tool keeps to itself
+- First step: a `--trees` diagnostic on `check-draft-prs.sh` that prints one
+  line per open pull request with its number, its draft-or-ready state and its
+  head tree, and exits 0 — the table this run built by hand in six lines of
+  shell. It makes the negative verifiable on every live run rather than only in
+  `tests/draft-prs.test.mjs`, and it costs no new reading at all, since the tool
+  already fetches exactly those trees and memoises them
+- Cost: $0
+- Status: proposed
+
+### 2026-10-25 — The draft check's call budget grew and nothing measures it
+- Trigger: `carries=duplicate#N` added one `gh pr list` plus one
+  `gh api .../commits/<ref>` per open pull request to an invocation that already
+  made three calls per draft. Tonight's live run: three drafts in scope, six
+  open pull requests, so eleven to sixteen forge calls for one summary line
+- What: no rule here is broken — the queue is single digits and the tool is
+  called a few times a run — but the number is now large enough that nobody
+  knows it, and the first time it matters will be a rate limit inside somebody
+  else's run rather than inside this one. The whole queue is one GraphQL query:
+  numbers, head refs, draft flags, head commit trees and committer dates in a
+  single round trip, which would take the per-draft part of the budget to zero
+- First step: print the call count on the summary line behind a flag, which is
+  cheaper than the rewrite and answers whether the rewrite is worth doing.
+  `gh api --include` carries the rate-limit headers, so the remaining budget is
+  readable too, and a check that reports its own cost is the only kind whose
+  cost anyone will ever notice
+- Cost: $0
+- Status: proposed
