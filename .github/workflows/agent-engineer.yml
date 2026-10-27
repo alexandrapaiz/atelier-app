@@ -11,6 +11,7 @@ on:
         default: ""
 
 permissions:
+  actions: read # gh run list: a seat reads its own runs (ADR-037)
   contents: write
   pull-requests: write
   id-token: write
@@ -73,3 +74,38 @@ jobs:
           if [ -z "$pr" ]; then
             echo "::warning::No pull request exists for branch $branch. A run with nothing to ship must say so in a draft PR and close it, rather than ending silently."
           fi
+      # The stranded-draft check (tools/check-draft-prs.sh, engineer PR #39).
+      # A seat runs with no memory of its own last run and GitHub refuses to
+      # merge a draft at all, so a draft with no live run behind it is work
+      # that shipped nothing. Reported, never fatal, on purpose: the draft it
+      # names is usually this run's own, which is correct and expected, and
+      # the point is that the NEXT run on this seat sees what this one left.
+      # Exit 1 names the stranded drafts, 0 means every seat pull request is
+      # reachable by a merger, and anything else means the check could not run
+      # and must never be read as a 0.
+      - name: Stranded drafts (reported, never fatal)
+        if: always()
+        env:
+          SEAT: engineer
+        run: |
+          if [ ! -f tools/check-draft-prs.sh ] || ! grep -q '"drafts"' package.json; then
+            echo "::warning::The stranded-draft question went UNASKED: tools/check-draft-prs.sh or the \`drafts\` script is not in this tree. That is not a clean result. Both arrive with engineer PR #39."
+            echo "### Stranded drafts for the \`engineer\` seat: NOT CHECKED (tool absent, engineer PR #39)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          out=$(npm run --silent drafts -- --seat "$SEAT" 2>&1) && status=0 || status=$?
+          printf '%s\n' "$out"
+          {
+            echo "### Stranded drafts for the \`$SEAT\` seat"
+            echo ""
+            echo '```'
+            printf '%s\n' "$out"
+            echo "exit $status"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$status" in
+            0) echo "Every pull request on the $SEAT seat is reachable by a merger." ;;
+            1) echo "::warning::A pull request on the $SEAT seat is sitting where no merger can reach it. If one of these is this run's own draft, ready it or write into it which clause keeps it a draft. Reported, not fatal." ;;
+            *) echo "::warning::The stranded-draft check could not run (exit $status). A check that could not run is not a pass and must never be read as one." ;;
+          esac
+          exit 0
