@@ -52,22 +52,69 @@ jobs:
         run: |
           git fetch origin --quiet 2>/dev/null || true
           branch=$(git rev-parse --abbrev-ref HEAD)
+          base="${GITHUB_REF_NAME:-main}"
           dirty=$(git status --porcelain)
-          pushed=$(git branch -r --contains HEAD 2>/dev/null | tr -d ' ')
+          commits=0
+          if git rev-parse "origin/$base" >/dev/null 2>&1; then
+            commits=$(git rev-list --count "origin/$base..HEAD" 2>/dev/null || echo 0)
+          fi
+          # Ask the REMOTE by name. `git branch -r --contains HEAD` answers only
+          # from the tracking refs the clone's refspec creates, and a seat clone
+          # may fetch the mainline alone (`+refs/heads/main:refs/remotes/origin/main`),
+          # in which case the reading is empty for a branch the remote is holding
+          # at this exact HEAD and a run that shipped is failed as a run that
+          # shipped nothing. Measured on the resident runtime 2026-10-24: empty
+          # from `git branch -r`, answered by `git ls-remote` (incident I13). The
+          # cause is the refspec, not the depth, so `git fetch` above cannot
+          # repair it; one question put to the remote needs no local ref at all.
+          # The base branch is still excluded by name, which is what the old
+          # reading got right: a run that never branched leaves HEAD on
+          # origin/$base and satisfied this check trivially — epitome run
+          # 35956231272 (2026-09-24) died at turn one, produced nothing, and the
+          # tripwire reported success.
+          head_sha=$(git rev-parse HEAD)
+          pushed=""
+          stale=""
+          unasked=""
+          if [ "$branch" != "$base" ] && [ "$branch" != "HEAD" ]; then
+            if ls_out=$(git ls-remote --heads origin "$branch" 2>&1); then
+              remote_sha=$(printf '%s\n' "$ls_out" | cut -f1)
+              if [ "$remote_sha" = "$head_sha" ]; then
+                pushed="origin/$branch"
+              elif [ -n "$remote_sha" ]; then
+                stale="origin/$branch is at $remote_sha but HEAD is $head_sha"
+              fi
+            else
+              # one line, because a GitHub annotation is one line
+              unasked="git ls-remote --heads origin $branch failed: $(printf '%s' "$ls_out" | tr '\n' ' ')"
+            fi
+          fi
           pr=$(gh pr list --head "$branch" --state all --json number --jq '.[0].number' 2>/dev/null || true)
           {
             echo "### Did this run ship anything?"
             echo ""
-            echo "- branch: \`$branch\`"
-            echo "- pushed to a remote branch: ${pushed:-NO}"
+            echo "- branch: \`$branch\` ($commits commit(s) ahead of $base)"
+            echo "- pushed to a seat branch (asked of the remote): ${pushed:-NO}"
+            if [ -n "$stale" ]; then echo "- the remote has the branch at another tip: $stale"; fi
+            if [ -n "$unasked" ]; then echo "- the remote could not be asked: $unasked"; fi
             echo "- pull request: ${pr:-none}"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$dirty" ]; then
             echo "::warning::Uncommitted changes were left in the sandbox and are lost at teardown."
             printf '%s\n' "$dirty" | head -20
           fi
-          if [ -z "$pushed" ]; then
-            echo "::error::This run made commits that were never pushed, so the work dies with the sandbox. See incident 3 in docs/agents/incidents.md and the 'Ship first, then work' rule in this seat's charter."
+          if [ "$commits" = "0" ] && [ -z "$pr" ] && [ -z "$dirty" ]; then
+            echo "::error::This run produced nothing at all: no commit, no seat branch, no pull request. A green model step is not evidence of work; read the seat run step's own outcome."
+            exit 1
+          fi
+          if [ "$commits" != "0" ] && [ -z "$pushed" ]; then
+            if [ -n "$unasked" ]; then
+              echo "::error::This run made $commits commit(s) and the remote could not be asked whether it has them ($unasked). A check that could not run is not a pass, and for a ship tripwire the conservative answer is to fail loudly."
+            elif [ -n "$stale" ]; then
+              echo "::error::The remote holds $branch but not this run's HEAD ($stale), so every commit above the remote tip dies with the sandbox. Push again."
+            else
+              echo "::error::This run made commits that were never pushed, so the work dies with the sandbox. See incident 3 in docs/agents/incidents.md and the 'Ship first, then work' rule in this seat's charter."
+            fi
             exit 1
           fi
           if [ -z "$pr" ]; then
