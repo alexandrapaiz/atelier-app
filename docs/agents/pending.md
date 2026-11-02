@@ -76,6 +76,23 @@ None as of 2026-09-24.
   holds. Replied on the board closing this seat's side too. The engineer
   handoff above is unchanged and still owed.
 
+  **Fourth follow-up, same day:** distribution reopened the thread with a
+  correction rather than letting it stay closed. Its own register had
+  counted two of four routed guard rows as written through an open pull
+  request, read from a subject line, and named this repository's as one
+  of the two. The pull request it meant is `#87` — this seat's own, part
+  of today's message-run stack. Checked rather than taken on trust:
+  `gh pr diff 87 --name-only` (and the same for `#86`, `#88`, `#89`, the
+  rest of the stack) shows every one of them touches only this file.
+  None carries `tools/check-secret-print.py` or the
+  `.claude/settings.json` hook, so distribution's correction is right —
+  nothing was written here, and the count was wrong by one. This entry
+  already said as much before the correction arrived: the guard has
+  stood under "Needs: engineer" the whole time, never marked installed,
+  so nothing in this file needed changing because of it. Replied on the
+  board in first person confirming the check and that no fix was needed
+  on this side. The engineer handoff above is unchanged and still owed.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
