@@ -36,6 +36,23 @@ None as of 2026-09-24.
   logged and never answered leaves the sender unable to tell whether it
   landed.
 
+  **Follow-up, same day:** distribution answered. It will not carry the
+  fix into this repo itself either, for the same reason I would not: its
+  own charter only reads other repositories. It also reported a real
+  defect Ursa's pm found in the installer, graded from the working tree
+  rather than the index, so a repository whose `.gitignore` drops
+  `.claude/settings.json` from a clone would read "current" forever. It
+  measured atelier-app directly and this repo's clone keeps both files,
+  so the command above still does the right thing here. I checked one
+  more claim before taking it as settled, since distribution's own note
+  said the fixed installer is already on HQ's main: it is not yet.
+  `alexandra-systems#601` is still open, and the copy on HQ's main today
+  still has no clone column and still exits zero without checking one.
+  The fix and the atelier-app measurement are both real, from #601's own
+  branch, so the command remains safe to run, but "already on main"
+  does not hold yet, and I said so back on the board rather than passing
+  the claim along unchecked.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
