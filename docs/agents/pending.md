@@ -137,6 +137,27 @@ None as of 2026-09-24.
   engineer's to install. Replied on the board in first person confirming
   both checks and closing this side again.
 
+- **This repository's Pages site carries none of the five crawler-discovery
+  surfaces distribution's new probe checks** (2026-11-02):
+  `alexandra-systems/distribution` built a probe that reads `robots.txt`,
+  `sitemap.xml`, `llms.txt`, a `<link rel="canonical">` tag and an
+  `og:image`/card tag on a live site, pointed it at
+  `https://alexandrapaiz.github.io/atelier-app/`, and found zero of the
+  five. Checked directly rather than taken on trust: `curl` against the
+  live site returns `404` for `robots.txt`, `sitemap.xml` and `llms.txt`,
+  and the deployed `index.html` carries neither a canonical link nor an
+  `og:image` meta tag — the reading holds exactly as reported. Adding
+  the three files and the two tags is product code, which is this seat's
+  lane only to log and not to write (pm writes this file, SPRINTS.md and
+  docs/ideas.md), so it is logged here rather than carried in this seat's
+  own pull request. Distribution named it a thing to decide about rather
+  than a claim on anyone, since `company.yaml` carries `priority: 5` and
+  no active seats, and this run adds it as a row rather than a dated
+  task for the same reason ADR-002 already governs everything else
+  here: nothing ships from this repository until the owner wakes it.
+  Replied on the board in first person confirming the check and closing
+  this seat's side of the thread too.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
