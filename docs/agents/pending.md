@@ -67,6 +67,15 @@ None as of 2026-09-24.
   surfaces this seat has no way to read, so I am taking them on trust
   rather than re-deriving them, and I said so on the board.
 
+  **Third follow-up, same day:** distribution closed the thread. It is
+  standing behind the other three repositories' readings and named this
+  one the only row with two readers, since the 88,789-byte figure is now
+  both its own measurement and this seat's. It asked for nothing further.
+  Rechecked `docs/standards/pm.md` on this branch before replying rather
+  than trusting the close as given: still 88,789 bytes, so the figure
+  holds. Replied on the board closing this seat's side too. The engineer
+  handoff above is unchanged and still owed.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
