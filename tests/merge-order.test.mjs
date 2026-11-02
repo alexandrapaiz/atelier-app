@@ -18,7 +18,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
@@ -135,7 +135,7 @@ test('a shallow clone still answers when the merge base is inside the depth', ()
   assert.match(r.out, /^EXCLUSIVE {2}#1 x #2 files=register\.md$/m);
   assert.match(r.out, /^ANCHOR {2}register\.md pairs=1 prs=2$/m);
   // the depth is reported, because a verdict names the footing it stands on
-  assert.match(r.out, /^BLOCKED .*clone=shallow$/m);
+  assert.match(r.out, /^BLOCKED .*clone=shallow \(exit 1\)$/m);
   assert.equal(r.code, 1, r.out);
   rmSync(w.dir, { recursive: true, force: true });
 });
@@ -187,7 +187,7 @@ test('a merge base below the shallow boundary is unreadable, never EXCLUSIVE', (
   assert.doesNotMatch(r.out, /EXCLUSIVE/);
   assert.doesNotMatch(r.out, /^BLOCKED/m);
   assert.match(r.out, /^SEQ {3}#1 feat unreadable order=1$/m);
-  assert.match(r.out, /^INCONCLUSIVE .*clone=shallow$/m);
+  assert.match(r.out, /^INCONCLUSIVE .*clone=shallow \(exit 2\)$/m);
   assert.match(r.out, /--unshallow/);
   assert.equal(r.code, 2, r.out);
 
@@ -215,7 +215,7 @@ test('a clone behind the remote base refuses rather than measuring a dead queue'
   w.git('push', '-q', 'origin', 'main');
 
   const r = run(c, [[1, 'a', w.tips.a]]);
-  assert.match(r.out, /^INCONCLUSIVE {2}reason=stale-base base=main local=[0-9a-f]{8} remote=[0-9a-f]{8}$/m);
+  assert.match(r.out, /^INCONCLUSIVE {2}reason=stale-base base=main local=[0-9a-f]{8} remote=[0-9a-f]{8} \(exit 2\)$/m);
   assert.equal(r.code, 2, r.out);
 
   // --fetch is the opt-in that makes it measurable, and then it answers
@@ -242,7 +242,7 @@ test('two passes appending at one anchor are EXCLUSIVE and name the file', () =>
 
   assert.match(r.out, /^EXCLUSIVE {2}#1 x #2 files=register\.md$/m);
   assert.match(r.out, /^ANCHOR {2}register\.md pairs=1 prs=2$/m);
-  assert.match(r.out, /^BLOCKED {2}in-scope=2 out-of-scope=0 sequence=1\/2 exclusive-pairs=1\/1 base=main@[0-9a-f]{8} anchor=register\.md clone=complete$/m);
+  assert.match(r.out, /^BLOCKED {2}in-scope=2 out-of-scope=0 sequence=1\/2 exclusive-pairs=1\/1 base=main@[0-9a-f]{8} anchor=register\.md clone=complete \(exit 1\)$/m);
   assert.equal(r.code, 1, r.out);
 
   // each one is clean against the mainline on its own, which is the whole point:
@@ -310,7 +310,7 @@ test('a queue with no contention is CLEAN and says what it examined', () => {
   });
   const c = clone(w.origin, join(w.dir, 'full'));
   const r = run(c, [[1, 'a', w.tips.a], [2, 'b', w.tips.b]]);
-  assert.match(r.out, /^CLEAN {2}in-scope=2 out-of-scope=0 sequence=2\/2 exclusive-pairs=0\/1 base=main@[0-9a-f]{8} anchor=none clone=complete$/m);
+  assert.match(r.out, /^CLEAN {2}in-scope=2 out-of-scope=0 sequence=2\/2 exclusive-pairs=0\/1 base=main@[0-9a-f]{8} anchor=none clone=complete \(exit 0\)$/m);
   assert.equal(r.code, 0, r.out);
   rmSync(w.dir, { recursive: true, force: true });
 });
@@ -443,4 +443,48 @@ test('the check moves no ref and leaves the working tree clean', () => {
   // and the clone is still complete, which is the L-E12 half that bites later
   assert.equal(execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: c, encoding: 'utf8' }).trim(), 'false');
   rmSync(w.dir, { recursive: true, force: true });
+});
+
+// --- the status in the text (blocked-fix entry 21, 2026-10-25) --------------
+//
+// Entry 21 named three tools, because this one did not exist on `main` when it
+// was written. The rule is "every check", and a rule applied to the callers
+// the entry happened to list is not a fix to the rule (L7). This tool's advice
+// lines go to stderr and its verdict to stdout, so the status rides on the
+// verdict line, which is the last thing on stdout either way.
+
+test('every verdict names the status it returns, across the whole decision table', () => {
+  const w = world({
+    branches: [
+      { name: 'a', files: { 'register.md': '# register\n\n- seed\n- a\n' } },
+      { name: 'b', files: { 'register.md': '# register\n\n- seed\n- b\n' } },
+      { name: 'c', files: { 'notes.md': 'c\n' } },
+    ],
+  });
+  const full = clone(w.origin, join(w.dir, 'full'));
+
+  const cases = [
+    { label: 'BLOCKED', rows: [[1, 'a', w.tips.a], [2, 'b', w.tips.b]], code: 1 },
+    { label: 'CLEAN', rows: [[1, 'c', w.tips.c]], code: 0 },
+    { label: 'CLEAN empty queue', rows: [], code: 0 },
+    { label: 'INCONCLUSIVE no head', rows: [[9, 'gone', '0'.repeat(40)]], code: 2 },
+  ];
+  for (const c of cases) {
+    const r = run(full, c.rows);
+    assert.equal(r.code, c.code, `${c.label}: ${r.out}`);
+    const verdict = r.out.split('\n').find(l => /^(CLEAN|BLOCKED|INCONCLUSIVE)/.test(l));
+    assert.ok(verdict, `${c.label} printed no verdict line: ${r.out}`);
+    assert.match(verdict, new RegExp(`\\(exit ${c.code}\\)$`), `${c.label}: ${verdict}`);
+  }
+  rmSync(w.dir, { recursive: true, force: true });
+});
+
+test('the argument refusals name their status, and a flag with no value is never a finding', () => {
+  for (const args of [['--nope'], ['--limit', 'lots'], ['--base'], ['--prs'], ['--limit']]) {
+    const r = spawnSync('bash', [TOOL, ...args], { cwd: root, encoding: 'utf8' });
+    assert.notEqual(r.status, 1, `${args.join(' ')} is a caller error, not a blocked queue`);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stdout}${r.stderr}`);
+    const last = `${r.stdout}${r.stderr}`.trimEnd().split('\n').pop();
+    assert.match(last, /\(exit 2\)$/, `${args.join(' ')} said: ${last}`);
+  }
 });

@@ -20,12 +20,23 @@
 #   LIVE      #47 atelier-engineer/2026-10-24-message idle=2m commits=1 files=1 carries=work run=self
 #   FRESH     #52 atelier-engineer/2026-10-24-message-2 idle=4m commits=1 files=0 carries=nothing run=fresh
 #   STRANDED  #40 atelier-exo/2026-10-24-message idle=4h commits=3 files=2 carries=work run=ci
+#   STRANDED  #65 atelier-exo/2026-10-24-message-6 idle=3h commits=28 files=4 carries=duplicate#62 run=none
 #
 # carries=work   the branch changes files, so it is unfinished work: ready it
 #                (gh pr ready <n>), or write in it which clause keeps it a draft
 #   carries=nothing  the branch changes no file: it is not unfinished work, it
 #                  is nothing. Close it and re-declare what it owed on the
 #                  board.
+#   carries=duplicate#N
+#                  the branch changes files, and an open pull request a merger
+#                  can already merge — #N, not a draft — has the identical
+#                  tree, so merging that one lands exactly this one's content
+#                  and closing this one loses nothing. Its own word, never
+#                  folded into `nothing`: `nothing` licenses an inaction,
+#                  `duplicate#N` names the pull request to merge instead.
+#                  Measured against the sibling's tree rather than against the
+#                  base, because `carries` counts files and this is the same
+#                  question asked of the rest of the queue (I20).
 #   run=self       this is the branch the calling run is standing in, so the seat
 #                  holding it is the one reading this line. Not stranded, not
 #                  counted. The only reading that works on the surface the seats
@@ -72,12 +83,32 @@
 #      company.yaml declares, a --fresh-under that is not a whole number of
 #      minutes). Never read a 2 as a 0.
 #
-# Read the status, never a pipe's: `npm run drafts | tail` reports the tail's 0
-# whatever the check found. Pipe and you want ${PIPESTATUS[0]}.
+# The last line this prints names the status it is about to return, as
+# `(exit N)`. The exit status is still the contract; the suffix is there because
+# a pipe destroys the status and not the text, and `npm run drafts | tail`
+# reports the tail's 0 whatever the check found. Piping and reading `$?` is the
+# one mistake this header cannot prevent, so the verdict carries its own status
+# into whatever quotes it. If you need the status itself from a pipeline, it is
+# ${PIPESTATUS[0]}.
 #
 # Requires: git, gh (authenticated). No npm dependencies, by this product's ethos.
 
 set -euo pipefail
+
+# The status in the text and the status in `$?` are the same number because one
+# call produces both. A summary that merely mentions a number somebody typed is
+# a second decision that can drift from the first, and a check whose text and
+# status disagreed would be worse than a check with no text at all.
+verdict() { # status, line...
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status"
+  exit "$status"
+}
+refuse() { # status, line...  — the argument and precondition paths, on stderr
+  local status=$1; shift
+  printf '%s (exit %s)\n' "$*" "$status" >&2
+  exit "$status"
+}
 
 # How new a draft has to be for this check to decline to judge it, in minutes.
 #
@@ -109,36 +140,55 @@ set -euo pipefail
 # reading a merger sweeping the queue wants.
 fresh_under_min=60
 
+
+# A flag typed without its value is a question nobody asked, and until
+# 2026-10-25 none of the three tools in here said so. Two shapes, both wrong in
+# the direction that matters. `--seat` and `--base` died inside `shift 2`,
+# which fails on one remaining argument, and `set -e` turns a failed shift into
+# exit 1 — the status that means a finding. `--company` and `--fixture` read as
+# the empty string, and empty is this code's "not given", so the tool silently
+# answered the live question instead of the one on the command line. Both are
+# L6: the third outcome is could-not-run, and a caller error is never either of
+# the other two.
+need_value() { # flag, $# at the point of the match
+  [ "$2" -ge 2 ] || refuse 2 "check-draft-prs: $1 needs a value"
+}
 scope=seats
 seat=
 while [ $# -gt 0 ]; do
   case "$1" in
     --all)   scope=all; shift ;;
-    --seat)  scope=one; seat="${2:-}"; shift 2 ;;
+    # `shift 2` with one argument left fails, and under `set -e` a failed shift
+    # exits 1 — which in this check is the status that means stranded drafts
+    # were found. So a bare `--seat` reported a finding instead of reaching the
+    # "needs a name" refusal three lines below, and `npm run drafts --seat`
+    # read as a queue with work stranded in it. Shift what is there (L6).
+    --seat)  need_value --seat $#; scope=one; seat="$2"; shift 2 ;;
     # A threshold that silently became 0 would turn the guard off and read as a
     # clean sweep, so a value that is not a whole number of minutes is an
     # unasked question (exit 2) rather than a default quietly restored.
     --fresh-under)
-      fresh_under_min="${2:-}"
+      need_value --fresh-under $#
+      fresh_under_min="$2"
       case "$fresh_under_min" in
-        ''|*[!0-9]*) echo "check-draft-prs: --fresh-under needs a whole number of minutes, got: ${2:-<nothing>}" >&2; exit 2 ;;
+        ''|*[!0-9]*) refuse 2 "check-draft-prs: --fresh-under needs a whole number of minutes, got: ${2:-<nothing>}" ;;
       esac
       shift 2 ;;
     # The whole leading comment block, however long it grows: a line range
     # here silently truncates the help the next time this header is edited.
     -h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"; exit 0 ;;
-    *) echo "check-draft-prs: unknown argument: $1" >&2; exit 2 ;;
+    *) refuse 2 "check-draft-prs: unknown argument: $1" ;;
   esac
 done
-[ "$scope" = one ] && [ -z "$seat" ] && { echo "check-draft-prs: --seat needs a name" >&2; exit 2; }
+[ "$scope" = one ] && [ -z "$seat" ] && refuse 2 "check-draft-prs: --seat needs a name"
 
-command -v gh >/dev/null 2>&1 || { echo "check-draft-prs: gh is not installed" >&2; exit 2; }
-git rev-parse --git-dir >/dev/null 2>&1 || { echo "check-draft-prs: not a git repository" >&2; exit 2; }
-gh auth status >/dev/null 2>&1 || { echo "check-draft-prs: gh is not authenticated" >&2; exit 2; }
+command -v gh >/dev/null 2>&1 || refuse 2 "check-draft-prs: gh is not installed"
+git rev-parse --git-dir >/dev/null 2>&1 || refuse 2 "check-draft-prs: not a git repository"
+gh auth status >/dev/null 2>&1 || refuse 2 "check-draft-prs: gh is not authenticated"
 
 root=$(git rev-parse --show-toplevel)
-base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) || {
-  echo "check-draft-prs: could not read the default branch" >&2; exit 2; }
+base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) \
+  || refuse 2 "check-draft-prs: could not read the default branch"
 
 # The branch this run is standing in, read once. A run's own draft is live by
 # construction, and on the surface that actually runs the seats there is no
@@ -190,15 +240,14 @@ case "$scope" in
     for s in "${declared[@]}"; do [ "$s" = "$seat" ] && seats=("$seat"); done
     if [ ${#seats[@]} -eq 0 ]; then
       if [ ${#declared[@]} -eq 0 ]; then
-        echo "check-draft-prs: company.yaml named no seats, so --seat $seat could not be answered; use --all" >&2
+        refuse 2 "check-draft-prs: company.yaml named no seats, so --seat $seat could not be answered; use --all"
       else
-        echo "check-draft-prs: no seat named $seat in company.yaml (declared: ${declared[*]}); use --all for an undeclared branch" >&2
+        refuse 2 "check-draft-prs: no seat named $seat in company.yaml (declared: ${declared[*]}); use --all for an undeclared branch"
       fi
-      exit 2
     fi ;;
   seats)
     seats=("${declared[@]}")
-    [ ${#seats[@]} -eq 0 ] && { echo "check-draft-prs: company.yaml named no seats; use --all" >&2; exit 2; } ;;
+    [ ${#seats[@]} -eq 0 ] && refuse 2 "check-draft-prs: company.yaml named no seats; use --all" ;;
 esac
 
 in_scope() { # branch
@@ -210,11 +259,57 @@ in_scope() { # branch
   return 1
 }
 
+# The rest of the queue, as the pull requests a merger can actually merge. A
+# draft's work being "reachable" has to mean reachable by the person deciding
+# whether to close it, and GitHub refuses to merge a draft at all, so a sibling
+# draft with the same tree is not an answer — it is two drafts either of which
+# closing would lose the work. Hence `select(.isDraft | not)`: only a ready
+# pull request can stand in for one being closed.
+#
+# A failed read here never upgrades a verdict. It leaves `carries=work`, which
+# keeps the draft open, and says so on the summary line, because a duplicate
+# this check could not look for and a draft with no duplicate are different
+# answers (L6).
+mergeable_siblings=""
+siblings_read=yes
+if ! mergeable_siblings=$(gh pr list --state open --limit 100 \
+      --json number,headRefName,isDraft \
+      --jq '.[] | select(.isDraft | not) | [.number, .headRefName] | @tsv' 2>/dev/null); then
+  mergeable_siblings=""; siblings_read=no
+fi
+
+# The tree a ref points at, memoised across drafts, because the sibling list is
+# the same list for every draft and the queue is read once per invocation. The
+# commits endpoint takes a ref, so no local object is needed and none is
+# fetched: this clone's refspec is often `+refs/heads/main:refs/remotes/origin/main`
+# alone, in which case `origin/<seat branch>` does not exist and cannot be made
+# to exist by a fetch, so any reading built on local refs is dead code on the
+# surface the seats actually run on (L4, L-E12).
+#
+# It answers into `$tree` rather than onto stdout on purpose: a command
+# substitution is a subshell, so a memo written inside one is discarded the
+# moment it returns, and the cache would have been a cache that never hit.
+tree_cache=""
+tree=""
+tree_of() { # ref -> sets $tree; non-zero when the read failed
+  local ref="$1" hit
+  hit=$(printf '%s\n' "$tree_cache" | awk -F'\t' -v r="$ref" '$1 == r { print $2; exit }')
+  if [ -n "$hit" ]; then tree="$hit"; return 0; fi
+  tree=$(gh api "repos/{owner}/{repo}/commits/$ref" --jq '.commit.tree.sha' 2>/dev/null) || tree=
+  [ -n "$tree" ] || return 1
+  tree_cache="$tree_cache
+$ref	$tree"
+}
+
 now=$(date -u +%s)
 stranded=0
 fresh=0
 checked=0
 skipped=0
+# Reads this check could not take while looking for a duplicate. Counted rather
+# than folded into the verdict: the verdict is unchanged by them, and the
+# summary line is where a reader learns the reading was partial.
+dup_unreadable=0
 
 while IFS=$'\t' read -r number branch; do
   [ -z "$number" ] && continue
@@ -231,6 +326,35 @@ while IFS=$'\t' read -r number branch; do
     [ "$files" -gt 0 ] && carries=work || carries=nothing
   else
     commits=? files=? carries=unreadable
+  fi
+
+  # Is this work already somewhere a merger can reach? `carries` counts files,
+  # so the containment question is asked of files too: two heads with the same
+  # tree have the same content, which means merging the ready one lands exactly
+  # what closing this one would have thrown away. Measured 2026-10-25 on the
+  # pair that produced I20 — #65 and #62 both at tree
+  # 34f0c07f43c7da0e58ba72ba2e11d68a07f381e0 while #65 printed carries=work.
+  #
+  # Only asked of a draft that carries work: `nothing` and `unreadable` are
+  # already the strongest things this field can say, and `nothing` is reached by
+  # the diff against the base being empty, which is a different fact.
+  if [ "$carries" = work ] && [ "$siblings_read" = yes ]; then
+    if tree_of "$branch"; then
+      mine="$tree"
+      while IFS=$'\t' read -r sib_num sib_ref; do
+        [ -n "$sib_num" ] || continue
+        [ "$sib_num" = "$number" ] && continue
+        if tree_of "$sib_ref"; then
+          if [ "$tree" = "$mine" ]; then carries="duplicate#$sib_num"; break; fi
+        else
+          dup_unreadable=$((dup_unreadable + 1))
+        fi
+      done <<EOF
+$mergeable_siblings
+EOF
+    else
+      dup_unreadable=$((dup_unreadable + 1))
+    fi
   fi
 
   if last=$(gh api "repos/{owner}/{repo}/commits?sha=$branch&per_page=1" \
@@ -304,12 +428,15 @@ read_note="$skipped out of scope"
 # strictness its caller can change says which setting produced the verdict.
 [ "$fresh_under_min" -eq 0 ] && read_note="$read_note, freshness guard off"
 [ "$fresh" -gt 0 ] && read_note="$read_note, $fresh too fresh to judge (under ${fresh_under_min}m)"
+# A duplicate nobody could look for is not the absence of one. Both halves are
+# named, because the field that would have carried the finding reads `work`
+# either way and a reader cannot tell which from the line.
+[ "$siblings_read" = yes ] || read_note="$read_note, mergeable siblings unreadable (no duplicate reading)"
+[ "$dup_unreadable" -eq 0 ] || read_note="$read_note, ${dup_unreadable} head tree(s) unreadable (a duplicate could be missed)"
 [ -n "$self" ] || read_note="$read_note, no own branch (detached HEAD)"
 [ ${#declared_workflows[@]} -gt 0 ] || read_note="$read_note, no seat workflow declared (run=live unreachable)"
 
 if [ "$stranded" -gt 0 ]; then
-  echo "check-draft-prs: $stranded of $checked draft(s) in scope are stranded ($read_note) — ready them, close them, or name the clause that keeps them drafts (L-A32)."
-  exit 1
+  verdict 1 "check-draft-prs: $stranded of $checked draft(s) in scope are stranded ($read_note) — ready them, close them, or name the clause that keeps them drafts (L-A32)."
 fi
-echo "check-draft-prs: $checked draft(s) in scope, $read_note, none stranded."
-exit 0
+verdict 0 "check-draft-prs: $checked draft(s) in scope, $read_note, none stranded."

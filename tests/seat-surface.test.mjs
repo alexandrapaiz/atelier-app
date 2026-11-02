@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -152,4 +153,57 @@ test('a fixture directory that does not exist is an error, not an empty pass', (
   );
   assert.equal(r.status, 2);
   assert.match(`${r.stdout}${r.stderr}`, /is not a directory/);
+});
+
+// --- the status in the text (blocked-fix entry 21, 2026-10-25) --------------
+//
+// This is the command the lost measurement was taken on. On 2026-10-25 a seat
+// ran `bash tools/check-seat-surface.sh --all | head`, read exit 0, and
+// recorded that the tool accepts an undeclared flag and exits clean. Unpiped it
+// exits 2, as its own header says. The tool was right, the measurement was
+// wrong, and the warning that would have prevented it had been read by the same
+// run minutes earlier — so the status is now in the text of the last line,
+// where a pipe cannot destroy it.
+
+test('--all is not a flag this command takes, and the refusal says so with its status', () => {
+  const r = spawnSync('bash', ['tools/check-seat-surface.sh', '--all'], { cwd: root, encoding: 'utf8' });
+  assert.equal(r.status, 2, 'an undeclared flag is an unasked question');
+  const last = `${r.stdout}${r.stderr}`.trimEnd().split('\n').pop();
+  assert.match(last, /unknown argument: --all \(exit 2\)$/, last);
+});
+
+test('a piped read loses the status and keeps the verdict', () => {
+  const r = spawnSync('bash', ['-c', 'tools/check-seat-surface.sh --all 2>&1 | head'], { cwd: root, encoding: 'utf8' });
+  assert.equal(r.status, 0, 'the pipe reports head’s status, which is the whole defect');
+  assert.match(`${r.stdout}`, /\(exit 2\)/, 'the text has to carry what the pipe threw away');
+});
+
+test('every verdict names the status it returns, on every fixture in the table', () => {
+  const cases = fs.readdirSync(path.join(root, 'tests/fixtures/seat-surface')).sort();
+  assert.ok(cases.length >= 11, `the table shrank to ${cases.length} cases`);
+  for (const fixture of cases) {
+    const { code, out } = surface(fixture);
+    const last = out.trimEnd().split('\n').pop();
+    assert.match(last, new RegExp(`\\(exit ${code}\\)$`),
+      `${fixture} returned ${code} and its last line said: ${last}`);
+  }
+});
+
+// Each of these used to die inside `shift 2` and exit 1 — the status that means
+// a seat was found running off its declaration — instead of reaching the
+// refusal written for it three lines below.
+test('a flag given without its value is a caller error, never a finding', () => {
+  for (const flag of ['--seat', '--company', '--fixture']) {
+    const r = spawnSync('bash', ['tools/check-seat-surface.sh', flag], { cwd: root, encoding: 'utf8' });
+    assert.notEqual(r.status, 1, `${flag} alone must not read as a seat running elsewhere`);
+    assert.equal(r.status, 2, `${r.stdout}${r.stderr}`);
+  }
+});
+
+test('--help prints the whole header, including the exit-status table', () => {
+  const r = spawnSync('bash', ['tools/check-seat-surface.sh', '--help'], { cwd: root, encoding: 'utf8' });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /board=silent-in-window/, 'the help truncated before the board readings');
+  assert.match(r.stdout, /Exit status:/);
+  assert.match(r.stdout, /Requires: git, gh/, 'the help truncated before its last line');
 });
