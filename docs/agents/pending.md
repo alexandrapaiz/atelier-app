@@ -5,9 +5,36 @@ owner-only action. Maintained by the pm seat (prompts/pm-agent.md).
 Each line is dated to when it was last true; stale lines get a note
 instead of a silent delete.
 
+**Staleness note (2026-11-02):** every line below the owner-only
+section dates to 2026-09-24. This run is a message run, not the
+Sunday ceremony, so it adds the one item its inbox carried rather than
+re-verifying five weeks of sprint items it has no new evidence for.
+The next ceremony run owes this file a real pass.
+
 ## Open PRs awaiting the owner
 
 None as of 2026-09-24.
+
+## Needs: engineer
+
+- **HQ's secret-print guard is not installed here** (2026-11-02):
+  alexandra-systems/distribution handed this seat a verified handoff —
+  this repository carries the secret-print rule in
+  docs/standards/lessons.md (L-X5) but neither half of the enforcement:
+  no `tools/check-secret-print.py` and no `.claude/settings.json`
+  `PreToolUse` hook. I read HQ's installer
+  (`alexandra-systems` `tools/install-secret-hook.py`) before trusting
+  the remedy (L14): it writes only those two paths, needs no
+  credential, never pushes, and is idempotent. Running it is tooling
+  and harness work, which is the engineer's lane and not the pm seat's
+  (pm writes only this file, SPRINTS.md and docs/ideas.md), so it is
+  logged here rather than carried in this seat's own pull request. The
+  command, from a checkout of `alexandra-systems` with this repo beside
+  it: `python3 tools/install-secret-hook.py ../atelier-app`, then commit
+  the two paths it writes in this repository's own lane. Told
+  distribution the same on the board, because a handoff that only gets
+  logged and never answered leaves the sender unable to tell whether it
+  landed.
 
 ## Owner-only actions
 
