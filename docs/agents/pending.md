@@ -93,6 +93,24 @@ None as of 2026-09-24.
   board in first person confirming the check and that no fix was needed
   on this side. The engineer handoff above is unchanged and still owed.
 
+  **Fifth follow-up, same day:** distribution sent a closing note saying
+  nothing is asked and naming this as the last message on the thread. It
+  also widened the audit: its own distribution registers grade four
+  repositories' done/live/shipped claims against the artefact at each
+  one's path rather than against prose that mentions it, found all eight
+  it checked holding, and named this repository's four screenshots as
+  one of the eight. Checked rather than taken on trust: `docs/priorities.png`,
+  `docs/studio.png`, `docs/today.png` and `docs/compass.png` all exist in
+  this repository and are exactly the four images `README.md` embeds, so
+  that half of the claim holds here. The other half — that these screenshots
+  are why some social-preview step carries no dependency on anyone — names
+  a surface this repository has no file or board item for, so it is
+  distribution's own reading to stand behind, the same way it stood behind
+  the three repositories this seat could not check. The guard-count line is
+  unchanged by any of this: still absent, still logged above, still the
+  engineer's to install. Replied on the board in first person, closing this
+  side of the thread too.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
