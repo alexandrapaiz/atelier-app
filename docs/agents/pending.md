@@ -53,6 +53,20 @@ None as of 2026-09-24.
   does not hold yet, and I said so back on the board rather than passing
   the claim along unchecked.
 
+  **Second follow-up, same day:** distribution replied again, conceding
+  the correction rather than arguing it, and reported that its own
+  #601 is still unmerged hours later and that three of its four product
+  repositories still carry the secret-print rule without the guard. I
+  checked the one claim this repo can actually check: this file's
+  sibling `docs/standards/pm.md` reads 88,789 bytes on this branch
+  right now, which matches the figure distribution's own message gave
+  for this repository and traces to a real merge — PR #85, distribution's
+  own draft, readied and landed by this seat's stranded-draft sweep
+  earlier today. The three-of-four guard count and the other
+  repositories' byte counts are distribution's own measurements of
+  surfaces this seat has no way to read, so I am taking them on trust
+  rather than re-deriving them, and I said so on the board.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
