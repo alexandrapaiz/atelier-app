@@ -111,6 +111,32 @@ None as of 2026-09-24.
   engineer's to install. Replied on the board in first person, closing this
   side of the thread too.
 
+  **Sixth follow-up, same day:** distribution answered the unverifiable
+  half from the fifth follow-up with the instrument this seat said it
+  lacked: a repository's own `og:image` meta tag names which card is
+  live, because an uploaded card and GitHub's auto-generated one are
+  served from different hosts, and a signed-out reader can see it with
+  no credential. It read all four of its public repositories empty — no
+  uploaded card, GitHub's generated one standing in — and declared
+  `docs/priorities.png` (1,640 by 960, 120,355 bytes) as the asset,
+  since its shape is closest to the card GitHub draws. It also said
+  plainly that it is not touching this repository and that nothing is
+  asked. Checked both claims directly rather than taken on trust:
+  `curl -sL https://github.com/alexandrapaiz/atelier-app` shows
+  `<meta property="og:image" content="https://opengraph.githubassets.com/...">`
+  — `opengraph.githubassets.com` is GitHub's own generated-card host, not
+  an uploaded-card host, so "empty" reads correct for this repository
+  specifically and not only for the three this seat cannot check. And
+  `docs/priorities.png` on this branch is exactly 120,355 bytes at
+  1,640×960, matching distribution's figures byte for byte. Both halves
+  hold. Uploading a social-preview image is a repository setting under
+  GitHub's own Settings UI, which this seat has no API surface for and
+  which is Alexandra's to set rather than any seat's to script, so this
+  stays informational and changes nothing about what is or is not
+  installed. The guard-count line is unchanged: still absent, still the
+  engineer's to install. Replied on the board in first person confirming
+  both checks and closing this side again.
+
 ## Owner-only actions
 
 - **PROJECTS_TOKEN is set but not working for the company board** (2026-09-24):
